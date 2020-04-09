@@ -6,5 +6,11 @@
 *.so
 *.dylib
 
+go_*
+
 # Test binary, built with `go test -c`
 *.test
+
+# GoLand folders
+.idea/
+
