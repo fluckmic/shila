@@ -1,12 +1,12 @@
 // TODO: Add a description.
 package config
 
+var _ config = (*Config) (nil)
+
 type Error string
 func (e Error) Error() string {
 	return string(e)
 }
-
-var _ config = (*Config) (nil)
 
 type config interface {
 	InitDefault() error
