@@ -56,8 +56,6 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-
-
 type Device struct {
 	Name string
 	file *os.File

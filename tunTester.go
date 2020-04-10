@@ -4,8 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"shila/appep/tun"
-	"time"
+	"shila/appep/vif"
 )
 
 func main() {
@@ -17,37 +16,15 @@ func main() {
 		quit <- text
 	}()
 
-	dev27 := tun.New("tun27")
+	// sudo ip netns add shila-ingress
+	// sudo ip netns exec shila-ingress ip a
+	dev27 := vif.New("tun27", vif.Namespace{"shila-ingress"}, "10.0.0.1/24")
 
-	dev27.Name = "tun27"
-	if err := dev27.Allocate(); err != nil {
+	if err := dev27.Setup(); err != nil {
 		fmt.Println(err.Error())
 	} else {
 		fmt.Print("Allocated ", dev27.Name, ".\n")
 	}
 
-	time.Sleep(4 * time.Second)
-
-	if err := dev27.Allocate(); err != nil {
-		fmt.Println(err.Error())
-	} else {
-		fmt.Print("Allocated ", dev27.Name, ".\n")
-	}
-
-	time.Sleep(4 * time.Second)
-
-	if err := dev27.Deallocate(); err != nil {
-		fmt.Print(err.Error())
-	} else {
-		fmt.Print("Deallocated ", dev27.Name, ".\n")
-	}
-
-	time.Sleep(2 * time.Second)
-
-	if err := dev27.Deallocate(); err != nil {
-		fmt.Print(err.Error())
-	} else {
-		fmt.Print("Deallocated ", dev27.Name, ".\n")
-	}
 	<-quit
 }
