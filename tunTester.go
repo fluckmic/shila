@@ -2,11 +2,11 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"shila/appep/tun"
+	"time"
 )
-
-var dev tun.Device
 
 func main() {
 
@@ -17,7 +17,37 @@ func main() {
 		quit <- text
 	}()
 
-	dev.Allocate()
+	dev27 := tun.New("tun27")
 
+	dev27.Name = "tun27"
+	if err := dev27.Allocate(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Print("Allocated ", dev27.Name, ".\n")
+	}
+
+	time.Sleep(4 * time.Second)
+
+	if err := dev27.Allocate(); err != nil {
+		fmt.Println(err.Error())
+	} else {
+		fmt.Print("Allocated ", dev27.Name, ".\n")
+	}
+
+	time.Sleep(4 * time.Second)
+
+	if err := dev27.Deallocate(); err != nil {
+		fmt.Print(err.Error())
+	} else {
+		fmt.Print("Deallocated ", dev27.Name, ".\n")
+	}
+
+	time.Sleep(2 * time.Second)
+
+	if err := dev27.Deallocate(); err != nil {
+		fmt.Print(err.Error())
+	} else {
+		fmt.Print("Deallocated ", dev27.Name, ".\n")
+	}
 	<-quit
 }

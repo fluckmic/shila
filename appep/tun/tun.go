@@ -1,3 +1,4 @@
+// TODO: tun package deserves a description.
 package tun
 
 /*
@@ -44,24 +45,63 @@ package tun
 */
 import "C"
 
-import "C"
 import (
 	"fmt"
+	"os"
 	"unsafe"
 )
 
-type Device struct {
+type Error string
+func (e Error) Error() string {
+	return string(e)
 }
 
-func (d *Device) Allocate() (int, error) {
+
+
+type Device struct {
+	Name string
+	file *os.File
+}
+
+func New(name string) *Device {
+	return &Device{name, nil}
+}
+
+// TODO: Allocate deserves a description.
+func (d *Device) Allocate() error {
+
+	if d.file != nil {
+		return Error(fmt.Sprint("Unable to allocate tun device: ",
+								d.Name, " - ", "Device already allocated."))
+	}
 
 	var errno C.int
-	var devName = C.CString("tun27")
+	var devName = C.CString(d.Name)
 	var flags C.int = C.IFF_TUN | C.IFF_NO_PI
 	var fd = int(C.allocateTun(devName, &errno, flags))
 	C.free(unsafe.Pointer(devName))
 
-	fmt.Println("File descriptor:", fd, "errno:", errno)
+	if fd < 0 {
+		var errorString = C.GoString(C.strerror(errno))
+		return Error(fmt.Sprint("Unable to allocate tun device: ",
+								d.Name, " - ", errorString, "."))
+	}
 
-	return 0, nil
+	d.file = os.NewFile(uintptr(fd), d.Name)
+	return nil
+}
+
+// TODO: De-allocate deserves a description.
+func (d *Device) Deallocate() error {
+	if d.file == nil {
+		return Error(fmt.Sprint("Unable to de-allocate tun device: ",
+								d.Name, " - ", "Device not allocated."))
+	}
+	err := d.file.Close()
+	d.file = nil
+	return err
+}
+
+func (d *Device) IsAllocated() bool {
+	return d.file != nil
 }
