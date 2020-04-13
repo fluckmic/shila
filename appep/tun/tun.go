@@ -52,6 +52,7 @@ import (
 )
 
 type Error string
+
 func (e Error) Error() string {
 	return string(e)
 }
@@ -70,19 +71,19 @@ func (d *Device) Allocate() error {
 
 	if d.file != nil {
 		return Error(fmt.Sprint("Unable to allocate tun device: ",
-								d.Name, " - ", "Device already allocated."))
+			d.Name, " - ", "Device already allocated."))
 	}
 
 	var errno C.int
 	var devName = C.CString(d.Name)
 	var flags C.int = C.IFF_TUN | C.IFF_NO_PI
-	var fd = int(C.allocateTun(devName, &errno, flags))
+	fd := int(C.allocateTun(devName, &errno, flags))
 	C.free(unsafe.Pointer(devName))
 
 	if fd < 0 {
 		var errorString = C.GoString(C.strerror(errno))
 		return Error(fmt.Sprint("Unable to allocate tun device: ",
-								d.Name, " - ", errorString, "."))
+			d.Name, " - ", errorString, "."))
 	}
 
 	d.file = os.NewFile(uintptr(fd), d.Name)
@@ -93,7 +94,7 @@ func (d *Device) Allocate() error {
 func (d *Device) Deallocate() error {
 	if d.file == nil {
 		return Error(fmt.Sprint("Unable to de-allocate tun device: ",
-								d.Name, " - ", "Device not allocated."))
+			d.Name, " - ", "Device not allocated."))
 	}
 	err := d.file.Close()
 	d.file = nil
