@@ -70,7 +70,7 @@ func New(name string) *Device {
 func (d *Device) Allocate() error {
 
 	if d.file != nil {
-		return Error(fmt.Sprint("Unable to allocate tun device: ",
+		return Error(fmt.Sprint("Unable to allocate tun device ",
 			d.Name, " - ", "Device already allocated."))
 	}
 
@@ -82,7 +82,7 @@ func (d *Device) Allocate() error {
 
 	if fd < 0 {
 		var errorString = C.GoString(C.strerror(errno))
-		return Error(fmt.Sprint("Unable to allocate tun device: ",
+		return Error(fmt.Sprint("Unable to allocate tun device ",
 			d.Name, " - ", errorString, "."))
 	}
 
@@ -93,7 +93,7 @@ func (d *Device) Allocate() error {
 // TODO: De-allocate deserves a description.
 func (d *Device) Deallocate() error {
 	if d.file == nil {
-		return Error(fmt.Sprint("Unable to de-allocate tun device: ",
+		return Error(fmt.Sprint("Unable to de-allocate tun device ",
 			d.Name, " - ", "Device not allocated."))
 	}
 	err := d.file.Close()
@@ -103,4 +103,22 @@ func (d *Device) Deallocate() error {
 
 func (d *Device) IsAllocated() bool {
 	return d.file != nil
+}
+
+func (d *Device) Read(b []byte) (int, error) {
+	if !d.IsAllocated() {
+		err := Error(fmt.Sprint("Unable to read from tun device ",
+			d.Name, " - ", "Device not allocated."))
+		return 0, err
+	}
+	return d.file.Read(b)
+}
+
+func (d *Device) Write(b []byte) (int, error) {
+	if !d.IsAllocated() {
+		err := Error(fmt.Sprint("Unable to write to tun device ",
+			d.Name, " - ", "Device not allocated."))
+		return 0, err
+	}
+	return d.file.Write(b)
 }

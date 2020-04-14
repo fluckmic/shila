@@ -3,8 +3,8 @@ package vif
 
 import (
 	"fmt"
-	"os/exec"
 	"shila/appep/tun"
+	"shila/helper"
 )
 
 type Error string
@@ -18,20 +18,21 @@ type Device struct {
 	Namespace *Namespace
 	Subnet    string
 	device    *tun.Device
+	isUp      bool
 }
 
 type Namespace struct {
 	Name string
 }
 
-func New(name string, namespace *Namespace, address string) *Device {
-	return &Device{name, namespace, address, nil}
+func New(name string, namespace *Namespace, subnet string) *Device {
+	return &Device{name, namespace, subnet, nil, false}
 }
 
-// TODO: Setup deserves a description.
+// Setup allocates the vif device.
 func (d *Device) Setup() error {
 
-	if d.device != nil {
+	if d.IsSetup() {
 		return Error(fmt.Sprint("Unable to setup vif device ",
 			d.Name, " - ", "Device already setup."))
 	}
@@ -55,13 +56,41 @@ func (d *Device) Setup() error {
 	return nil
 }
 
-// TODO: Teardown deserves a description.
+// Teardown de-allocate and deletes the vif device.
 func (d *Device) Teardown() error {
-	return nil
+
+	if !d.IsSetup() {
+		return Error(fmt.Sprint("Unable to tear down vif device ", d.Name,
+			" - ", "Device not even setup."))
+	}
+
+	var err error
+	// Return the most recent error, if there is one.
+	// However we proceed with the teardown nevertheless.
+
+	// Remove the interface from the system
+	err = d.removeInterface()
+
+	// Deallocate the corresponding instance of the interface
+	err = d.device.Deallocate()
+
+	d.device = nil
+
+	return err
 }
 
-// TODO: TurnUp deserves a description.
+// TurnUp enables the vif device.
 func (d *Device) TurnUp() error {
+
+	if !d.IsSetup() {
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
+			" up - ", "Device not even setup."))
+	}
+
+	if d.IsUp() {
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
+			" up - ", "Device already up."))
+	}
 
 	var args []string
 	if d.Namespace == nil {
@@ -70,17 +99,86 @@ func (d *Device) TurnUp() error {
 		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "set", d.Name, "up"}
 	}
 
-	err := executeIpCommand(args...)
+	err := helper.ExecuteIpCommand(args...)
 	if err != nil {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, "up - ", err.Error()))
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
 	}
+
+	d.isUp = true
 
 	return nil
 }
 
-// TODO: TurnDown deserves a description.
+// TurnDown disables the vif device.
 func (d *Device) TurnDown() error {
+
+	if !d.IsSetup() {
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
+			" down - ", "Device not even setup."))
+	}
+
+	if !d.IsUp() {
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
+			" down - ", "Device already down."))
+	}
+
+	var args []string
+	if d.Namespace == nil {
+		args = []string{"link", "set", d.Name, "down"}
+	} else {
+		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "set", d.Name, "down"}
+	}
+
+	err := helper.ExecuteIpCommand(args...)
+	if err != nil {
+		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
+	}
+
+	d.isUp = false
+
 	return nil
+}
+
+func (d *Device) Read(b []byte) (int, error) {
+
+	if !d.IsSetup() {
+		err := Error(fmt.Sprint("Cannot read from vif device ", d.Name,
+			" - ", "Device not even setup."))
+		return 0, err
+	}
+
+	if !d.IsUp() {
+		err := Error(fmt.Sprint("Cannot read from vif device ", d.Name,
+			" - ", "Device is not up."))
+		return 0, err
+	}
+
+	return d.device.Read(b)
+}
+
+func (d *Device) Write(b []byte) (int, error) {
+
+	if !d.IsSetup() {
+		err := Error(fmt.Sprint("Cannot write to vif device ", d.Name,
+			" - ", "Device not even setup."))
+		return 0, err
+	}
+
+	if !d.IsUp() {
+		err := Error(fmt.Sprint("Cannot write to vif device ", d.Name,
+			" - ", "Device is not up."))
+		return 0, err
+	}
+
+	return d.device.Write(b)
+}
+
+func (d *Device) IsSetup() bool {
+	return d.device != nil
+}
+
+func (d *Device) IsUp() bool {
+	return d.isUp
 }
 
 func (d *Device) assignNamespace() error {
@@ -90,7 +188,8 @@ func (d *Device) assignNamespace() error {
 		return nil
 	}
 
-	err := executeIpCommand("link", "set", d.Name, "netns", d.Namespace.Name)
+	// ip link set <device name> netns <namespace name>
+	err := helper.ExecuteIpCommand("link", "set", d.Name, "netns", d.Namespace.Name)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to assign namespace ", d.Namespace.Name,
 			" to vif device ", d.Name, " - ", err.Error()))
@@ -104,6 +203,7 @@ func (d *Device) assignNamespace() error {
 // was already a successful call to assignNamespace().
 func (d *Device) assignSubnet() error {
 
+	// ip addr add <subnet> dev <dev name>
 	var args []string
 	if d.Namespace == nil {
 		args = []string{"addr", "add", d.Subnet, "dev", d.Name}
@@ -111,8 +211,7 @@ func (d *Device) assignSubnet() error {
 		args = []string{"netns", "exec", d.Namespace.Name, "ip", "addr", "add", d.Subnet, "dev", d.Name}
 	}
 
-	err := executeIpCommand(args...)
-	if err != nil {
+	if err := helper.ExecuteIpCommand(args...); err != nil {
 		return Error(fmt.Sprint("Unable to assign subnet ", d.Subnet,
 			" to vif device ", d.Name, " - ", err.Error()))
 	}
@@ -120,16 +219,18 @@ func (d *Device) assignSubnet() error {
 	return nil
 }
 
-func executeIpCommand(args ...string) error {
+func (d *Device) removeInterface() error {
 
-	_, err := exec.Command("ip", args...).Output()
-	if err != nil {
-		// From the official documentation: "Any returned error will *usually be of type *ExitError."
-		if exitError, ok := err.(*exec.ExitError); ok {
-			return Error(exitError.Stderr)
-		} else {
-			return err
-		}
+	// ip link delete <interface name>
+	var args []string
+	if d.Namespace == nil {
+		args = []string{"link", "delete", d.Name}
+	} else {
+		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "delete", d.Name}
+	}
+
+	if err := helper.ExecuteIpCommand(args...); err != nil {
+		return Error(fmt.Sprint("Unable to remove interface ", d.Name, " - ", err.Error()))
 	}
 
 	return nil
