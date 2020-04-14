@@ -1,15 +1,15 @@
 package testing
 
 import (
-	"shila/appep"
+	"shila/kerep"
 	"testing"
 )
 
 func TestDevice_Setup(t *testing.T) {
 
-	var appEp appep.Device
+	var kernelEndpoint kerep.Device
 
-	if err := appEp.Setup(); err == nil {
+	if err := kernelEndpoint.Setup(); err == nil {
 		t.Error("Cannot setup a device before initialization.")
 	}
 

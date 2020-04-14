@@ -17,6 +17,7 @@ type config interface {
 
 type Config struct {
 	Logging        Logging
+	KernelSide     KernelSide
 	KernelEndpoint KernelEndpoint
 }
 
@@ -34,10 +35,16 @@ func (c *Config) InitDefault() (err error) {
 			"config for logging - ", err.Error()))
 	}
 
-	// Initialize configuration for the application endpoint
+	// Initialize configuration for the kernel side
+	if err = c.KernelSide.InitDefault(); err != nil {
+		return Error(fmt.Sprint("Unable to initialize default "+
+			"config for kernel side - ", err.Error()))
+	}
+
+	// Initialize configuration for the kernel endpoint
 	if err = c.KernelEndpoint.InitDefault(); err != nil {
 		return Error(fmt.Sprint("Unable to initialize default "+
-			"config for application endpoint - ", err.Error()))
+			"config for kernel endpoint - ", err.Error()))
 	}
 
 	return nil

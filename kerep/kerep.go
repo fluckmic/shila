@@ -14,7 +14,7 @@ type Device struct {
 	Id         Identifier
 	config     config.KernelEndpoint
 	ingressBuf chan *shila.Packet
-	engressBuf chan *shila.Packet
+	egressBuf  chan *shila.Packet
 	vif        *vif.Device
 	isRunning  bool
 }
@@ -26,8 +26,8 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint,
-	ingressBuff chan *shila.Packet, engressBuff chan *shila.Packet) *Device {
-	return &Device{id, config, ingressBuff, engressBuff, nil, false}
+	ingressBuff chan *shila.Packet, egressBuff chan *shila.Packet) *Device {
+	return &Device{id, config, ingressBuff, egressBuff, nil, false}
 }
 
 func (d *Device) Setup() error {
@@ -57,7 +57,7 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 	d.ingressBuf = make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.engressBuf = make(chan *shila.Packet, d.config.SizeEngressBuff)
+	d.egressBuf = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
 	return nil
 }
@@ -86,7 +86,7 @@ func (d *Device) TearDown() error {
 
 	d.vif = nil
 	d.ingressBuf = nil
-	d.engressBuf = nil
+	d.egressBuf = nil
 
 	return err
 
@@ -125,7 +125,7 @@ func (d *Device) Stop() error {
 }
 
 func (d *Device) IsSetup() bool {
-	return d.vif != nil && d.ingressBuf != nil && d.engressBuf != nil
+	return d.vif != nil && d.ingressBuf != nil && d.egressBuf != nil
 }
 
 func (d *Device) IsRunning() bool {
