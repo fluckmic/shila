@@ -1,7 +1,7 @@
 package testing
 
 import (
-	"shila/kerep"
+	"shila/kersi/kerep"
 	"testing"
 )
 

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"shila/config"
 	"shila/helper"
-	"shila/kerep/vif"
+	"shila/kersi/kerep/vif"
 	"shila/shila"
 )
 

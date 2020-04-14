@@ -4,7 +4,7 @@ package vif
 import (
 	"fmt"
 	"shila/helper"
-	"shila/kerep/tun"
+	"shila/kersi/kerep/tun"
 )
 
 type Error string

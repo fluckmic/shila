@@ -3,7 +3,7 @@ package kerep
 import (
 	"fmt"
 	"net"
-	"shila/kerep/vif"
+	"shila/kersi/kerep/vif"
 )
 
 type Identifier struct {
