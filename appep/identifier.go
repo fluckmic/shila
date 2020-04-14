@@ -18,7 +18,7 @@ func (id *Identifier) Name() string {
 
 func (id *Identifier) Namespace() string {
 	if id.namespace == nil {
-		return string(nil)
+		return ""
 	} else {
 		return id.namespace.Name
 	}

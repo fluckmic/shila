@@ -1,9 +1,12 @@
 // TODO: Add a description.
 package config
 
-var _ config = (*Config) (nil)
+import "fmt"
+
+var _ config = (*Config)(nil)
 
 type Error string
+
 func (e Error) Error() string {
 	return string(e)
 }
@@ -14,6 +17,7 @@ type config interface {
 
 type Config struct {
 	Logging Logging
+	AppEndP Appep
 }
 
 func (c *Config) InitDefault() (err error) {
@@ -25,7 +29,16 @@ func (c *Config) InitDefault() (err error) {
 	}()
 
 	// Initialize configuration for the logging
-	c.Logging.InitDefault()
+	if err = c.Logging.InitDefault(); err != nil {
+		return Error(fmt.Sprint("Unable to initialize default "+
+			"config for logging - ", err.Error()))
+	}
+
+	// Initialize configuration for the application endpoint
+	if err = c.AppEndP.InitDefault(); err != nil {
+		return Error(fmt.Sprint("Unable to initialize default "+
+			"config for application endpoint - ", err.Error()))
+	}
 
 	return nil
 }
