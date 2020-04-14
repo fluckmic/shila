@@ -1,18 +1,18 @@
 // TODO: Add a more detailed description.
 // application endpoint
-package appep
+package kerep
 
 import (
 	"fmt"
-	"shila/appep/vif"
 	"shila/config"
 	"shila/helper"
+	"shila/kerep/vif"
 	"shila/shila"
 )
 
 type Device struct {
 	Id         Identifier
-	config     config.Appep
+	config     config.KernelEndpoint
 	ingressBuf chan *shila.Packet
 	engressBuf chan *shila.Packet
 	vif        *vif.Device
@@ -25,7 +25,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(id Identifier, config config.Appep,
+func New(id Identifier, config config.KernelEndpoint,
 	ingressBuff chan *shila.Packet, engressBuff chan *shila.Packet) *Device {
 	return &Device{id, config, ingressBuff, engressBuff, nil, false}
 }
@@ -33,7 +33,7 @@ func New(id Identifier, config config.Appep,
 func (d *Device) Setup() error {
 
 	if d.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup appep ",
+		return Error(fmt.Sprint("Unable to setup kernel endpoint ",
 			d.Id.Name(), " - ", "Device already setup."))
 	}
 
@@ -65,12 +65,12 @@ func (d *Device) Setup() error {
 func (d *Device) TearDown() error {
 
 	if !d.IsSetup() {
-		return Error(fmt.Sprint("Unable to tear down appep ",
+		return Error(fmt.Sprint("Unable to tear down kernel endpoint ",
 			d.Id.Name(), " - ", "Device not even setup."))
 	}
 
 	if d.IsRunning() {
-		return Error(fmt.Sprint("Unable to tear down appep ",
+		return Error(fmt.Sprint("Unable to tear down kernel endpoint ",
 			d.Id.Name(), " - ", "Device still running."))
 	}
 
@@ -78,7 +78,7 @@ func (d *Device) TearDown() error {
 	// Return the most recent error, if there is one.
 	// However we proceed with the teardown nevertheless.
 
-	// Remove the routing table associated with the appep
+	// Remove the routing table associated with the kernel endpoint
 	err = d.removeRouting()
 
 	// Deallocate the corresponding instance of the interface
@@ -95,12 +95,12 @@ func (d *Device) TearDown() error {
 func (d *Device) Start() error {
 
 	if !d.IsSetup() {
-		return Error(fmt.Sprint("Cannot start appep ",
+		return Error(fmt.Sprint("Cannot start kernel endpoint ",
 			d.Id.Name(), " - ", "Device not yet setup."))
 	}
 
 	if d.IsRunning() {
-		return Error(fmt.Sprint("Cannot start appep ",
+		return Error(fmt.Sprint("Cannot start kernel endpoint ",
 			d.Id.Name(), " - ", "Device already running."))
 
 	}
@@ -111,12 +111,12 @@ func (d *Device) Start() error {
 func (d *Device) Stop() error {
 
 	if !d.IsSetup() {
-		return Error(fmt.Sprint("Cannot stop appep ",
+		return Error(fmt.Sprint("Cannot stop kernel endpoint ",
 			d.Id.Name(), " - ", "Device not yet setup."))
 	}
 
 	if !d.IsRunning() {
-		return Error(fmt.Sprint("Cannot stop appep ",
+		return Error(fmt.Sprint("Cannot stop kernel endpoint ",
 			d.Id.Name(), " - ", "Device is not running."))
 
 	}
@@ -150,12 +150,12 @@ func (d *Device) setupRouting() error {
 	}
 
 	if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
-		return Error(fmt.Sprint("Unable to setup routing for appep ", d.Id.Name(),
+		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
 	}
 
 	if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-		return Error(fmt.Sprint("Unable to setup routing for appep ", d.Id.Name(),
+		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
 	}
 
@@ -179,12 +179,12 @@ func (d *Device) removeRouting() error {
 	}
 
 	if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
-		return Error(fmt.Sprint("Unable to remove routing for appep ", d.Id.Name(),
+		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
 	}
 
 	if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-		return Error(fmt.Sprint("Unable to remove routing for appep ", d.Id.Name(),
+		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
 	}
 

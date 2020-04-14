@@ -16,8 +16,8 @@ type config interface {
 }
 
 type Config struct {
-	Logging Logging
-	AppEndP Appep
+	Logging        Logging
+	KernelEndpoint KernelEndpoint
 }
 
 func (c *Config) InitDefault() (err error) {
@@ -35,7 +35,7 @@ func (c *Config) InitDefault() (err error) {
 	}
 
 	// Initialize configuration for the application endpoint
-	if err = c.AppEndP.InitDefault(); err != nil {
+	if err = c.KernelEndpoint.InitDefault(); err != nil {
 		return Error(fmt.Sprint("Unable to initialize default "+
 			"config for application endpoint - ", err.Error()))
 	}

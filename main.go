@@ -7,17 +7,15 @@ import (
 	"shila/logging"
 )
 
-var (
-	cfg config.Config
-	log *logging.Logger
-	err error
-)
-
 func main() {
 	os.Exit(realMain())
 }
 
 func realMain() int {
+
+	var cfg config.Config
+	var log *logging.Logger
+	var err error
 
 	// Load the initialization
 	// TODO: Load config from a file as an alternative.
@@ -34,7 +32,7 @@ func realMain() int {
 
 	log.Infoln("Shila initialization successful.")
 	log.Debugf("%T : %+v\n", cfg.Logging, cfg.Logging)
-	log.Debugf("%T : %+v\n", cfg.AppEndP, cfg.AppEndP)
+	log.Debugf("%T : %+v\n", cfg.KernelEndpoint, cfg.KernelEndpoint)
 
 	return 0
 }
