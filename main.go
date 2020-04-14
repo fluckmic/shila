@@ -33,7 +33,6 @@ func realMain() int {
 		log.Error.Fatalln("Fatal error -", err.Error())
 		return 1
 	}
-	log.Verbose.Println("Configuration loaded.")
 
 	// Create and setup the kernel side
 	var kernelSide = kersi.New(cfg)
@@ -41,14 +40,20 @@ func realMain() int {
 		log.Error.Fatalln("Fatal error -", err.Error())
 	}
 	defer kernelSide.CleanUp()
-	log.Verbose.Println("Setup kernel side done.")
+
+	// TODO: Create and setup the network side
+
+	// TODO: Create and setup the core
 
 	log.Info.Println("Setup done, starting machinery..")
 
+	// TODO: Run the machinery.
+
 	log.Info.Println("Machinery up and running.")
+
 	returnCode := waitForTeardown()
 
-	// Clean up which cannot be done with defer.
+	// TODO: Clean everything up
 
 	return returnCode
 }
