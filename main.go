@@ -1,13 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"os/signal"
 	"shila/config"
-	"shila/fatal"
 	"shila/kersi"
-	"shila/logging"
+	"shila/log"
+	"shila/shutdown"
 )
 
 func main() {
@@ -16,40 +14,38 @@ func main() {
 
 func realMain() int {
 
+	defer log.Info.Println("Shutdown complete.")
+
 	var cfg config.Config
-	var log *logging.Logger
 	var err error
 
+	// Initialize logging functionality
+	log.Init()
+
 	// Initialize termination functionality
-	fatal.Init()
+	shutdown.Init()
+
+	log.Info.Println("Setup started...")
 
 	// Load the initialization
 	// TODO: Load config from a file as an alternative.
 	if err = cfg.InitDefault(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
+		log.Error.Fatalln("Fatal error -", err.Error())
 		return 1
 	}
-
-	// Set up the logging
-	if log, err = logging.New(cfg.Logging); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
-		return 1
-	}
-	// TODO: defer log.TearDown: properly close logging afterwards.
-
-	log.Infoln("Shila initialization successful.")
-	log.Debugf("%T : %+v\n", cfg.Logging, cfg.Logging)
-	log.Debugf("%T : %+v\n", cfg.KernelSide, cfg.KernelSide)
-	log.Debugf("%T : %+v\n", cfg.KernelEndpoint, cfg.KernelEndpoint)
+	log.Verbose.Println("Configuration loaded.")
 
 	// Create and setup the kernel side
 	var kernelSide = kersi.New(cfg)
 	if err = kernelSide.Setup(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err.Error())
-		return 1
+		log.Error.Fatalln("Fatal error -", err.Error())
 	}
 	defer kernelSide.CleanUp()
+	log.Verbose.Println("Setup kernel side done.")
 
+	log.Info.Println("Setup done, starting machinery..")
+
+	log.Info.Println("Machinery up and running.")
 	returnCode := waitForTeardown()
 
 	// Clean up which cannot be done with defer.
@@ -58,16 +54,10 @@ func realMain() int {
 }
 
 func waitForTeardown() int {
-
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, os.Kill)
-
 	select {
-	case <-c:
+	case <-shutdown.OrderlyChan():
 		return 0
-	case <-fatal.ShutdownChan():
-		return 0
-	case <-fatal.FatalChan():
+	case <-shutdown.FatalChan():
 		return 1
 	}
 }

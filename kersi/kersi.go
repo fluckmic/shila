@@ -24,7 +24,6 @@ func (m *Manager) Setup() error {
 }
 
 func (m *Manager) CleanUp() {
-	fmt.Print("Called CleanUp.")
 	// Clean up the kernel side as good as possible.
 }
 
