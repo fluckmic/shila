@@ -31,7 +31,6 @@ func realMain() int {
 	// TODO: Load config from a file as an alternative.
 	if err = cfg.InitDefault(); err != nil {
 		log.Error.Fatalln("Fatal error -", err.Error())
-		return 1
 	}
 
 	// Create and setup the kernel side
