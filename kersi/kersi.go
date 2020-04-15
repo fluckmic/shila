@@ -6,7 +6,6 @@ import (
 	"shila/config"
 	"shila/helper"
 	"shila/kersi/kerep"
-	"shila/kersi/kerep/vif"
 	"shila/log"
 )
 
@@ -59,14 +58,21 @@ func (m *Manager) Setup() error {
 	}
 
 	// Setup the kernel endpoints
+	if err := m.setupKernelEndpoints(); err != nil {
+		m.tearDownKernelEndpoints()
+		m.clearKernelEndpoints()
+		m.removeNamespaces()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
 
 	return nil
 }
 
 func (m *Manager) CleanUp() {
 
+	m.tearDownKernelEndpoints()
 	m.clearKernelEndpoints()
-
 	m.removeNamespaces()
 
 }
@@ -119,6 +125,31 @@ func (m *Manager) clearKernelEndpoints() {
 	}
 }
 
+func (m *Manager) tearDownKernelEndpoints() {
+	for _, kerep := range m.endpoints {
+		if kerep.IsSetup() {
+			_ = kerep.TearDown()
+		}
+	}
+}
+
+func (m *Manager) stopKernelEndpoints() {
+	for _, kerep := range m.endpoints {
+		if kerep.IsRunning() {
+			_ = kerep.Stop()
+		}
+	}
+}
+
+func (m *Manager) setupKernelEndpoints() error {
+	for _, kerep := range m.endpoints {
+		if err := kerep.Setup(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
@@ -156,7 +187,7 @@ func (m *Manager) removeNamespaces() {
 }
 
 // TODO: ingress and egress buffer not yet provided!
-func (m *Manager) addKernelEndpoints(n uint, ns *vif.Namespace, sn net.IPNet) error {
+func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, sn net.IPNet) error {
 
 	if startIP := sn.IP.To4(); startIP == nil {
 		return Error(fmt.Sprint("Invalid starting IP: ", sn.IP))

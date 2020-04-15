@@ -1,6 +1,8 @@
 package helper
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
 type Error string
 
@@ -8,23 +10,27 @@ func (e Error) Error() string {
 	return string(e)
 }
 
+type Namespace struct {
+	Name string
+}
+
+// ip netns add <namespace name>
 func AddNamespace(name string) error {
-	// ip netns add <namespace name>
-	if err := ExecuteIpCommand("netns", "add", name); err != nil {
+	if err := execIpCmd("netns", "add", name); err != nil {
 		return err
 	}
 	return nil
 }
 
+// ip netns delete <namespace name>
 func DeleteNamespace(name string) error {
-	// ip netns delete <namespace name>
-	if err := ExecuteIpCommand("netns", "delete", name); err != nil {
+	if err := execIpCmd("netns", "delete", name); err != nil {
 		return err
 	}
 	return nil
 }
 
-func ExecuteIpCommand(args ...string) error {
+func execIpCmd(args ...string) error {
 
 	_, err := exec.Command("ip", args...).Output()
 	if err != nil {
@@ -37,4 +43,16 @@ func ExecuteIpCommand(args ...string) error {
 	}
 
 	return nil
+}
+
+func execIpCmdInNamespace(ns string, args ...string) error {
+	return execIpCmd(append([]string{"netns", "exec", ns, "ip"}, args...)...)
+}
+
+func ExecuteIpCommand(ns *Namespace, args ...string) error {
+	if ns == nil {
+		return execIpCmd(args...)
+	} else {
+		return execIpCmdInNamespace(ns.Name, args...)
+	}
 }

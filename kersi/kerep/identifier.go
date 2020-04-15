@@ -3,16 +3,16 @@ package kerep
 import (
 	"fmt"
 	"net"
-	"shila/kersi/kerep/vif"
+	"shila/helper"
 )
 
 type Identifier struct {
 	number    uint
-	namespace *vif.Namespace
+	namespace *helper.Namespace
 	subnet    net.IPNet
 }
 
-func NewIdentifier(number uint, namespace *vif.Namespace, subnet net.IPNet) Identifier {
+func NewIdentifier(number uint, namespace *helper.Namespace, subnet net.IPNet) Identifier {
 	return Identifier{number, namespace, subnet}
 }
 

@@ -15,17 +15,13 @@ func (e Error) Error() string {
 
 type Device struct {
 	Name      string
-	Namespace *Namespace
+	Namespace *helper.Namespace
 	Subnet    string
 	device    *tun.Device
 	isUp      bool
 }
 
-type Namespace struct {
-	Name string
-}
-
-func New(name string, namespace *Namespace, subnet string) *Device {
+func New(name string, namespace *helper.Namespace, subnet string) *Device {
 	return &Device{name, namespace, subnet, nil, false}
 }
 
@@ -92,20 +88,11 @@ func (d *Device) TurnUp() error {
 			" up - ", "Device already up."))
 	}
 
-	var args []string
-	if d.Namespace == nil {
-		args = []string{"link", "set", d.Name, "up"}
-	} else {
-		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "set", d.Name, "up"}
-	}
-
-	err := helper.ExecuteIpCommand(args...)
-	if err != nil {
+	args := []string{"link", "set", d.Name, "up"}
+	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
 	}
-
 	d.isUp = true
-
 	return nil
 }
 
@@ -122,20 +109,12 @@ func (d *Device) TurnDown() error {
 			" down - ", "Device already down."))
 	}
 
-	var args []string
-	if d.Namespace == nil {
-		args = []string{"link", "set", d.Name, "down"}
-	} else {
-		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "set", d.Name, "down"}
-	}
-
-	err := helper.ExecuteIpCommand(args...)
-	if err != nil {
+	// ip link set <device name> down
+	args := []string{"link", "set", d.Name, "down"}
+	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
 	}
-
 	d.isUp = false
-
 	return nil
 }
 
@@ -189,7 +168,7 @@ func (d *Device) assignNamespace() error {
 	}
 
 	// ip link set <device name> netns <namespace name>
-	err := helper.ExecuteIpCommand("link", "set", d.Name, "netns", d.Namespace.Name)
+	err := helper.ExecuteIpCommand(nil, "link", "set", d.Name, "netns", d.Namespace.Name)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to assign namespace ", d.Namespace.Name,
 			" to vif device ", d.Name, " - ", err.Error()))
@@ -204,34 +183,20 @@ func (d *Device) assignNamespace() error {
 func (d *Device) assignSubnet() error {
 
 	// ip addr add <subnet> dev <dev name>
-	var args []string
-	if d.Namespace == nil {
-		args = []string{"addr", "add", d.Subnet, "dev", d.Name}
-	} else {
-		args = []string{"netns", "exec", d.Namespace.Name, "ip", "addr", "add", d.Subnet, "dev", d.Name}
-	}
-
-	if err := helper.ExecuteIpCommand(args...); err != nil {
+	args := []string{"addr", "add", d.Subnet, "dev", d.Name}
+	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to assign subnet ", d.Subnet,
 			" to vif device ", d.Name, " - ", err.Error()))
 	}
-
 	return nil
 }
 
 func (d *Device) removeInterface() error {
 
 	// ip link delete <interface name>
-	var args []string
-	if d.Namespace == nil {
-		args = []string{"link", "delete", d.Name}
-	} else {
-		args = []string{"netns", "exec", d.Namespace.Name, "ip", "link", "delete", d.Name}
-	}
-
-	if err := helper.ExecuteIpCommand(args...); err != nil {
+	args := []string{"link", "delete", d.Name}
+	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to remove interface ", d.Name, " - ", err.Error()))
 	}
-
 	return nil
 }

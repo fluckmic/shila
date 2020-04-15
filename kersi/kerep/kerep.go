@@ -46,10 +46,16 @@ func (d *Device) Setup() error {
 		return err
 	}
 
+	// Turn the vif up
+	if err := d.vif.TurnUp(); err != nil {
+		_ = d.vif.Teardown()
+		d.vif = nil
+		return nil
+	}
+
 	// Setup the routing
 	if err := d.setupRouting(); err != nil {
-		// Return the error which happened in the setup, this is more
-		// useful than returning a possible error from the subsequent cleaning up.
+		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
 		d.vif = nil
 		return err
@@ -69,19 +75,18 @@ func (d *Device) TearDown() error {
 			d.Id.Name(), " - ", "Device not even setup."))
 	}
 
-	if d.IsRunning() {
-		return Error(fmt.Sprint("Unable to tear down kernel endpoint ",
-			d.Id.Name(), " - ", "Device still running."))
-	}
-
 	var err error
 	// Return the most recent error, if there is one.
 	// However we proceed with the teardown nevertheless.
+
+	// Stop the reader and the writer
+	err = d.Stop()
 
 	// Remove the routing table associated with the kernel endpoint
 	err = d.removeRouting()
 
 	// Deallocate the corresponding instance of the interface
+	err = d.vif.TurnDown()
 	err = d.vif.Teardown()
 
 	d.vif = nil
@@ -105,6 +110,7 @@ func (d *Device) Start() error {
 
 	}
 
+	d.isRunning = true
 	return nil
 }
 
@@ -121,6 +127,7 @@ func (d *Device) Stop() error {
 
 	}
 
+	d.isRunning = false
 	return nil
 }
 
@@ -134,29 +141,18 @@ func (d *Device) IsRunning() bool {
 
 func (d *Device) setupRouting() error {
 
-	// TODO: Explain what is done here.
 	// ip rule add from <dev ip> table <table id>
+	args := []string{"rule", "add", "from", d.Id.subnet.IP.String(), "table", fmt.Sprint(d.Id.number)}
+	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
+		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
+			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
+	}
+
 	// ip route add table <table id> default dev <dev name> scope link
-
-	var argsCmd1, argsCmd2 []string
-	if d.Id.InDefaultNamespace() {
-		argsCmd1 = []string{"rule", "add", "from", d.Id.subnet.IP.String(), "table", string(d.Id.number)}
-		argsCmd2 = []string{"route", "add", "table", string(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
-	} else {
-		argsCmd1 = []string{"netns", "exec", d.Id.Namespace(), "ip",
-			"rule", "add", "from", d.Id.subnet.IP.String(), fmt.Sprint("table", d.Id.number)}
-		argsCmd2 = []string{"netns", "exec", d.Id.Namespace(), "ip",
-			"route", "add", "table", string(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
-	}
-
-	if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
+	args = []string{"route", "add", "table", fmt.Sprint(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
+	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
-	}
-
-	if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
+			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
 
 	return nil
@@ -164,28 +160,18 @@ func (d *Device) setupRouting() error {
 
 func (d *Device) removeRouting() error {
 
-	// TODO: Explain what is done here.
 	// ip rule del table <table id>
+	args := []string{"rule", "del", "table", fmt.Sprint(d.Id.number)}
+	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
+		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
+			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
+	}
+
 	// ip route flush table <table id>
-
-	var argsCmd1, argsCmd2 []string
-	if d.Id.InDefaultNamespace() {
-
-		argsCmd1 = []string{"rule", "del", "table", string(d.Id.number)}
-		argsCmd2 = []string{"route", "flush", "table", string(d.Id.number)}
-	} else {
-		argsCmd1 = []string{"netns", "exec", d.Id.Namespace(), "ip", "rule", "del", "table", string(d.Id.number)}
-		argsCmd2 = []string{"netns", "exec", d.Id.Namespace(), "ip", "route", "flush", "table", string(d.Id.number)}
-	}
-
-	if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
+	args = []string{"route", "flush", "table", fmt.Sprint(d.Id.number)}
+	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
-	}
-
-	if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
+			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
 
 	return nil
