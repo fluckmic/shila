@@ -8,6 +8,22 @@ func (e Error) Error() string {
 	return string(e)
 }
 
+func AddNamespace(name string) error {
+	// ip netns add <namespace name>
+	if err := ExecuteIpCommand("netns", "add", name); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteNamespace(name string) error {
+	// ip netns delete <namespace name>
+	if err := ExecuteIpCommand("netns", "delete", name); err != nil {
+		return err
+	}
+	return nil
+}
+
 func ExecuteIpCommand(args ...string) error {
 
 	_, err := exec.Command("ip", args...).Output()

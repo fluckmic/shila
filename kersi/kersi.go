@@ -2,11 +2,17 @@ package kersi
 
 import (
 	"fmt"
+	"net"
 	"shila/config"
+	"shila/helper"
+	"shila/kersi/kerep"
+	"shila/kersi/kerep/vif"
+	"shila/log"
 )
 
 type Manager struct {
-	config config.Config
+	config    config.Config
+	endpoints map[string]*kerep.Device
 }
 
 type Error string
@@ -16,15 +22,53 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config) *Manager {
-	return &Manager{config}
+	return &Manager{config, nil}
 }
 
 func (m *Manager) Setup() error {
+
+	if m.IsSetup() {
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", "Already setup."))
+	}
+
+	kCfg := m.config.KernelSide
+
+	// Setup the mapping holding the kernel endpoints
+	m.endpoints = make(map[string]*kerep.Device)
+
+	// Create the kernel endpoints
+	// Ingress
+	if err := m.addKernelEndpoints(kCfg.NIngressKerEp, kCfg.IngressNamespace, kCfg.StartingIngressSubnet); err != nil {
+		m.clearKernelEndpoints()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
+	// Egress
+	if err := m.addKernelEndpoints(kCfg.NEgressKerEp, kCfg.EgressNamespace, kCfg.StartingEgressSubnet); err != nil {
+		m.clearKernelEndpoints()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
+
+	// Setup the namespaces
+	if err := m.setupNamespaces(); err != nil {
+		m.clearKernelEndpoints()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
+
+	// Setup the kernel endpoints
+
 	return nil
 }
 
 func (m *Manager) CleanUp() {
-	// Clean up the kernel side as good as possible.
+
+	m.clearKernelEndpoints()
+
+	m.removeNamespaces()
+
 }
 
 func (m *Manager) Start() error {
@@ -60,68 +104,82 @@ func (m *Manager) Stop() error {
 }
 
 func (m *Manager) IsSetup() bool {
-	return false
+	return len(m.endpoints) > 0
 }
 
 func (m *Manager) IsRunning() bool {
 	return false
 }
 
-func (m *Manager) setupRouting() error {
+// clearKernelEndpoints just empties the mapping
+// but does not deallocate the endpoints beforehand!
+func (m *Manager) clearKernelEndpoints() {
+	for k := range m.endpoints {
+		delete(m.endpoints, k)
+	}
+}
 
-	// TODO: Explain what is done here.
-	// ip rule add from <dev ip> table <table id>
-	// ip route add table <table id> default dev <dev name> scope link
-	/*
-		var argsCmd1, argsCmd2 []string
-		if d.Id.InDefaultNamespace() {
-			argsCmd1 = []string{"rule", "add", "from", d.Id.subnet.IP.String(), "table", string(d.Id.number)}
-			argsCmd2 = []string{"route", "add", "table", string(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
-		} else {
-			argsCmd1 = []string{"netns", "exec", d.Id.Namespace(), "ip",
-				"rule", "add", "from", d.Id.subnet.IP.String(), fmt.Sprint("table", d.Id.number)}
-			argsCmd2 = []string{"netns", "exec", d.Id.Namespace(), "ip",
-				"route", "add", "table", string(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
-		}
+func (m *Manager) setupNamespaces() error {
 
-		if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
-			return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-				" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
+	// Create ingress namespace
+	if m.config.KernelSide.IngressNamespace != nil {
+		if err := helper.AddNamespace(m.config.KernelSide.IngressNamespace.Name); err != nil {
+			return Error(fmt.Sprint("Unable to setup ingress namespace ",
+				m.config.KernelSide.IngressNamespace.Name, " - ", err.Error()))
 		}
+	}
 
-		if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-			return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-				" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
+	// Create egress namespace
+	if m.config.KernelSide.EgressNamespace != nil {
+		if err := helper.AddNamespace(m.config.KernelSide.EgressNamespace.Name); err != nil {
+			if m.config.KernelSide.IngressNamespace != nil {
+				// Remove ingress namespace if setting up the egress namespace fails.
+				_ = helper.DeleteNamespace(m.config.KernelSide.IngressNamespace.Name)
+			}
+			return Error(fmt.Sprint("Unable to setup egress namespace ",
+				m.config.KernelSide.EgressNamespace.Name, " - ", err.Error()))
 		}
-	*/
+	}
+
 	return nil
 }
 
-func (m *Manager) removeRouting() error {
+func (m *Manager) removeNamespaces() {
+	// Remove ingress namespace
+	if m.config.KernelSide.IngressNamespace != nil {
+		_ = helper.DeleteNamespace(m.config.KernelSide.IngressNamespace.Name)
+	}
+	// Remove egress namespace
+	if m.config.KernelSide.EgressNamespace != nil {
+		_ = helper.DeleteNamespace(m.config.KernelSide.EgressNamespace.Name)
+	}
+}
 
-	// TODO: Explain what is done here.
-	// ip rule del table <table id>
-	// ip route flush table <table id>
-	/*
-		var argsCmd1, argsCmd2 []string
-		if d.Id.InDefaultNamespace() {
+// TODO: ingress and egress buffer not yet provided!
+func (m *Manager) addKernelEndpoints(n uint, ns *vif.Namespace, sn net.IPNet) error {
 
-			argsCmd1 = []string{"rule", "del", "table", string(d.Id.number)}
-			argsCmd2 = []string{"route", "flush", "table", string(d.Id.number)}
-		} else {
-			argsCmd1 = []string{"netns", "exec", d.Id.Namespace(), "ip", "rule", "del", "table", string(d.Id.number)}
-			argsCmd2 = []string{"netns", "exec", d.Id.Namespace(), "ip", "route", "flush", "table", string(d.Id.number)}
+	if startIP := sn.IP.To4(); startIP == nil {
+		return Error(fmt.Sprint("Invalid starting IP: ", sn.IP))
+	} else {
+		for i := 0; i < int(n); i++ {
+
+			// First create the identifier..
+			newKerepId := kerep.NewIdentifier(uint(len(m.endpoints)+1), ns,
+				net.IPNet{IP: net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)), Mask: sn.Mask})
+
+			// ..then create the kernel endpoint..
+			newKerep := kerep.New(newKerepId, m.config.KernelEndpoint, nil, nil)
+
+			// ..and add it to the mapping.
+			newKerepKey := newKerepId.Key()
+			if _, ok := m.endpoints[newKerepKey]; !ok {
+				m.endpoints[newKerepId.Key()] = newKerep
+				log.Verbose.Println("Added kernel endpoint:", newKerepKey)
+			} else {
+				// Cannot have two endpoints w/ the same key.
+				return Error(fmt.Sprint("Kernel endpoint already exists: ", newKerepKey))
+			}
 		}
-
-		if errCmd1 := helper.ExecuteIpCommand(argsCmd1...); errCmd1 != nil {
-			return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-				" in namespace ", d.Id.Namespace(), " - ", errCmd1.Error()))
-		}
-
-		if errCmd2 := helper.ExecuteIpCommand(argsCmd2...); errCmd2 != nil {
-			return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-				" in namespace ", d.Id.Namespace(), " - ", errCmd2.Error()))
-		}
-	*/
+	}
 	return nil
 }

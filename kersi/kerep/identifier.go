@@ -12,6 +12,10 @@ type Identifier struct {
 	subnet    net.IPNet
 }
 
+func NewIdentifier(number uint, namespace *vif.Namespace, subnet net.IPNet) Identifier {
+	return Identifier{number, namespace, subnet}
+}
+
 func (id *Identifier) Name() string {
 	return fmt.Sprint("tun", id.number)
 }
@@ -30,4 +34,9 @@ func (id *Identifier) InDefaultNamespace() bool {
 
 func (id *Identifier) Subnet() string {
 	return id.subnet.String()
+}
+
+// TODO: What is the best key to use?
+func (id *Identifier) Key() string {
+	return fmt.Sprint(id.Namespace(), "-", id.Subnet())
 }
