@@ -38,7 +38,7 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the vif
-	d.vif = vif.New(d.Id.Name(), d.Id.namespace, d.Id.Subnet())
+	d.vif = vif.New(d.Id.Name(), d.Id.namespace, d.Id.IP())
 
 	// Setup the vif
 	if err := d.vif.Setup(); err != nil {
@@ -142,14 +142,14 @@ func (d *Device) IsRunning() bool {
 func (d *Device) setupRouting() error {
 
 	// ip rule add from <dev ip> table <table id>
-	args := []string{"rule", "add", "from", d.Id.subnet.IP.String(), "table", fmt.Sprint(d.Id.number)}
+	args := []string{"rule", "add", "from", d.Id.IP(), "table", fmt.Sprint(d.Id.Number())}
 	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
-	args = []string{"route", "add", "table", fmt.Sprint(d.Id.number), "default", "dev", d.Id.Name(), "scope", "link"}
+	args = []string{"route", "add", "table", fmt.Sprint(d.Id.Number()), "default", "dev", d.Id.Name(), "scope", "link"}
 	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))

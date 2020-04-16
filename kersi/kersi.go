@@ -36,23 +36,31 @@ func (m *Manager) Setup() error {
 	// Setup the mapping holding the kernel endpoints
 	m.endpoints = make(map[string]*kerep.Device)
 
-	// Create the kernel endpoints
-	// Ingress
-	if err := m.addKernelEndpoints(kCfg.NIngressKerEp, kCfg.IngressNamespace, kCfg.StartingIngressSubnet); err != nil {
-		m.clearKernelEndpoints()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
-	}
-	// Egress
-	if err := m.addKernelEndpoints(kCfg.NEgressKerEp, kCfg.EgressNamespace, kCfg.StartingEgressSubnet); err != nil {
-		m.clearKernelEndpoints()
+	// Setup the namespaces
+	if err := m.setupNamespaces(); err != nil {
 		return Error(fmt.Sprint("Unable to setup kernel side",
 			" - ", err.Error()))
 	}
 
-	// Setup the namespaces
-	if err := m.setupNamespaces(); err != nil {
+	// Setup additional routing
+	if err := m.setupAdditionalRouting(); err != nil {
+		m.removeNamespaces()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
+
+	// Egress
+	if err := m.addKernelEndpoints(kCfg.NEgressKerEp, kCfg.EgressNamespace, kCfg.EgressIP); err != nil {
 		m.clearKernelEndpoints()
+		m.removeNamespaces()
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", err.Error()))
+	}
+	// Create the kernel endpoints
+	// Ingress
+	if err := m.addKernelEndpoints(1, kCfg.IngressNamespace, kCfg.IngressIP); err != nil {
+		m.clearKernelEndpoints()
+		m.removeNamespaces()
 		return Error(fmt.Sprint("Unable to setup kernel side",
 			" - ", err.Error()))
 	}
@@ -187,16 +195,16 @@ func (m *Manager) removeNamespaces() {
 }
 
 // TODO: ingress and egress buffer not yet provided!
-func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, sn net.IPNet) error {
+func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) error {
 
-	if startIP := sn.IP.To4(); startIP == nil {
-		return Error(fmt.Sprint("Invalid starting IP: ", sn.IP))
+	if startIP := ip.To4(); startIP == nil {
+		return Error(fmt.Sprint("Invalid starting IP: ", ip))
 	} else {
 		for i := 0; i < int(n); i++ {
 
 			// First create the identifier..
 			newKerepId := kerep.NewIdentifier(uint(len(m.endpoints)+1), ns,
-				net.IPNet{IP: net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)), Mask: sn.Mask})
+				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
 
 			// ..then create the kernel endpoint..
 			newKerep := kerep.New(newKerepId, m.config.KernelEndpoint, nil, nil)
@@ -211,6 +219,24 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, sn net.IPNet)
 				return Error(fmt.Sprint("Kernel endpoint already exists: ", newKerepKey))
 			}
 		}
+	}
+	return nil
+}
+
+func (m *Manager) setupAdditionalRouting() error {
+
+	kCfg := m.config.KernelSide
+
+	// Restrict the use of MPTCP to the virtual devices
+
+	// SYN packets coming from client side connect calls are sent from the
+	// local interface, route them through one of the egress devices
+
+	// ip rule add to <ip> iif lo table <id>
+	// TODO: dont like this..
+	args := []string{"rule", "add", "to", kCfg.IngressIP.String(), "table", "1"}
+	if err := helper.ExecuteIpCommand(kCfg.EgressNamespace, args...); err != nil {
+		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 	return nil
 }

@@ -9,15 +9,19 @@ import (
 type Identifier struct {
 	number    uint
 	namespace *helper.Namespace
-	subnet    net.IPNet
+	ip        net.IP
 }
 
-func NewIdentifier(number uint, namespace *helper.Namespace, subnet net.IPNet) Identifier {
-	return Identifier{number, namespace, subnet}
+func NewIdentifier(number uint, namespace *helper.Namespace, ip net.IP) Identifier {
+	return Identifier{number, namespace, ip}
 }
 
 func (id *Identifier) Name() string {
 	return fmt.Sprint("tun", id.number)
+}
+
+func (id *Identifier) Number() uint {
+	return id.number
 }
 
 func (id *Identifier) Namespace() string {
@@ -32,11 +36,11 @@ func (id *Identifier) InDefaultNamespace() bool {
 	return id.namespace == nil
 }
 
-func (id *Identifier) Subnet() string {
-	return id.subnet.String()
+func (id *Identifier) IP() string {
+	return id.ip.String()
 }
 
 // TODO: What is the best key to use?
 func (id *Identifier) Key() string {
-	return fmt.Sprint(id.Namespace(), "-", id.Subnet())
+	return id.IP()
 }
