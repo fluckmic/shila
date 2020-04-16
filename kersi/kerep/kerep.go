@@ -42,12 +42,14 @@ func (d *Device) Setup() error {
 
 	// Setup the vif
 	if err := d.vif.Setup(); err != nil {
+		_ = d.vif.Teardown()
 		d.vif = nil
 		return err
 	}
 
 	// Turn the vif up
 	if err := d.vif.TurnUp(); err != nil {
+		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
 		d.vif = nil
 		return nil
@@ -55,6 +57,7 @@ func (d *Device) Setup() error {
 
 	// Setup the routing
 	if err := d.setupRouting(); err != nil {
+		_ = d.removeRouting()
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
 		d.vif = nil
@@ -71,16 +74,11 @@ func (d *Device) Setup() error {
 func (d *Device) TearDown() error {
 
 	if !d.IsSetup() {
-		return Error(fmt.Sprint("Unable to tear down kernel endpoint ",
-			d.Id.Name(), " - ", "Device not even setup."))
+		return nil
 	}
 
-	var err error
-	// Return the most recent error, if there is one.
-	// However we proceed with the teardown nevertheless.
-
 	// Stop the reader and the writer
-	err = d.Stop()
+	err := d.Stop()
 
 	// Remove the routing table associated with the kernel endpoint
 	err = d.removeRouting()
@@ -94,7 +92,6 @@ func (d *Device) TearDown() error {
 	d.egressBuf = nil
 
 	return err
-
 }
 
 func (d *Device) Start() error {
@@ -162,17 +159,11 @@ func (d *Device) removeRouting() error {
 
 	// ip rule del table <table id>
 	args := []string{"rule", "del", "table", fmt.Sprint(d.Id.number)}
-	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
-	}
+	err := helper.ExecuteIpCommand(d.Id.namespace, args...)
 
 	// ip route flush table <table id>
 	args = []string{"route", "flush", "table", fmt.Sprint(d.Id.number)}
-	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to remove routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
-	}
+	err = helper.ExecuteIpCommand(d.Id.namespace, args...)
 
-	return nil
+	return err
 }

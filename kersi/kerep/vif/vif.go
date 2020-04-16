@@ -36,16 +36,20 @@ func (d *Device) Setup() error {
 	// Create and allocated a new tun device
 	d.device = tun.New(d.Name)
 	if err := d.device.Allocate(); err != nil {
+		_ = d.device.Deallocate()
 		return err
 	}
 
 	// Assign the device to the namespace
 	if err := d.assignNamespace(); err != nil {
+		_ = d.device.Deallocate()
 		return err
 	}
 
 	// Assign subnet to the device
 	if err := d.assignSubnet(); err != nil {
+		_ = d.removeInterface()
+		_ = d.device.Deallocate()
 		return err
 	}
 
@@ -195,8 +199,6 @@ func (d *Device) removeInterface() error {
 
 	// ip link delete <interface name>
 	args := []string{"link", "delete", d.Name}
-	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to remove interface ", d.Name, " - ", err.Error()))
-	}
-	return nil
+	err := helper.ExecuteIpCommand(d.Namespace, args...)
+	return err
 }
