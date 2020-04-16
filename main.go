@@ -16,6 +16,9 @@ func realMain() int {
 
 	defer log.Info.Println("Shutdown complete.")
 
+	// TODO: Return if not run as root.
+	// TODO: Encourage user to run shila in separate namespace for ingress and egress
+
 	var cfg config.Config
 	var err error
 

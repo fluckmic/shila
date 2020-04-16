@@ -228,12 +228,15 @@ func (m *Manager) setupAdditionalRouting() error {
 	kCfg := m.config.KernelSide
 
 	// Restrict the use of MPTCP to the virtual devices
+	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
+	// then there is just the local interface which could also try to participate in MPTC.
+	// However, if this is not the case, then there could possibly multiple interfaces which
+	// also want to participate. // TODO: handle these cases.
 
 	// SYN packets coming from client side connect calls are sent from the
 	// local interface, route them through one of the egress devices
-
 	// ip rule add to <ip> iif lo table <id>
-	// TODO: dont like this..
+	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args := []string{"rule", "add", "to", kCfg.IngressIP.String(), "table", "1"}
 	if err := helper.ExecuteIpCommand(kCfg.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
