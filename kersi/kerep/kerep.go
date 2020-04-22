@@ -11,12 +11,16 @@ import (
 )
 
 type Device struct {
-	Id         Identifier
-	config     config.KernelEndpoint
-	ingressBuf chan *shila.Packet
-	egressBuf  chan *shila.Packet
-	vif        *vif.Device
-	isRunning  bool
+	Id        Identifier
+	Buffers   *Buffer
+	config    config.KernelEndpoint
+	vif       *vif.Device
+	isRunning bool
+}
+
+type Buffer struct {
+	Ingress chan *shila.Packet
+	Egress  chan *shila.Packet
 }
 
 type Error string
@@ -25,9 +29,9 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(id Identifier, config config.KernelEndpoint,
-	ingressBuff chan *shila.Packet, egressBuff chan *shila.Packet) *Device {
-	return &Device{id, config, ingressBuff, egressBuff, nil, false}
+func New(id Identifier, config config.KernelEndpoint) *Device {
+	var buf = Buffer{nil, nil}
+	return &Device{id, &buf, config, nil, false}
 }
 
 func (d *Device) Setup() error {
@@ -52,7 +56,7 @@ func (d *Device) Setup() error {
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
 		d.vif = nil
-		return nil
+		return err
 	}
 
 	// Setup the routing
@@ -65,8 +69,8 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the buffers
-	d.ingressBuf = make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.egressBuf = make(chan *shila.Packet, d.config.SizeEgressBuff)
+	d.Buffers.Ingress = make(chan *shila.Packet, d.config.SizeIngressBuff)
+	d.Buffers.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
 	return nil
 }
@@ -88,8 +92,8 @@ func (d *Device) TearDown() error {
 	err = d.vif.Teardown()
 
 	d.vif = nil
-	d.ingressBuf = nil
-	d.egressBuf = nil
+	d.Buffers.Ingress = nil
+	d.Buffers.Egress = nil
 
 	return err
 }
@@ -129,7 +133,7 @@ func (d *Device) Stop() error {
 }
 
 func (d *Device) IsSetup() bool {
-	return d.vif != nil && d.ingressBuf != nil && d.egressBuf != nil
+	return d.vif != nil && d.Buffers.Ingress != nil && d.Buffers.Egress != nil
 }
 
 func (d *Device) IsRunning() bool {

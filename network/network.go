@@ -14,14 +14,14 @@ type endpoint interface {
 }
 
 type clientEndpoint interface {
-	New(connectTo address, connectVia path, ingressBuf chan *packet, egressBuf chan *packet)
+	New(connectTo address, connectVia path, ingressBuf chan *packet, egressBuf chan *packet) clientEndpoint
 	endpoint
 	// TODO: config?
 	// TODO: path renegotiation?
 }
 
 type serverEndpoint interface {
-	New(listenTo address, ingressBuf chan *packet, egressBuf chan *packet)
+	New(listenTo address, ingressBuf chan *packet, egressBuf chan *packet) serverEndpoint
 	endpoint
 }
 

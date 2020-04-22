@@ -6,6 +6,7 @@ import (
 	"shila/kersi"
 	"shila/log"
 	"shila/shutdown"
+	"shila/stumps"
 )
 
 func main() {
@@ -47,10 +48,12 @@ func realMain() int {
 	// TODO: Create and setup the network side
 
 	// TODO: Create and setup the core
+	stumps.Setup(kernelSide)
 
 	log.Info.Println("Setup done, starting machinery..")
 
 	// TODO: Run the machinery.
+	stumps.Start()
 
 	log.Info.Println("Machinery up and running.")
 

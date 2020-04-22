@@ -10,8 +10,8 @@ import (
 )
 
 type Manager struct {
+	Endpoints map[string]*kerep.Device
 	config    config.Config
-	endpoints map[string]*kerep.Device
 }
 
 type Error string
@@ -21,7 +21,7 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config) *Manager {
-	return &Manager{config, nil}
+	return &Manager{nil, config}
 }
 
 func (m *Manager) Setup() error {
@@ -34,7 +34,7 @@ func (m *Manager) Setup() error {
 	kCfg := m.config.KernelSide
 
 	// Setup the mapping holding the kernel endpoints
-	m.endpoints = make(map[string]*kerep.Device)
+	m.Endpoints = make(map[string]*kerep.Device)
 
 	// Setup the namespaces
 	if err := m.setupNamespaces(); err != nil {
@@ -134,7 +134,7 @@ func (m *Manager) Stop() error {
 }
 
 func (m *Manager) IsSetup() bool {
-	return len(m.endpoints) > 0
+	return len(m.Endpoints) > 0
 }
 
 func (m *Manager) IsRunning() bool {
@@ -142,7 +142,7 @@ func (m *Manager) IsRunning() bool {
 }
 
 func (m *Manager) setupKernelEndpoints() error {
-	for _, kerep := range m.endpoints {
+	for _, kerep := range m.Endpoints {
 		if err := kerep.Setup(); err != nil {
 			return err
 		}
@@ -153,14 +153,14 @@ func (m *Manager) setupKernelEndpoints() error {
 // clearKernelEndpoints just empties the mapping
 // but does not deallocate the endpoints beforehand!
 func (m *Manager) clearKernelEndpoints() {
-	for k := range m.endpoints {
-		delete(m.endpoints, k)
+	for k := range m.Endpoints {
+		delete(m.Endpoints, k)
 	}
 }
 
 func (m *Manager) tearDownKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.endpoints {
+	for _, kerep := range m.Endpoints {
 		if kerep.IsSetup() {
 			_ = kerep.TearDown()
 		}
@@ -170,7 +170,7 @@ func (m *Manager) tearDownKernelEndpoints() error {
 
 func (m *Manager) stopKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.endpoints {
+	for _, kerep := range m.Endpoints {
 		if kerep.IsRunning() {
 			err = kerep.Stop()
 		}
@@ -215,7 +215,6 @@ func (m *Manager) removeNamespaces() error {
 	return err
 }
 
-// TODO: ingress and egress buffer not yet provided!
 func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) error {
 
 	if startIP := ip.To4(); startIP == nil {
@@ -224,17 +223,17 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 		for i := 0; i < int(n); i++ {
 
 			// First create the identifier..
-			newKerepId := kerep.NewIdentifier(uint(len(m.endpoints)+1), ns,
+			newKerepId := kerep.NewIdentifier(uint(len(m.Endpoints)+1), ns,
 				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
 
 			// ..then create the kernel endpoint..
-			newKerep := kerep.New(newKerepId, m.config.KernelEndpoint, nil, nil)
+			newKerep := kerep.New(newKerepId, m.config.KernelEndpoint)
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
-			if _, ok := m.endpoints[newKerepKey]; !ok {
-				m.endpoints[newKerepId.Key()] = newKerep
-				log.Verbose.Println("Added kernel endpoint:", newKerepKey)
+			if _, ok := m.Endpoints[newKerepKey]; !ok {
+				m.Endpoints[newKerepId.Key()] = newKerep
+				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.
 				return Error(fmt.Sprint("Kernel endpoint already exists: ", newKerepKey))
