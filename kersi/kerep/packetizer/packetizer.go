@@ -1,0 +1,84 @@
+package packetizer
+
+import (
+	"encoding/binary"
+	"fmt"
+	"shila/shila"
+	"shila/shutdown"
+)
+
+// TODO: Link with same const in kerep.go
+const BufferSize = 1500
+
+// TODO: ByteOrder!
+var hostByteOrder = binary.BigEndian
+
+type Device struct {
+	input  chan byte
+	output chan shila.Packet
+}
+
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+func New(in chan byte, out chan shila.Packet) *Device {
+	return &Device{in, out}
+}
+
+func (d *Device) Run() error {
+
+	// Fatal error could occur.. :o
+	shutdown.Check()
+
+	for {
+		rawData := make([]byte, 0, BufferSize)
+
+		b := <-d.input
+		switch b >> 4 {
+		case 4:
+			rawData = append(rawData, b)
+			d.ip4(rawData)
+		case 6:
+			rawData = append(rawData, b)
+			d.ip6(rawData)
+		default:
+			shutdown.Fatal(Error(fmt.Sprint("Unknown IPv in packetizer.")))
+		}
+	}
+	return nil
+}
+
+func (d *Device) ip4(storage []byte) {
+
+	// Read 3 more bytes
+	for cnt := 0; cnt < 3; cnt++ {
+		storage = append(storage, <-d.input)
+	}
+
+	length := binary.ByteOrder(hostByteOrder).Uint16(storage[2:4])
+
+	// Load the remaining bytes of the package
+	for cnt := 0; cnt < int(length-4); cnt++ {
+		storage = append(storage, <-d.input)
+	}
+
+	d.output <- shila.Packet{shila.IPPacket{storage}}
+}
+
+func (d *Device) ip6(storage []byte) {
+
+	// Read 7 more bytes
+	for cnt := 0; cnt < 7; cnt++ {
+		storage = append(storage, <-d.input)
+	}
+
+	length := binary.ByteOrder(hostByteOrder).Uint16(storage[4:6])
+
+	// Discard the remaining 32 byte of the header and the payload
+	for cnt := 0; cnt < int(32+length); cnt++ {
+		<-d.input
+	}
+}

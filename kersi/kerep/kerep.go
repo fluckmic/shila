@@ -4,23 +4,35 @@ package kerep
 
 import (
 	"fmt"
+	"io"
 	"shila/config"
 	"shila/helper"
+	"shila/kersi/kerep/packetizer"
 	"shila/kersi/kerep/vif"
+	"shila/log"
 	"shila/shila"
 )
 
+const (
+	// Buffer for reading must be at least 1500 TODO: why?
+	BufferSize = 1500
+	// Read at least bytes at once from the interface
+	ReadBatchSize = 30
+)
+
 type Device struct {
-	Id        Identifier
-	Buffers   *Buffer
-	config    config.KernelEndpoint
-	vif       *vif.Device
-	isRunning bool
+	Id         Identifier
+	Buffers    *Buffer
+	config     config.KernelEndpoint
+	packetizer *packetizer.Device
+	vif        *vif.Device
+	isRunning  bool
 }
 
 type Buffer struct {
-	Ingress chan *shila.Packet
-	Egress  chan *shila.Packet
+	ingressRaw chan byte
+	Ingress    chan shila.Packet
+	Egress     chan shila.Packet
 }
 
 type Error string
@@ -30,8 +42,8 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
-	var buf = Buffer{nil, nil}
-	return &Device{id, &buf, config, nil, false}
+	var buf = Buffer{nil, nil, nil}
+	return &Device{id, &buf, config, nil, nil, false}
 }
 
 func (d *Device) Setup() error {
@@ -69,8 +81,12 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the buffers
-	d.Buffers.Ingress = make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.Buffers.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
+	d.Buffers.ingressRaw = make(chan byte, BufferSize)
+	d.Buffers.Ingress = make(chan shila.Packet, d.config.SizeIngressBuff)
+	d.Buffers.Egress = make(chan shila.Packet, d.config.SizeEgressBuff)
+
+	// Create the packetizer
+	d.packetizer = packetizer.New(d.Buffers.ingressRaw, d.Buffers.Ingress)
 
 	return nil
 }
@@ -111,7 +127,15 @@ func (d *Device) Start() error {
 
 	}
 
+	log.Verbose.Print("Starting kernel endpoint: ", d.Id.Key(), ".")
+
+	go d.packetizer.Run()
+	go d.serveIngress()
+	go d.serveEgress()
+
 	d.isRunning = true
+
+	log.Verbose.Print("Started kernel endpoint: ", d.Id.Key(), ".")
 	return nil
 }
 
@@ -128,7 +152,12 @@ func (d *Device) Stop() error {
 
 	}
 
+	log.Verbose.Print("Stopping kernel endpoint: ", d.Id.Key(), ".")
+
 	d.isRunning = false
+
+	log.Verbose.Print("Stopped kernel endpoint: ", d.Id.Key(), ".")
+
 	return nil
 }
 
@@ -171,3 +200,21 @@ func (d *Device) removeRouting() error {
 
 	return err
 }
+
+func (d *Device) serveIngress() {
+
+	reader := io.Reader(d.vif)
+	storage := make([]byte, BufferSize)
+	for {
+		nBytesRead, err := io.ReadAtLeast(reader, storage, ReadBatchSize)
+		if err != nil {
+			log.Verbose.Println("Error!") //TODO!
+			return
+		}
+		for _, b := range storage[:nBytesRead] {
+			d.Buffers.ingressRaw <- b
+		}
+	}
+}
+
+func (d *Device) serveEgress() {}

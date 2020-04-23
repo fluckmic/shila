@@ -12,6 +12,7 @@ import (
 type Manager struct {
 	Endpoints map[string]*kerep.Device
 	config    config.Config
+	isRunning bool
 }
 
 type Error string
@@ -21,7 +22,7 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config) *Manager {
-	return &Manager{nil, config}
+	return &Manager{nil, config, false}
 }
 
 func (m *Manager) Setup() error {
@@ -111,8 +112,17 @@ func (m *Manager) Start() error {
 	if m.IsRunning() {
 		return Error(fmt.Sprint("Cannot start kernel side",
 			" - ", "Kernel side already running."))
-
 	}
+
+	log.Verbose.Println("Starting kernel side...")
+
+	if err := m.startKernelEndpoints(); err != nil {
+		return Error(fmt.Sprint("Cannot start kernel side",
+			" - ", err.Error()))
+	}
+	m.isRunning = true
+
+	log.Verbose.Println("Kernel side started.")
 
 	return nil
 }
@@ -130,6 +140,12 @@ func (m *Manager) Stop() error {
 
 	}
 
+	log.Verbose.Println("Stopping kernel side...")
+
+	m.isRunning = false
+
+	log.Verbose.Println("Kernel side stopped.")
+
 	return nil
 }
 
@@ -138,7 +154,7 @@ func (m *Manager) IsSetup() bool {
 }
 
 func (m *Manager) IsRunning() bool {
-	return false
+	return m.isRunning
 }
 
 func (m *Manager) setupKernelEndpoints() error {
@@ -163,6 +179,17 @@ func (m *Manager) tearDownKernelEndpoints() error {
 	for _, kerep := range m.Endpoints {
 		if kerep.IsSetup() {
 			_ = kerep.TearDown()
+		}
+	}
+	return err
+}
+
+func (m *Manager) startKernelEndpoints() error {
+	var err error = nil
+	for _, kerep := range m.Endpoints {
+		if err = kerep.Start(); err != nil {
+			_ = m.stopKernelEndpoints()
+			return err
 		}
 	}
 	return err

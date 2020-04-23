@@ -53,7 +53,12 @@ func realMain() int {
 	log.Info.Println("Setup done, starting machinery..")
 
 	// TODO: Run the machinery.
-	stumps.Start()
+	_ = stumps.Start()
+
+	if err = kernelSide.Start(); err != nil {
+		log.Error.Fatalln("Fatal error -", err.Error())
+	}
+	defer kernelSide.Stop()
 
 	log.Info.Println("Machinery up and running.")
 
