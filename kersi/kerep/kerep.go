@@ -13,23 +13,18 @@ import (
 	"shila/shila"
 )
 
-const (
-	// Buffer for reading must be at least 1500 TODO: why?
-	BufferSize = 1500
-	// Read at least bytes at once from the interface
-	ReadBatchSize = 30
-)
-
 type Device struct {
 	Id         Identifier
-	Buffers    *Buffer
+	Channels   *Channel
 	config     config.KernelEndpoint
 	packetizer *packetizer.Device
 	vif        *vif.Device
+	isValid    bool
+	isSetup    bool // TODO: merge to "state" object
 	isRunning  bool
 }
 
-type Buffer struct {
+type Channel struct {
 	ingressRaw chan byte
 	Ingress    chan shila.Packet
 	Egress     chan shila.Packet
@@ -42,15 +37,24 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
-	var buf = Buffer{nil, nil, nil}
-	return &Device{id, &buf, config, nil, nil, false}
+	var buf = Channel{nil, nil, nil}
+	return &Device{id, &buf, config, nil, nil, true, false, false}
 }
 
 func (d *Device) Setup() error {
 
-	if d.IsSetup() {
+	if !d.IsValid() {
 		return Error(fmt.Sprint("Unable to setup kernel endpoint ",
-			d.Id.Name(), " - ", "Device already setup."))
+			d.Id.Name(), " - ", "Device no longer valid."))
+	}
+
+	if d.IsRunning() {
+		return Error(fmt.Sprint("Unable to setup kernel endpoint ",
+			d.Id.Name(), " - ", "Device already running."))
+	}
+
+	if d.IsSetup() {
+		return nil
 	}
 
 	// Allocate the vif
@@ -81,40 +85,43 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the buffers
-	d.Buffers.ingressRaw = make(chan byte, BufferSize)
-	d.Buffers.Ingress = make(chan shila.Packet, d.config.SizeIngressBuff)
-	d.Buffers.Egress = make(chan shila.Packet, d.config.SizeEgressBuff)
+	d.Channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
+	d.Channels.Ingress = make(chan shila.Packet, d.config.SizeIngressBuff)
+	d.Channels.Egress = make(chan shila.Packet, d.config.SizeEgressBuff)
 
 	// Create the packetizer
-	d.packetizer = packetizer.New(d.Buffers.ingressRaw, d.Buffers.Ingress)
+	d.packetizer = packetizer.New(d.Channels.ingressRaw, d.Channels.Ingress, d.config.SizeReadBuffer)
 
+	d.isSetup = true
 	return nil
 }
 
 func (d *Device) TearDown() error {
 
-	if !d.IsSetup() {
-		return nil
-	}
-
-	// Stop the reader and the writer
-	err := d.Stop()
+	d.isValid = false
+	d.isRunning = false
+	d.isSetup = false
 
 	// Remove the routing table associated with the kernel endpoint
-	err = d.removeRouting()
+	err := d.removeRouting()
 
 	// Deallocate the corresponding instance of the interface
 	err = d.vif.TurnDown()
 	err = d.vif.Teardown()
 
 	d.vif = nil
-	d.Buffers.Ingress = nil
-	d.Buffers.Egress = nil
+	d.Channels.Ingress = nil
+	d.Channels.Egress = nil
 
 	return err
 }
 
 func (d *Device) Start() error {
+
+	if !d.IsValid() {
+		return Error(fmt.Sprint("Cannot start kernel endpoint ",
+			d.Id.Name(), " - ", "Device no longer valid."))
+	}
 
 	if !d.IsSetup() {
 		return Error(fmt.Sprint("Cannot start kernel endpoint ",
@@ -139,30 +146,12 @@ func (d *Device) Start() error {
 	return nil
 }
 
-func (d *Device) Stop() error {
-
-	if !d.IsSetup() {
-		return Error(fmt.Sprint("Cannot stop kernel endpoint ",
-			d.Id.Name(), " - ", "Device not yet setup."))
-	}
-
-	if !d.IsRunning() {
-		return Error(fmt.Sprint("Cannot stop kernel endpoint ",
-			d.Id.Name(), " - ", "Device is not running."))
-
-	}
-
-	log.Verbose.Print("Stopping kernel endpoint: ", d.Id.Key(), ".")
-
-	d.isRunning = false
-
-	log.Verbose.Print("Stopped kernel endpoint: ", d.Id.Key(), ".")
-
-	return nil
+func (d *Device) IsValid() bool {
+	return d.isValid
 }
 
 func (d *Device) IsSetup() bool {
-	return d.vif != nil && d.Buffers.Ingress != nil && d.Buffers.Egress != nil
+	return d.isSetup
 }
 
 func (d *Device) IsRunning() bool {
@@ -202,19 +191,31 @@ func (d *Device) removeRouting() error {
 }
 
 func (d *Device) serveIngress() {
-
 	reader := io.Reader(d.vif)
-	storage := make([]byte, BufferSize)
+	storage := make([]byte, d.config.SizeReadBuffer)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, ReadBatchSize)
-		if err != nil {
-			log.Verbose.Println("Error!") //TODO!
+		nBytesRead, err := io.ReadAtLeast(reader, storage, d.config.BatchSizeRead)
+		if err != nil && !d.IsValid() {
+			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
+		} else if err != nil {
+			panic("implement me") //TODO!
 		}
 		for _, b := range storage[:nBytesRead] {
-			d.Buffers.ingressRaw <- b
+			d.Channels.ingressRaw <- b
 		}
 	}
 }
 
-func (d *Device) serveEgress() {}
+func (d *Device) serveEgress() {
+	writer := io.Writer(d.vif)
+	for p := range d.Channels.Egress {
+		_, err := writer.Write(p.IP.Raw)
+		if err != nil && !d.IsValid() {
+			// Error doesn't matter, kernel endpoint is no longer valid anyway.
+			return
+		} else if err != nil {
+			panic("implement me") //TODO!
+		}
+	}
+}

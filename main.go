@@ -58,7 +58,6 @@ func realMain() int {
 	if err = kernelSide.Start(); err != nil {
 		log.Error.Fatalln("Fatal error -", err.Error())
 	}
-	defer kernelSide.Stop()
 
 	log.Info.Println("Machinery up and running.")
 

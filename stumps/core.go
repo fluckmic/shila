@@ -18,7 +18,7 @@ func Setup(kersi *kersi.Manager) error {
 
 func Start() error {
 	for kerepKey, ep := range kernelSide.Endpoints {
-		go serveKerepIngress(ep.Buffers.Ingress, kerepKey)
+		go serveKerepIngress(ep.Channels.Ingress, kerepKey)
 	}
 	return nil
 }

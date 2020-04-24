@@ -51,7 +51,7 @@ func (m *Manager) Setup() error {
 		return Error(fmt.Sprint("Unable to setup kernel side",
 			" - ", err.Error()))
 	}
-
+	// Create the kernel endpoints
 	// Egress
 	if err := m.addKernelEndpoints(kCfg.NEgressKerEp, kCfg.EgressNamespace, kCfg.EgressIP); err != nil {
 		m.clearKernelEndpoints()
@@ -60,7 +60,6 @@ func (m *Manager) Setup() error {
 		return Error(fmt.Sprint("Unable to setup kernel side",
 			" - ", err.Error()))
 	}
-	// Create the kernel endpoints
 	// Ingress
 	if err := m.addKernelEndpoints(1, kCfg.IngressNamespace, kCfg.IngressIP); err != nil {
 		m.clearKernelEndpoints()
@@ -127,28 +126,6 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-func (m *Manager) Stop() error {
-
-	if !m.IsSetup() {
-		return Error(fmt.Sprint("Cannot stop kernel side",
-			" - ", "Device not yet setup."))
-	}
-
-	if !m.IsRunning() {
-		return Error(fmt.Sprint("Cannot stop kernel side",
-			" - ", "Device is not running."))
-
-	}
-
-	log.Verbose.Println("Stopping kernel side...")
-
-	m.isRunning = false
-
-	log.Verbose.Println("Kernel side stopped.")
-
-	return nil
-}
-
 func (m *Manager) IsSetup() bool {
 	return len(m.Endpoints) > 0
 }
@@ -188,18 +165,8 @@ func (m *Manager) startKernelEndpoints() error {
 	var err error = nil
 	for _, kerep := range m.Endpoints {
 		if err = kerep.Start(); err != nil {
-			_ = m.stopKernelEndpoints()
+			_ = m.tearDownKernelEndpoints()
 			return err
-		}
-	}
-	return err
-}
-
-func (m *Manager) stopKernelEndpoints() error {
-	var err error = nil
-	for _, kerep := range m.Endpoints {
-		if kerep.IsRunning() {
-			err = kerep.Stop()
 		}
 	}
 	return err

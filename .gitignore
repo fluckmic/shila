@@ -14,3 +14,5 @@ go_*
 # GoLand folders
 .idea/
 
+# Logs
+log-*

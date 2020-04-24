@@ -7,15 +7,13 @@ import (
 	"shila/shutdown"
 )
 
-// TODO: Link with same const in kerep.go
-const BufferSize = 1500
-
 // TODO: ByteOrder!
 var hostByteOrder = binary.BigEndian
 
 type Device struct {
-	input  chan byte
-	output chan shila.Packet
+	input      chan byte
+	output     chan shila.Packet
+	bufferSize int
 }
 
 type Error string
@@ -24,17 +22,17 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(in chan byte, out chan shila.Packet) *Device {
-	return &Device{in, out}
+func New(in chan byte, out chan shila.Packet, bufferSize int) *Device {
+	return &Device{in, out, bufferSize}
 }
 
-func (d *Device) Run() error {
+func (d *Device) Run() {
 
 	// Fatal error could occur.. :o
 	shutdown.Check()
 
 	for {
-		rawData := make([]byte, 0, BufferSize)
+		rawData := make([]byte, 0, d.bufferSize)
 
 		b := <-d.input
 		switch b >> 4 {
@@ -48,7 +46,6 @@ func (d *Device) Run() error {
 			shutdown.Fatal(Error(fmt.Sprint("Unknown IPv in packetizer.")))
 		}
 	}
-	return nil
 }
 
 func (d *Device) ip4(storage []byte) {
