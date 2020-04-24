@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"shila/layer"
+	"shila/log"
 	"shila/shila"
 )
 
@@ -28,8 +30,8 @@ func Parse(p *shila.Packet) error {
 		return Error(fmt.Sprint("Unable to parse packet", " - ", err.Error()))
 	}
 
-	// Potentially parse the TCP options (MPTCP parameters)
-	if err := parseTCPOptions(p); err != nil {
+	// Potentially parse the MPTCP options
+	if err := parseMPTCPOptions(p); err != nil {
 		return Error(fmt.Sprint("Unable to parse packet", " - ", err.Error()))
 	}
 
@@ -41,7 +43,7 @@ func parseTCPIPv4(p *shila.Packet) error {
 	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, &p.IP.Parsed, &p.TCP.Parsed)
 	var decoded []gopacket.LayerType
 	if err := parser.DecodeLayers(p.IP.Raw, &decoded); err != nil {
-		return Error(fmt.Sprint("Could not decode layers", " - ", err.Error()))
+		return Error(fmt.Sprint("Could not decode layer", " - ", err.Error()))
 	}
 	return nil
 }
@@ -50,6 +52,19 @@ func parseIPOptions(p *shila.Packet) error {
 	return nil
 }
 
-func parseTCPOptions(p *shila.Packet) error {
+func parseMPTCPOptions(p *shila.Packet) error {
+
+	var MPTCPOptions []layer.MPTCPOption
+	for _, option := range p.TCP.Parsed.Options {
+		if option.OptionType == layers.TCPOptionKind(layer.TCPOptionKindMPTCP) {
+			opt := layer.MPTCPOption{}
+			if err := opt.DecodeFromTCPOption(option); err != nil {
+				return  Error(fmt.Sprint("Could not parse TCP Option", " - ", err.Error()))
+			}
+			MPTCPOptions = append(MPTCPOptions, opt)
+			log.Verbose.Print(opt.OptionSubtype)
+		}
+	}
+
 	return nil
 }

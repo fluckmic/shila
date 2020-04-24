@@ -7,6 +7,7 @@
 *.dylib
 
 go_*
+_usr_local_go_*
 
 # Test binary, built with `go test -c`
 *.test

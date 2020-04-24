@@ -40,7 +40,9 @@ func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId in
 func processKerepIngress(p *shila.Packet) {
 
 	// Parse the packet
-	parser.Parse(p)
+	if err := parser.Parse(p); err != nil {
+		log.Error.Panicln(err.Error())
+	}
 
 	// Determine the destination
 
