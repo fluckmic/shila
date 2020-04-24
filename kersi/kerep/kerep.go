@@ -26,8 +26,8 @@ type Device struct {
 
 type Channel struct {
 	ingressRaw chan byte
-	Ingress    chan shila.Packet
-	Egress     chan shila.Packet
+	Ingress    chan *shila.Packet
+	Egress     chan *shila.Packet
 }
 
 type Error string
@@ -86,8 +86,8 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 	d.Channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.Channels.Ingress = make(chan shila.Packet, d.config.SizeIngressBuff)
-	d.Channels.Egress = make(chan shila.Packet, d.config.SizeEgressBuff)
+	d.Channels.Ingress = make(chan *shila.Packet, d.config.SizeIngressBuff)
+	d.Channels.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
 	// Create the packetizer
 	d.packetizer = packetizer.New(d.Channels.ingressRaw, d.Channels.Ingress, d.config.SizeReadBuffer)

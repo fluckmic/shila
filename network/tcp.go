@@ -84,11 +84,11 @@ func (p Packet) GetAddress() address {
 	panic("implement me")
 }
 
-func (p Packet) SetPayload(payload shila.IPPacket) {
+func (p Packet) SetPayload(payload shila.IP) {
 	panic("implement me")
 }
 
-func (p Packet) GetPayload() shila.IPPacket {
+func (p Packet) GetPayload() shila.IP {
 	panic("implement me")
 }
 

@@ -29,8 +29,8 @@ type packet interface {
 	SetAddress(address address)
 	GetAddress() address
 
-	SetPayload(payload shila.IPPacket)
-	GetPayload() shila.IPPacket
+	SetPayload(payload shila.IP)
+	GetPayload() shila.IP
 }
 
 // Should be able to create the address

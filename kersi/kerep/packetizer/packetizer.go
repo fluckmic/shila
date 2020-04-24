@@ -12,7 +12,7 @@ var hostByteOrder = binary.BigEndian
 
 type Device struct {
 	input      chan byte
-	output     chan shila.Packet
+	output     chan *shila.Packet
 	bufferSize int
 }
 
@@ -22,7 +22,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(in chan byte, out chan shila.Packet, bufferSize int) *Device {
+func New(in chan byte, out chan *shila.Packet, bufferSize int) *Device {
 	return &Device{in, out, bufferSize}
 }
 
@@ -62,7 +62,7 @@ func (d *Device) ip4(storage []byte) {
 		storage = append(storage, <-d.input)
 	}
 
-	d.output <- shila.Packet{shila.IPPacket{storage}}
+	d.output <- shila.NewPacketFromRawIP(storage)
 }
 
 func (d *Device) ip6(storage []byte) {

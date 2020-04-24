@@ -3,6 +3,7 @@ package stumps
 import (
 	"shila/kersi"
 	"shila/log"
+	"shila/parser"
 	"shila/shila"
 )
 
@@ -23,19 +24,26 @@ func Start() error {
 	return nil
 }
 
-func serveKerepIngress(buffer chan shila.Packet, kerepKey string) {
+func serveKerepIngress(buffer chan *shila.Packet, kerepKey string) {
 	for id := 0; id < nKerepIngressHandler; id++ {
 		go handleKerepIngress(buffer, kerepKey, id)
 	}
 }
 
-func handleKerepIngress(buffer chan shila.Packet, kerepKey string, handlerId int) {
+func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId int) {
 	log.Verbose.Print("Started kernel endpoint ingress listener ", kerepKey, "-", handlerId, ".")
 	for p := range buffer {
 		processKerepIngress(p)
 	}
 }
 
-func processKerepIngress(p shila.Packet) {
-	log.Verbose.Println(p.String())
+func processKerepIngress(p *shila.Packet) {
+
+	// Parse the packet
+	parser.Parse(p)
+
+	// Determine the destination
+
+	// Dispatch it to the correct channel
+
 }
