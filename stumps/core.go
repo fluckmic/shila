@@ -39,8 +39,8 @@ func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId in
 
 func processKerepIngress(p *shila.Packet) {
 
-	// Parse the packet
-	if err := parser.Parse(p); err != nil {
+	// DecodeIPv4andTCPLayer the packet
+	if err := parser.DecodeIPv4andTCPLayer(p); err != nil {
 		log.Error.Panicln(err.Error())
 	}
 
