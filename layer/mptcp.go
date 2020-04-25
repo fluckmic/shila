@@ -81,130 +81,91 @@ func DecodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 	for _, option := range tcp.Options {
 		if option.OptionType == layers.TCPOptionKind(TCPOptionKindMPTCP) {
 
-			optLength := option.OptionLength
-			optSubtype := MPTCPOptionSubtype(option.OptionData[0] >> 4)
+			var opt MPTCPOption
 
-			optBase := MPTCPOptionBase{optLength, optSubtype}
-			optData := option.OptionData
+			length := option.OptionLength
+			subtype := MPTCPOptionSubtype(option.OptionData[0] >> 4)
 
-			switch optSubtype {
+			optBase := MPTCPOptionBase{length, subtype}
+			data := option.OptionData
+
+			switch subtype {
 
 			case MPTCPOptionSubtypeMultipathCapable:
 
-				switch optLength {
-				case 12:
-					continue
-				case 20:
-					continue
-				default:
-					continue
+				if length != 12 && length != 20 {
+					err = Error(fmt.Sprint("Invalid length ", length, " for MPTCPOptionSubtypeMultipathCapable"))
+					return
+				}
+
+				version := data[0] & 0xf
+
+				A := data[1]&0x80 != 0
+				B := data[1]&0x40 != 0
+				C := data[1]&0x20 != 0
+				D := data[1]&0x10 != 0
+				E := data[1]&0x8 != 0
+				F := data[1]&0x4 != 0
+				G := data[1]&0x2 != 0
+				H := data[1]&0x1 != 0
+
+				senderKey := binary.BigEndian.Uint64(data[2:10])
+
+				opt = MPTCPCapableOptionSender{optBase, version,
+					A, B, C, D, E, F, G, H, senderKey}
+
+				if length == 20 {
+					opt = MPTCPCapableOptionSenderReceiver{opt.(MPTCPCapableOptionSender),
+						binary.BigEndian.Uint64(data[10:17])}
 				}
 
 			case MPTCPOptionSubtypeJoinConnection:
 
-				switch optLength {
-				case 12:
-					continue
-				case 20:
-					continue
-				default:
-					continue
-				}
+				switch length {
 
-				continue
+				case 12:
+
+					B := data[0]&0x1 != 0
+					addressID := data[1]
+
+					receiverToken := binary.BigEndian.Uint32(data[2:6])
+					senderRandomNumber := binary.BigEndian.Uint32(data[6:10])
+
+					opt = MPTCPJoinOptionSYN{optBase, B, addressID,
+						receiverToken, senderRandomNumber}
+
+				case 16:
+
+					B := data[0]&0x1 != 0
+					addressID := data[1]
+
+					senderTruncHMAC := binary.BigEndian.Uint64(data[2:10])
+					senderRandomNumber := binary.BigEndian.Uint32(data[10:14])
+
+					opt = MPTCPJoinOptionSYNACK{optBase, B, addressID,
+						senderTruncHMAC, senderRandomNumber}
+
+				case 24:
+
+					opt = MPTCPJoinOptionThirdACK{optBase, data[2:22]}
+
+				default:
+					err = Error(fmt.Sprint("Invalid length ", length, " for  MPTCPOptionSubtypeJoinConnection"))
+					return
+				}
 
 			case MPTCPOptionSubtypeDataSequenceSignal, MPTCPOptionSubtypeAddAddress, MPTCPOptionSubtypeRemoveAddress,
 				MPTCPOptionSubtypeChangeSubflowPriority, MPTCPOptionSubtypeFallback, MPTCPOptionSubtypeFastClose:
-				options = append(options, MPTCPRawOption{optBase, optData})
-				continue
+				opt = MPTCPRawOption{optBase, data}
 
 			default:
-				log.Info.Println("Encountered invalid MPTCPOptionSubtype", optSubtype, "- Continuing anyway.")
+				log.Info.Println("Encountered invalid MPTCPOptionSubtype", subtype, "- Continuing anyway.")
 				continue
 			}
+
+			options = append(options, opt)
 		}
 	}
 
 	return
 }
-
-/*
-func (mptcp *MPTCPCapableOption) DecodeFromMPTCPOption(opt layers.TCPOption) error {
-
-	data := opt.OptionData
-
-	mptcp.OptionLength  = opt.OptionLength
-
-	mptcp.OptionSubtype = data[0] >> 4
-	if mptcp.OptionSubtype != MPTCPOptionSubtypeMultipathCapable {
-		return Error(fmt.Sprint("Invalid MPTCP option",
-			" - ", "Unknown MPTCP subtype ", mptcp.OptionSubtype, "." ))
-	}
-
-	mptcp.OptionSubtype = opt.OptionSubtype
-
-	mptcp.Version 		= data[0] & 0xf
-
-	mptcp.A				= data[1] & 0x80 != 0
-	mptcp.B 			= data[1] & 0x40 != 0
-	mptcp.C 			= data[1] & 0x20 != 0
-	mptcp.D 			= data[1] & 0x10 != 0
-	mptcp.E 			= data[1] & 0x8  != 0
-	mptcp.F 			= data[1] & 0x4  != 0
-	mptcp.G 			= data[1] & 0x2  != 0
-	mptcp.H 			= data[1] & 0x1  != 0
-
-	mptcp.SenderKey 	= binary.BigEndian.Uint64(data[2:10])
-
-	if mptcp.OptionLength == 20 {
-		mptcp.ReceiverKey = binary.BigEndian.Uint64(data[10:17])
-	}
-
-	return nil
-}
-
-func (mptcp *MPTCPJoinOptionSYN) DecodeFromMPTCPOption(opt MPTCPOption) error {
-
-	data := opt.OptionData
-
-	mptcp.OptionLength  		= opt.OptionLength
-	mptcp.OptionSubtype 		= opt.OptionSubtype
-
-	mptcp.B						= data[0] & 0x1  != 0
-	mptcp.AddressID 			= data[1]
-
-	mptcp.ReceiverToken 		= binary.BigEndian.Uint32(data[2:6])
-	mptcp.SenderRandomNumber	= binary.BigEndian.Uint32(data[6:10])
-
-	return nil
-}
-
-func (mptcp *MPTCPJoinOptionSYNACK) DecodeFromMPTCPOption(opt MPTCPOption) error {
-
-	data := opt.OptionData
-
-	mptcp.OptionLength  		= opt.OptionLength
-	mptcp.OptionSubtype 		= opt.OptionSubtype
-
-	mptcp.B						= data[0] & 0x1  != 0
-	mptcp.AddressID 			= data[1]
-
-	mptcp.SenderTruncHMAC 		= binary.BigEndian.Uint64(data[2:10])
-	mptcp.SenderRandomNumber	= binary.BigEndian.Uint32(data[10:14])
-
-	return nil
-}
-
-func (mptcp *MPTCPJoinOptionThirdACK) DecodeFromMPTCPOption(opt MPTCPOption) error {
-
-	mptcp.OptionLength  = opt.OptionLength
-	mptcp.OptionSubtype = opt.OptionSubtype
-
-	mptcp.SenderHMAC 			=  opt.OptionData[2:22]
-
-	return nil
-}
-
-func ()
-
-*/

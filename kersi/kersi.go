@@ -243,7 +243,7 @@ func (m *Manager) setupAdditionalRouting() error {
 
 	// Restrict the use of MPTCP to the virtual devices
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
-	// then there is just the local interface which could also try to participate in MPTC.
+	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath off
@@ -273,7 +273,7 @@ func (m *Manager) clearAdditionalRouting() error {
 
 	// Roll back the restriction of the use of MPTCP to the virtual devices.
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
-	// then there is just the local interface which could also try to participate in MPTC.
+	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath on

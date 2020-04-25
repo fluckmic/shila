@@ -39,10 +39,24 @@ func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId in
 
 func processKerepIngress(p *shila.Packet) {
 
-	// DecodeIPv4andTCPLayer the packet
+	// Get the flow of the packet.
+
+	// Decode the IPv4 and the TCP layer of the packet
 	if err := parser.DecodeIPv4andTCPLayer(p); err != nil {
 		log.Error.Panicln(err.Error())
 	}
+
+	// Decode the IPv4 options of the packet
+	if err := parser.DecodeIPv4Options(p); err != nil {
+		log.Error.Panicln(err.Error())
+	}
+
+	// Decode the MPTCP options of the packet
+	if err := parser.DecodeMPTCPOptions(p); err != nil {
+		log.Error.Panicln(err.Error())
+	}
+
+	log.Verbose.Println("Packet processed.")
 
 	// Determine the destination
 

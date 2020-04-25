@@ -12,8 +12,9 @@ type Packet struct {
 }
 
 type IP struct {
-	Raw    []byte
-	Parsed layers.IPv4
+	Raw     []byte
+	Parsed  layers.IPv4
+	Options []layer.IPv4Option
 }
 
 type TCP struct {
@@ -23,11 +24,12 @@ type TCP struct {
 
 func NewPacketFromRawIP(raw []byte) *Packet {
 	return &Packet{
-		IP:  IP{raw, layers.IPv4{}},
+		IP:  IP{raw, layers.IPv4{}, []layer.IPv4Option{}},
 		TCP: TCP{layers.TCP{}, []layer.MPTCPOption{}},
 	}
 }
 
 func (p *Packet) String() string {
+	// TODO: Debug...
 	return fmt.Sprint("Size of packet: ", len(p.IP.Raw), " Bytes.")
 }
