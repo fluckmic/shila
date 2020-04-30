@@ -11,6 +11,7 @@ import (
 var hostByteOrder = binary.BigEndian
 
 type Device struct {
+	//kerep 	   *kerep.Device
 	input      chan byte
 	output     chan *shila.Packet
 	bufferSize int
@@ -62,7 +63,7 @@ func (d *Device) ip4(storage []byte) {
 		storage = append(storage, <-d.input)
 	}
 
-	d.output <- shila.NewPacketFromRawIP(storage)
+	//d.output <- shila.NewPacketFromRawIP(d.kerep, storage)
 }
 
 func (d *Device) ip6(storage []byte) {
