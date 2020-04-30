@@ -210,7 +210,7 @@ func (d *Device) serveIngress() {
 func (d *Device) serveEgress() {
 	writer := io.Writer(d.vif)
 	for p := range d.Channels.Egress {
-		_, err := writer.Write(p.IP.Raw)
+		_, err := writer.Write(p.Payload.Raw)
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return

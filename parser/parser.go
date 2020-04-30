@@ -16,28 +16,28 @@ func (e Error) Error() string {
 
 // Start slow but correct..
 func DecodeIPv4andTCPLayer(p *shila.Packet) error {
-	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, &p.IP.Parsed, &p.TCP.Parsed)
+	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, &p.Payload.Decoded.IPv4Decoding, &p.Payload.Decoded.TCPDecoding)
 	var decoded []gopacket.LayerType
-	if err := parser.DecodeLayers(p.IP.Raw, &decoded); err != nil {
+	if err := parser.DecodeLayers(p.Payload.Raw, &decoded); err != nil {
 		return Error(fmt.Sprint("Could not decode IPv4/TCP layer", " - ", err.Error()))
 	}
 	return nil
 }
 
 func DecodeIPv4Options(p *shila.Packet) error {
-	opts, err := layer.DecodeIPv4POptions(p.IP.Parsed)
+	opts, err := layer.DecodeIPv4POptions(p.Payload.Decoded.IPv4Decoding)
 	if err != nil {
-		return Error(fmt.Sprint("Could not decode IP options", " - ", err.Error()))
+		return Error(fmt.Sprint("Could not decode IPv4TCPPacket options", " - ", err.Error()))
 	}
-	p.IP.Options = opts
+	p.Payload.Decoded.IPv4Options = opts
 	return nil
 }
 
 func DecodeMPTCPOptions(p *shila.Packet) error {
-	opts, err := layer.DecodeMPTCPOptions(p.TCP.Parsed)
+	opts, err := layer.DecodeMPTCPOptions(p.Payload.Decoded.TCPDecoding)
 	if err != nil {
 		return Error(fmt.Sprint("Could not decode MPTCP options", " - ", err.Error()))
 	}
-	p.TCP.MPTCPOptions = opts
+	p.Payload.Decoded.MPTCPOptions = opts
 	return nil
 }

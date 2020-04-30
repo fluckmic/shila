@@ -5,15 +5,18 @@ import (
 	"shila/log"
 	"shila/parser"
 	"shila/shila"
+	"shila/shila/connection"
 )
 
 // Will be part of the core config
 var nKerepIngressHandler = 2
 
-var kernelSide *kersi.Manager
+var kernelSide 	*kersi.Manager
+var mapping 	*connection.Mapping
 
 func Setup(kersi *kersi.Manager) error {
-	kernelSide = kersi
+	kernelSide 	= kersi
+	mapping 	= connection.NewMapping()
 	return nil
 }
 
@@ -39,13 +42,9 @@ func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId in
 
 func processKerepIngress(p *shila.Packet) {
 
-	// Get the flow of the packet.
-
-	// Decode the IPv4 and the TCP layer of the packet
-	if err := parser.DecodeIPv4andTCPLayer(p); err != nil {
-		log.Error.Panicln(err.Error())
-	}
-
+	// Get the connection
+	con := mapping.Retrieve(connection.ID(p.ID()))
+	_ = con
 	// Decode the IPv4 options of the packet
 	if err := parser.DecodeIPv4Options(p); err != nil {
 		log.Error.Panicln(err.Error())

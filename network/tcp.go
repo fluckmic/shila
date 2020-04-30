@@ -84,11 +84,11 @@ func (p Packet) GetAddress() address {
 	panic("implement me")
 }
 
-func (p Packet) SetPayload(payload shila.IP) {
+func (p Packet) SetPayload(payload shila.IPv4TCPPacket) {
 	panic("implement me")
 }
 
-func (p Packet) GetPayload() shila.IP {
+func (p Packet) GetPayload() shila.IPv4TCPPacket {
 	panic("implement me")
 }
 
@@ -104,7 +104,7 @@ func (a Address) New(s ...string) error {
 	if len(s) == 2 {
 		var ip net.IP
 		if ip = net.ParseIP(s[0]); ip != nil {
-			return Error(fmt.Sprint("Invalid IP: ", s[0]))
+			return Error(fmt.Sprint("Invalid IPv4TCPPacket: ", s[0]))
 		}
 		var port int
 		if port, err = strconv.Atoi(s[1]); err != nil {
