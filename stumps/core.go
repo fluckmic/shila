@@ -3,7 +3,6 @@ package stumps
 import (
 	"shila/kersi"
 	"shila/log"
-	"shila/parser"
 	"shila/shila"
 	"shila/shila/connection"
 )
@@ -43,8 +42,17 @@ func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId in
 func processKerepIngress(p *shila.Packet) {
 
 	// Get the connection
-	con := mapping.Retrieve(connection.ID(p.ID()))
+	var con *connection.Connection
+	if key, err := p.Key(); err != nil {
+		log.Error.Panicln(err.Error())
+	} else {
+		con = mapping.Retrieve(connection.ID(key))
+		//log.Verbose.Print("Connection: ", &con, " - Packet key: ", key)
+	}
+
 	_ = con
+
+	/*
 	// Decode the IPv4 options of the packet
 	if err := parser.DecodeIPv4Options(p); err != nil {
 		log.Error.Panicln(err.Error())
@@ -54,8 +62,7 @@ func processKerepIngress(p *shila.Packet) {
 	if err := parser.DecodeMPTCPOptions(p); err != nil {
 		log.Error.Panicln(err.Error())
 	}
-
-	log.Verbose.Println("Packet processed.")
+	 */
 
 	// Determine the destination
 

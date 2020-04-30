@@ -2,62 +2,61 @@ package shila
 
 import (
 	"fmt"
-	"github.com/google/gopacket/layers"
-	"shila/layer"
-	"shila/parser"
+	"net"
 )
+
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
 
 type PacketPayload  IPv4TCPPacket
 
 type Packet struct {
-	id 		*PacketID
-	Payload PacketPayload
+	id		*PacketID
+	header 	*PacketHeader
+	payload PacketPayload
 }
 
+// Has to be parsed for every packet
 type PacketID struct {
-	string
+	Src net.TCPAddr
+	Dst net.TCPAddr
+}
+
+func (p *PacketID) key() string {
+	return fmt.Sprint("{", p.Src.String(), "<>", p.Dst.String(), "}")
+}
+
+type PacketHeader struct {
 }
 
 type IPv4TCPPacket struct {
 	Raw      []byte
-	Decoded  *IPv4TCPPacketDecoding
-}
-
-type IPv4TCPPacketDecoding struct {
-	IPv4Decoding layers.IPv4
-	IPv4Options  []layer.IPv4Option
-	TCPDecoding  layers.TCP
-	MPTCPOptions []layer.MPTCPOption
 }
 
 func NewPacketFromRawIP(raw []byte) *Packet {
-	return &Packet{nil, PacketPayload{raw, nil}}
+	return &Packet{nil,nil, PacketPayload{raw}}
 }
 
-func (p *Packet) String() string {
-	// TODO: Debug...
-	return fmt.Sprint("Size of packet: ", len(p.Payload.Raw), " Bytes.")
-}
-
-func (p *Packet) ID() string {
-
-	if p.id != nil {
-
-		p.Payload.Decoded = &IPv4TCPPacketDecoding{
-			IPv4Decoding: layers.IPv4{},
-			IPv4Options:  nil,
-			TCPDecoding:  layers.TCP{},
-			MPTCPOptions: nil,
+func (p *Packet) ID() (*PacketID, error) {
+	if p.id == nil {
+		if err := decodePacketID(p); err != nil {
+			return nil, Error(fmt.Sprint("Could not decode packet id", " - ", err.Error()))
 		}
-
-		// Decode the IPv4 and the TCP layer of the packet
-		if err := parser.DecodeIPv4andTCPLayer(p); err != nil {
-			log.Error.Panicln(err.Error())
-		}
-	} else {
-		return p.id.string
 	}
+	return p.id, nil
+}
 
+func (p *Packet) Key() (string, error) {
+	if key, err := p.ID(); err != nil {
+		return "", err
+	} else {
+		return key.key(), nil
+	}
+}
 
-	return ""
+func (p *Packet) RawPayload() []byte {
+	return p.payload.Raw
 }
