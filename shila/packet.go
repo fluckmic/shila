@@ -2,6 +2,8 @@ package shila
 
 import (
 	"fmt"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"net"
 )
 
@@ -13,13 +15,11 @@ func (e Error) Error() string {
 
 type PacketPayload  IPv4TCPPacket
 
-// TODO: Add an additional label to make parsing of entry point easier.
-
 type Packet struct {
-	entryPoint  endpoint
-	id			*PacketID
-	header 		*PacketHeader
-	payload 	PacketPayload
+	entryPoint Endpoint
+	id         *PacketID
+	header     *PacketHeader
+	payload    PacketPayload
 }
 
 // Has to be parsed for every packet
@@ -28,18 +28,20 @@ type PacketID struct {
 	Dst net.TCPAddr
 }
 
-func (p *PacketID) key() string {
-	return fmt.Sprint("{", p.Src.String(), "<>", p.Dst.String(), "}")
+type PacketHeader struct {
+	Src NetworkAddress
+	Dst NetworkAddress
 }
 
-type PacketHeader struct {
+func (p *PacketID) key() string {
+	return fmt.Sprint("{", p.Src.String(), "<>", p.Dst.String(), "}")
 }
 
 type IPv4TCPPacket struct {
 	Raw      []byte
 }
 
-func NewPacketFromRawIP(ep endpoint, raw []byte) *Packet {
+func NewPacketFromRawIP(ep Endpoint, raw []byte) *Packet {
 	return &Packet{ep,nil, nil, PacketPayload{raw}}
 }
 
@@ -64,6 +66,58 @@ func (p *Packet) RawPayload() []byte {
 	return p.payload.Raw
 }
 
-func (p *Packet) EntryPoint() endpoint {
+func (p *Packet) EntryPoint() Endpoint {
 	return p.entryPoint
 }
+
+func decodePacketID(p *Packet) error {
+
+	if p.id == nil {
+		p.id = new(PacketID)
+	}
+
+	if ip4v, tcp, err := decodeIPv4andTCPLayer(p.RawPayload()); err != nil {
+		return err
+	} else {
+		p.id.Src.IP 	= ip4v.SrcIP
+		p.id.Src.Port 	= int(tcp.SrcPort)
+		p.id.Dst.IP 	= ip4v.DstIP
+		p.id.Dst.Port 	= int(tcp.DstPort)
+	}
+
+	return nil
+}
+
+// Start slow but correct..
+func decodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
+
+	ipv4 := layers.IPv4{}
+	tcp  := layers.TCP{}
+
+	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, &ipv4, &tcp)
+	var decoded []gopacket.LayerType
+	if err := parser.DecodeLayers(raw, &decoded); err != nil {
+		return ipv4, tcp, Error(fmt.Sprint("Could not decode IPv4/TCP layer", " - ", err.Error()))
+	}
+
+	return ipv4, tcp, nil
+}
+
+/*
+func DecodeIPv4Options(p *shila.Packet) error {
+	opts, err := layer.DecodeIPv4POptions(p.Payload.Decoded.IPv4Decoding)
+	if err != nil {
+		return Error(fmt.Sprint("Could not decode IPv4TCPPacket options", " - ", err.Error()))
+	}
+	p.Payload.Decoded.IPv4Options = opts
+	return nil
+}
+
+func DecodeMPTCPOptions(p *shila.Packet) error {
+	opts, err := layer.DecodeMPTCPOptions(p.Payload.Decoded.TCPDecoding)
+	if err != nil {
+		return Error(fmt.Sprint("Could not decode MPTCP options", " - ", err.Error()))
+	}
+	p.Payload.Decoded.MPTCPOptions = opts
+	return nil
+}*/

@@ -1,37 +1,41 @@
-package network
+package tcp
 
+import (
+	"fmt"
+	"net"
+	"shila/log"
+	"shila/shila"
+	"strconv"
+)
 
-/*
-var _ shila.clientEndpoint = (*ClientEndpoint)(nil)
-var _ shila.serverEndpoint = (*ServerEndpoint)(nil)
-var _ shila.packet = (*Packet)(nil)
-var _ shila.address = (*Address)(nil)
-var _ shila.path = (*Path)(nil)
-*/
+var _ shila.ClientNetworkEndpoint = (*ClientEndpoint)(nil)
+var _ shila.ServerNetworkEndpoint = (*ServerEndpoint)(nil)
+var _ shila.NetworkAddress = (*Address)(nil)
+var _ shila.NetworkPath = (*Path)(nil)
 
 type Endpoint struct{}
 
-/*
 type ClientEndpoint struct {
-	connectedTo   shila.address
-	ingressBuffer chan *shila.packet
-	egressBuffer  chan *shila.packet
+	connectedTo   Address
+	ingressBuffer shila.PacketChannel
+	egressBuffer  shila.PacketChannel
 	connection    *net.TCPConn
 }
 
-func (c ClientEndpoint) New(connectTo shila.address, connectVia shila.path, ingressBuf chan *shila.packet, egressBuf chan *shila.packet) shila.clientEndpoint {
+func (c *ClientEndpoint) New(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
+	ingressBuf shila.PacketChannel, egressBuf shila.PacketChannel) shila.ClientNetworkEndpoint {
 	_ = connectVia
-	return ClientEndpoint{connectedTo: connectTo, ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
+	return &ClientEndpoint{connectedTo: connectTo.(Address), ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
 }
 
-func (c ClientEndpoint) Setup() error {
+func (c *ClientEndpoint) Setup() error {
 
 	if c.IsSetup() {
 		return shila.Error(fmt.Sprint("Unable to setup client endpoint",
 			" - ", "Already setup."))
 	}
 
-	var dest = c.connectedTo.(Address).Addr
+	var dest = c.connectedTo.Addr
 	var err error
 
 	// Establish a connection to the server endpoint
@@ -48,44 +52,35 @@ func (c ClientEndpoint) Setup() error {
 	return nil
 }
 
-func (c ClientEndpoint) TearDown() error {
+func (c *ClientEndpoint) TearDown() error {
 	panic("implement me")
 }
 
-func (c ClientEndpoint) IsSetup() bool {
+func (c *ClientEndpoint) IsSetup() bool {
 	return c.connection != nil
+}
+
+func (c *ClientEndpoint) Label() shila.EndpointLabel {
+	return shila.NetworkClientEndpoint
 }
 
 type ServerEndpoint struct{}
 
-func (s ServerEndpoint) New(listenTo shila.address, ingressBuf chan *shila.packet, egressBuf chan *shila.packet) shila.serverEndpoint {
+func (s *ServerEndpoint) New(listenTo shila.NetworkAddress, ingressBuf shila.PacketChannel,
+	egressBuf shila.PacketChannel) shila.ServerNetworkEndpoint {
 	panic("implement me")
 }
 
-func (s ServerEndpoint) Setup() error {
+func (s *ServerEndpoint) Setup() error {
 	panic("implement me")
 }
 
-func (s ServerEndpoint) TearDown() error {
+func (s *ServerEndpoint) TearDown() error {
 	panic("implement me")
 }
 
-type Packet struct{}
-
-func (p Packet) SetAddress(address shila.address) {
-	panic("implement me")
-}
-
-func (p Packet) GetAddress() shila.address {
-	panic("implement me")
-}
-
-func (p Packet) SetPayload(payload shila.IPv4TCPPacket) {
-	panic("implement me")
-}
-
-func (p Packet) GetPayload() shila.IPv4TCPPacket {
-	panic("implement me")
+func (c *ServerEndpoint) Label() shila.EndpointLabel {
+	return shila.NetworkServerEndpoint
 }
 
 type Address struct {
@@ -130,4 +125,3 @@ func (p Path) String() string {
 	_ = p
 	return ""
 }
-*/

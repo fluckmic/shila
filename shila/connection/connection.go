@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"shila/kersi/kerep"
 	"shila/log"
-	"shila/network"
 	"shila/shila"
 	"sync"
 	"time"
@@ -24,7 +23,7 @@ type Connection struct {
 	id		ID
 	state 	State
 	Kerep 	*kerep.Device
-	Newep 	*network.Endpoint
+	Newep 	*shila.Endpoint
 	lock  	sync.Mutex
 	touched time.Time
 }

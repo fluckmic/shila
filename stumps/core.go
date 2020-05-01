@@ -33,7 +33,7 @@ func serveKerepIngress(buffer chan *shila.Packet, kerepKey string) {
 }
 
 func handleKerepIngress(buffer chan *shila.Packet, kerepKey string, handlerId int) {
-	log.Verbose.Print("Started kernel endpoint ingress listener ", kerepKey, "-", handlerId, ".")
+	//log.Verbose.Print("Started kernel endpoint ingress listener ", kerepKey, "-", handlerId, ".")
 	for p := range buffer {
 		processKerepIngress(p)
 	}
