@@ -14,14 +14,17 @@ type NetworkPath interface {
 	String() string
 }
 
+type NetworkEndpoint interface {
+	NewClient(connectTo NetworkAddress, connectVia NetworkPath, ingressBuf PacketChannel, egressBuf PacketChannel) ClientNetworkEndpoint
+	NewServer(listenTo NetworkAddress, ingressBuf PacketChannel, egressBuf PacketChannel) ServerNetworkEndpoint
+}
+
 type ClientNetworkEndpoint interface {
-	New(connectTo NetworkAddress, connectVia NetworkPath, ingressBuf PacketChannel, egressBuf PacketChannel) ClientNetworkEndpoint
 	Endpoint
-	// TODO: config?
-	// TODO: path renegotiation?
+	SetupAndRun() error
 }
 
 type ServerNetworkEndpoint interface {
-	New(listenTo NetworkAddress, ingressBuf PacketChannel, egressBuf PacketChannel) ServerNetworkEndpoint
 	Endpoint
+	SetupAndRun() error
 }

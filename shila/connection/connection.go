@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"shila/kersi/kerep"
 	"shila/log"
+	"shila/networkSide/networkEndpoint"
 	"shila/shila"
 	"sync"
 	"time"
@@ -20,16 +21,21 @@ const (
 )
 
 type Connection struct {
-	id		ID
-	state 	State
-	Kerep 	*kerep.Device
-	Newep 	*shila.Endpoint
-	lock  	sync.Mutex
-	touched time.Time
+	id		 ID
+	state 	 State
+	channels Channels
+	lock  	 sync.Mutex
+	touched  time.Time
+}
+
+type Channels struct {
+	Kerep shila.TrafficChannels	// Kernel end point
+	Newep shila.TrafficChannels // Network end point
+	Estep Channel   // End point for connection establishment
 }
 
 func New(id ID) *Connection {
-	return &Connection{id, Raw, nil, nil, sync.Mutex{}, time.Now()}
+	return &Connection{id, Raw, Channels{} ,sync.Mutex{}, time.Now()}
 }
 
 func (c *Connection) Close() {
@@ -76,20 +82,33 @@ func (c *Connection) processPacketFromKerep(p *shila.Packet) error {
 
 func (c *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
-	// Assign the entry device to the connection.
+	// Assign the channels from .
 	var ep interface{} = p.EntryPoint()
 	if entryPoint, ok := ep.(*kerep.Device); ok {
-		c.Kerep = entryPoint	// kernel side
+		c.channels.Kerep.Ingress = entryPoint.Channels.Ingress	// ingress from kernel end point
+		c.channels.Kerep.Egress  = entryPoint.Channels.Egress   // egress towards kernel end point
 	} else {
-		return Error(fmt.Sprint("Cannot process packet - ID mismatch: "))
+		return Error(fmt.Sprint("Cannot process packet - Invalid entry point type."))
 	}
 
 	c.touched = time.Now()
-	return nil
 
 	// Determine address and path
+	var address networkEndpoint.Address
+	var path networkEndpoint.Path
 
-	// Send the packet via establish channel
+	// Create the establishment connection
+	// TODO: Make size of channels configurable
+	c.channels.Estep.Egress =  make(shila.PacketChannel, 10)
+	c.channels.Estep.Ingress = make(shila.PacketChannel, 10)
+	estep := networkEndpoint.Generator{}.NewClient(address, path, c.channels.Estep.Egress, c.channels.Estep.Ingress)
+
+	if err := estep.SetupAndRun(); err != nil {
+		return Error(fmt.Sprint("Failed setup and run the establish connection - ", err.Error()))
+	}
+
+	// What to do with the
+
 
 	// Set new state
 	c.state = ClientReady
@@ -102,32 +121,23 @@ func (c *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 }
 
 func (c *Connection) processPacketFromKerepStateClientReady(p *shila.Packet) error {
-
 	c.touched = time.Now()
-	return nil
-
-	// Send via establish channel
-
+	c.channels.Estep.Egress <- p
 	return nil
 }
 
 func (c *Connection) processPacketFromKerepStateServerReady(p *shila.Packet) error {
-
-	return nil
-
 	// Put packet into egress queue of connection.
 	// If the connection is established at one one point, these packets
-	// are sent. If not they are lost. (--> Take care, could block if
-	// too many packets are in queue
+	// are sent. If not they are lost.
+	// (--> Take care, could block if too many packets are in queue
+	c.channels.Newep.Egress <- p
+	return nil
 }
 
 func (c *Connection) processPacketFromKerepStateEstablished(p *shila.Packet) error {
-
 	c.touched = time.Now()
-	return nil
-
-	// Send via connection
-
+	c.channels.Newep.Egress <- p
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package tcp
+package networkEndpoint
 
 import (
 	"fmt"
@@ -8,27 +8,38 @@ import (
 	"strconv"
 )
 
-var _ shila.ClientNetworkEndpoint = (*ClientEndpoint)(nil)
-var _ shila.ServerNetworkEndpoint = (*ServerEndpoint)(nil)
+var _ shila.NetworkEndpoint = (*Generator)(nil)
+var _ shila.ClientNetworkEndpoint = (*Client)(nil)
+var _ shila.ServerNetworkEndpoint = (*Server)(nil)
 var _ shila.NetworkAddress = (*Address)(nil)
 var _ shila.NetworkPath = (*Path)(nil)
 
-type Endpoint struct{}
+type Generator struct{}
 
-type ClientEndpoint struct {
+func (g Generator) NewClient(cT shila.NetworkAddress, cV shila.NetworkPath,
+	iB shila.PacketChannel, eB shila.PacketChannel) shila.ClientNetworkEndpoint {
+	return newClient(cT, cV, iB, eB)
+}
+
+func (g Generator) NewServer(lT shila.NetworkAddress, iB shila.PacketChannel,
+	eB shila.PacketChannel) shila.ServerNetworkEndpoint {
+	return newServer(lT, iB, eB)
+}
+
+type Client struct {
 	connectedTo   Address
 	ingressBuffer shila.PacketChannel
 	egressBuffer  shila.PacketChannel
 	connection    *net.TCPConn
 }
 
-func (c *ClientEndpoint) New(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
+func newClient(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
 	ingressBuf shila.PacketChannel, egressBuf shila.PacketChannel) shila.ClientNetworkEndpoint {
 	_ = connectVia
-	return &ClientEndpoint{connectedTo: connectTo.(Address), ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
+	return &Client{connectedTo: connectTo.(Address), ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
 }
 
-func (c *ClientEndpoint) Setup() error {
+func (c *Client) SetupAndRun() error {
 
 	if c.IsSetup() {
 		return shila.Error(fmt.Sprint("Unable to setup client endpoint",
@@ -52,34 +63,34 @@ func (c *ClientEndpoint) Setup() error {
 	return nil
 }
 
-func (c *ClientEndpoint) TearDown() error {
+func (c *Client) TearDown() error {
 	panic("implement me")
 }
 
-func (c *ClientEndpoint) IsSetup() bool {
+func (c *Client) IsSetup() bool {
 	return c.connection != nil
 }
 
-func (c *ClientEndpoint) Label() shila.EndpointLabel {
+func (c *Client) Label() shila.EndpointLabel {
 	return shila.NetworkClientEndpoint
 }
 
-type ServerEndpoint struct{}
+type Server struct{}
 
-func (s *ServerEndpoint) New(listenTo shila.NetworkAddress, ingressBuf shila.PacketChannel,
+func newServer(listenTo shila.NetworkAddress, ingressBuf shila.PacketChannel,
 	egressBuf shila.PacketChannel) shila.ServerNetworkEndpoint {
 	panic("implement me")
 }
 
-func (s *ServerEndpoint) Setup() error {
+func (s *Server) SetupAndRun() error {
 	panic("implement me")
 }
 
-func (s *ServerEndpoint) TearDown() error {
+func (s *Server) TearDown() error {
 	panic("implement me")
 }
 
-func (c *ServerEndpoint) Label() shila.EndpointLabel {
+func (c *Server) Label() shila.EndpointLabel {
 	return shila.NetworkServerEndpoint
 }
 

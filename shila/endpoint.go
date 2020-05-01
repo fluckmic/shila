@@ -10,7 +10,6 @@ const (
 )
 
 type Endpoint interface {
-	Setup() 	error
 	TearDown() 	error
 	Label() 	EndpointLabel
 }
