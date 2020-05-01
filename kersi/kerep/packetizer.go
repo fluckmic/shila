@@ -1,4 +1,4 @@
-package packetizer
+package kerep
 
 import (
 	"encoding/binary"
@@ -10,32 +10,15 @@ import (
 // TODO: ByteOrder!
 var hostByteOrder = binary.BigEndian
 
-type Device struct {
-	//kerep 	   *kerep.Device
-	input      chan byte
-	output     chan *shila.Packet
-	bufferSize int
-}
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
-func New(in chan byte, out chan *shila.Packet, bufferSize int) *Device {
-	return &Device{in, out, bufferSize}
-}
-
-func (d *Device) Run() {
+func (d *Device) packetize() {
 
 	// Fatal error could occur.. :o
 	shutdown.Check()
 
 	for {
-		rawData := make([]byte, 0, d.bufferSize)
+		rawData := make([]byte, 0, d.config.SizeReadBuffer)
 
-		b := <-d.input
+		b := <-d.Channels.ingressRaw
 		switch b >> 4 {
 		case 4:
 			rawData = append(rawData, b)
@@ -53,30 +36,30 @@ func (d *Device) ip4(storage []byte) {
 
 	// Read 3 more bytes
 	for cnt := 0; cnt < 3; cnt++ {
-		storage = append(storage, <-d.input)
+		storage = append(storage, <-d.Channels.ingressRaw)
 	}
 
 	length := binary.ByteOrder(hostByteOrder).Uint16(storage[2:4])
 
 	// Load the remaining bytes of the package
 	for cnt := 0; cnt < int(length-4); cnt++ {
-		storage = append(storage, <-d.input)
+		storage = append(storage, <-d.Channels.ingressRaw)
 	}
 
-	//d.output <- shila.NewPacketFromRawIP(d.kerep, storage)
+	d.Channels.Ingress <- shila.NewPacketFromRawIP(d, storage)
 }
 
 func (d *Device) ip6(storage []byte) {
 
 	// Read 7 more bytes
 	for cnt := 0; cnt < 7; cnt++ {
-		storage = append(storage, <-d.input)
+		storage = append(storage, <-d.Channels.ingressRaw)
 	}
 
 	length := binary.ByteOrder(hostByteOrder).Uint16(storage[4:6])
 
 	// Discard the remaining 32 byte of the header and the payload
 	for cnt := 0; cnt < int(32+length); cnt++ {
-		<-d.input
+		<-d.Channels.ingressRaw
 	}
 }

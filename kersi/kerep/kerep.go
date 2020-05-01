@@ -7,7 +7,6 @@ import (
 	"io"
 	"shila/config"
 	"shila/helper"
-	"shila/kersi/kerep/packetizer"
 	"shila/kersi/kerep/vif"
 	"shila/log"
 	"shila/shila"
@@ -17,7 +16,7 @@ type Device struct {
 	Id         Identifier
 	Channels   *Channel
 	config     config.KernelEndpoint
-	packetizer *packetizer.Device
+	packetizer *Device
 	vif        *vif.Device
 	isValid    bool
 	isSetup    bool // TODO: merge to "state" object
@@ -89,9 +88,6 @@ func (d *Device) Setup() error {
 	d.Channels.Ingress = make(chan *shila.Packet, d.config.SizeIngressBuff)
 	d.Channels.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
-	// Create the packetizer
-	d.packetizer = packetizer.New(d.Channels.ingressRaw, d.Channels.Ingress, d.config.SizeReadBuffer)
-
 	d.isSetup = true
 	return nil
 }
@@ -136,7 +132,7 @@ func (d *Device) Start() error {
 
 	log.Verbose.Print("Starting kernel endpoint: ", d.Id.Key(), ".")
 
-	go d.packetizer.Run()
+	go d.packetize()
 	go d.serveIngress()
 	go d.serveEgress()
 
@@ -218,4 +214,8 @@ func (d *Device) serveEgress() {
 			panic("implement me") //TODO!
 		}
 	}
+}
+
+func (d *Device) Label() shila.EndpointLabel {
+	return shila.KernelEndpoint
 }

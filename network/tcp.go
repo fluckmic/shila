@@ -1,29 +1,25 @@
 package network
 
-import (
-	"fmt"
-	"net"
-	"shila/log"
-	"shila/shila"
-	"strconv"
-)
 
-var _ clientEndpoint = (*ClientEndpoint)(nil)
-var _ serverEndpoint = (*ServerEndpoint)(nil)
-var _ packet = (*Packet)(nil)
-var _ address = (*Address)(nil)
-var _ path = (*Path)(nil)
+/*
+var _ shila.clientEndpoint = (*ClientEndpoint)(nil)
+var _ shila.serverEndpoint = (*ServerEndpoint)(nil)
+var _ shila.packet = (*Packet)(nil)
+var _ shila.address = (*Address)(nil)
+var _ shila.path = (*Path)(nil)
+*/
 
 type Endpoint struct{}
 
+/*
 type ClientEndpoint struct {
-	connectedTo   address
-	ingressBuffer chan *packet
-	egressBuffer  chan *packet
+	connectedTo   shila.address
+	ingressBuffer chan *shila.packet
+	egressBuffer  chan *shila.packet
 	connection    *net.TCPConn
 }
 
-func (c ClientEndpoint) New(connectTo address, connectVia path, ingressBuf chan *packet, egressBuf chan *packet) clientEndpoint {
+func (c ClientEndpoint) New(connectTo shila.address, connectVia shila.path, ingressBuf chan *shila.packet, egressBuf chan *shila.packet) shila.clientEndpoint {
 	_ = connectVia
 	return ClientEndpoint{connectedTo: connectTo, ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
 }
@@ -31,7 +27,7 @@ func (c ClientEndpoint) New(connectTo address, connectVia path, ingressBuf chan 
 func (c ClientEndpoint) Setup() error {
 
 	if c.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup client endpoint",
+		return shila.Error(fmt.Sprint("Unable to setup client endpoint",
 			" - ", "Already setup."))
 	}
 
@@ -41,7 +37,7 @@ func (c ClientEndpoint) Setup() error {
 	// Establish a connection to the server endpoint
 	if c.connection, err = net.DialTCP(dest.Network(), nil, &dest); err != nil {
 		c.connection = nil
-		return Error(fmt.Sprint("Unable to setup client endpoint",
+		return shila.Error(fmt.Sprint("Unable to setup client endpoint",
 			" - ", err.Error()))
 
 	}
@@ -62,7 +58,7 @@ func (c ClientEndpoint) IsSetup() bool {
 
 type ServerEndpoint struct{}
 
-func (s ServerEndpoint) New(listenTo address, ingressBuf chan *packet, egressBuf chan *packet) serverEndpoint {
+func (s ServerEndpoint) New(listenTo shila.address, ingressBuf chan *shila.packet, egressBuf chan *shila.packet) shila.serverEndpoint {
 	panic("implement me")
 }
 
@@ -76,11 +72,11 @@ func (s ServerEndpoint) TearDown() error {
 
 type Packet struct{}
 
-func (p Packet) SetAddress(address address) {
+func (p Packet) SetAddress(address shila.address) {
 	panic("implement me")
 }
 
-func (p Packet) GetAddress() address {
+func (p Packet) GetAddress() shila.address {
 	panic("implement me")
 }
 
@@ -104,17 +100,17 @@ func (a Address) New(s ...string) error {
 	if len(s) == 2 {
 		var ip net.IP
 		if ip = net.ParseIP(s[0]); ip != nil {
-			return Error(fmt.Sprint("Invalid IPv4TCPPacket: ", s[0]))
+			return shila.Error(fmt.Sprint("Invalid IPv4TCPPacket: ", s[0]))
 		}
 		var port int
 		if port, err = strconv.Atoi(s[1]); err != nil {
-			return Error(fmt.Sprint("Invalid Port: ", s[1]))
+			return shila.Error(fmt.Sprint("Invalid Port: ", s[1]))
 		}
 		a.Addr = net.TCPAddr{ip, port, ""}
 		return nil
 	}
 
-	return Error(fmt.Sprint("Invalid number of arguments."))
+	return shila.Error(fmt.Sprint("Invalid number of arguments."))
 }
 
 func (a Address) String() string {
@@ -134,3 +130,4 @@ func (p Path) String() string {
 	_ = p
 	return ""
 }
+*/

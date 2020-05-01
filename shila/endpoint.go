@@ -1,27 +1,29 @@
-package network
+package shila
 
-import "shila/shila"
+type EndpointLabel uint8
 
-type Error string
+const (
+	_                 		     = iota
+	KernelEndpoint EndpointLabel = iota
+)
 
-func (e Error) Error() string {
-	return string(e)
-}
+const ()
 
 type endpoint interface {
-	Setup() error
-	TearDown() error
+	Setup() 	error
+	TearDown() 	error
+	Label() 	EndpointLabel
 }
 
-type clientEndpoint interface {
-	New(connectTo address, connectVia path, ingressBuf chan *packet, egressBuf chan *packet) clientEndpoint
+type clientNetworkEndpoint interface {
+	New(connectTo address, connectVia path, ingressBuf chan *packet, egressBuf chan *packet) clientNetworkEndpoint
 	endpoint
 	// TODO: config?
 	// TODO: path renegotiation?
 }
 
-type serverEndpoint interface {
-	New(listenTo address, ingressBuf chan *packet, egressBuf chan *packet) serverEndpoint
+type serverNetworkEndpoint interface {
+	New(listenTo address, ingressBuf chan *packet, egressBuf chan *packet) serverNetworkEndpoint
 	endpoint
 }
 
@@ -29,8 +31,8 @@ type packet interface {
 	SetAddress(address address)
 	GetAddress() address
 
-	SetPayload(payload shila.IPv4TCPPacket)
-	GetPayload() shila.IPv4TCPPacket
+	SetPayload(payload IPv4TCPPacket)
+	GetPayload() IPv4TCPPacket
 }
 
 // Should be able to create the address

@@ -1,8 +1,8 @@
 package connection
 
 import (
-	"fmt"
 	"sync"
+	"time"
 )
 
 type Error string
@@ -19,7 +19,29 @@ type Mapping struct {
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[ID] *Connection), sync.Mutex{}}
+	m := &Mapping{make(map[ID] *Connection), sync.Mutex{}}
+	go m.vacuum()
+	return m
+}
+
+// Go through all connections and check whether they are still in use or not.
+// If the connections were not touched for a certain time, they are removed from
+// the mapping. Note that they are not delete, just set to closed and removed
+// from the mapping. Deleting of the connection is done by the GC as soon as there
+// is no more reference pointing to the connection.
+func (m *Mapping) vacuum() {
+	for {
+		// TODO: Make vacuum interval configurable
+		time.Sleep(time.Second)
+		m.lock.Lock()
+		for key, con := range m.connections {
+			if time.Since(con.touched) > (20 * time.Second) {
+				con.Close()
+				delete(m.connections, key)
+			}
+		}
+		m.lock.Unlock()
+	}
 }
 
 func (m *Mapping) Retrieve(id ID) *Connection {
@@ -28,30 +50,8 @@ func (m *Mapping) Retrieve(id ID) *Connection {
 	if con, ok := m.connections[id]; ok {
 		return con
 	} else {
-		newCon := New()
+		newCon := New(id)
 		m.connections[id] = newCon
 		return newCon
-	}
-}
-
-func (m *Mapping) add(id ID, con *Connection) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	if _, ok := m.connections[id]; !ok {
-		m.connections[id] = con
-		return nil
-	} else {
-		return Error(fmt.Sprint("Connection with id ", id, " already present."))
-	}
-}
-
-func (m *Mapping) remove(id ID, con *Connection) error {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	if _, ok := m.connections[id]; ok {
-		delete(m.connections, id)
-		return nil
-	} else {
-		return Error(fmt.Sprint("Non connection with id ", id, " present."))
 	}
 }

@@ -47,10 +47,11 @@ func processKerepIngress(p *shila.Packet) {
 		log.Error.Panicln(err.Error())
 	} else {
 		con = mapping.Retrieve(connection.ID(key))
-		//log.Verbose.Print("Connection: ", &con, " - Packet key: ", key)
 	}
 
-	_ = con
+	if err := con.ProcessPacket(p); err != nil {
+		log.Error.Panicln(err.Error())
+	}
 
 	/*
 	// Decode the IPv4 options of the packet

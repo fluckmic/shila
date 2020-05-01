@@ -13,10 +13,13 @@ func (e Error) Error() string {
 
 type PacketPayload  IPv4TCPPacket
 
+// TODO: Add an additional label to make parsing of entry point easier.
+
 type Packet struct {
-	id		*PacketID
-	header 	*PacketHeader
-	payload PacketPayload
+	entryPoint  endpoint
+	id			*PacketID
+	header 		*PacketHeader
+	payload 	PacketPayload
 }
 
 // Has to be parsed for every packet
@@ -36,8 +39,8 @@ type IPv4TCPPacket struct {
 	Raw      []byte
 }
 
-func NewPacketFromRawIP(raw []byte) *Packet {
-	return &Packet{nil,nil, PacketPayload{raw}}
+func NewPacketFromRawIP(ep endpoint, raw []byte) *Packet {
+	return &Packet{ep,nil, nil, PacketPayload{raw}}
 }
 
 func (p *Packet) ID() (*PacketID, error) {
@@ -59,4 +62,8 @@ func (p *Packet) Key() (string, error) {
 
 func (p *Packet) RawPayload() []byte {
 	return p.payload.Raw
+}
+
+func (p *Packet) EntryPoint() endpoint {
+	return p.entryPoint
 }
