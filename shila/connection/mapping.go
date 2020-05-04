@@ -1,6 +1,8 @@
 package connection
 
 import (
+	"shila/kernelSide"
+	"shila/networkSide"
 	"sync"
 	"time"
 )
@@ -14,12 +16,14 @@ func (e Error) Error() string {
 type ID string
 
 type Mapping struct {
+	kernelSide 	*kernelSide.Manager
+	networkSide *networkSide.Manager
 	connections map[ID] *Connection
 	lock		sync.Mutex
 }
 
-func NewMapping() *Mapping {
-	m := &Mapping{make(map[ID] *Connection), sync.Mutex{}}
+func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager) *Mapping {
+	m := &Mapping{kernelSide, networkSide, make(map[ID] *Connection), sync.Mutex{}}
 	go m.vacuum()
 	return m
 }
@@ -50,7 +54,7 @@ func (m *Mapping) Retrieve(id ID) *Connection {
 	if con, ok := m.connections[id]; ok {
 		return con
 	} else {
-		newCon := New(id)
+		newCon := New(m.kernelSide, m.networkSide, id)
 		m.connections[id] = newCon
 		return newCon
 	}

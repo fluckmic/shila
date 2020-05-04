@@ -1,7 +1,7 @@
 package stumps
 
 import (
-	"shila/kersi"
+	"shila/kernelSide"
 	"shila/log"
 	"shila/shila"
 	"shila/shila/connection"
@@ -10,18 +10,18 @@ import (
 // Will be part of the core config
 var nKerepIngressHandler = 2
 
-var kernelSide 	*kersi.Manager
-var mapping 	*connection.Mapping
+var kernsi	 *kernelSide.Manager
+var mapping  *connection.Mapping
 
-func Setup(kersi *kersi.Manager) error {
-	kernelSide 	= kersi
-	mapping 	= connection.NewMapping()
+func Setup(kersi *kernelSide.Manager) error {
+	kernsi = kersi
+	mapping 	= connection.NewMapping(kernsi, nil)
 	return nil
 }
 
 func Start() error {
-	for kerepKey, ep := range kernelSide.Endpoints {
-		go serveKerepIngress(ep.TrafficChannels().Ingress, kerepKey)
+	for kerepKey, ep := range kernsi.Endpoints {
+		go serveKerepIngress(ep.TrafficChannels().Ingress, string(kerepKey))
 	}
 	return nil
 }

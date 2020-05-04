@@ -1,4 +1,4 @@
-package kerep
+package kernelEndpoint
 
 import (
 	"encoding/binary"

@@ -1,13 +1,13 @@
 // TODO: Add a more detailed description.
 // application endpoint
-package kerep
+package kernelEndpoint
 
 import (
 	"fmt"
 	"io"
 	"shila/config"
 	"shila/helper"
-	"shila/kersi/kerep/vif"
+	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/log"
 	"shila/shila"
 )

@@ -1,19 +1,22 @@
-package kersi
+package kernelSide
 
 import (
 	"fmt"
 	"net"
 	"shila/config"
 	"shila/helper"
-	"shila/kersi/kerep"
+	"shila/kernelSide/kernelEndpoint"
 	"shila/log"
+	"shila/shila"
 )
 
 type Manager struct {
-	Endpoints map[string]*kerep.Device
+	Endpoints map[_IPv4_] *kernelEndpoint.Device
 	config    config.Config
 	isRunning bool
 }
+
+type _IPv4_ string
 
 type Error string
 
@@ -35,7 +38,7 @@ func (m *Manager) Setup() error {
 	kCfg := m.config.KernelSide
 
 	// Setup the mapping holding the kernel endpoints
-	m.Endpoints = make(map[string]*kerep.Device)
+	m.Endpoints = make(map[_IPv4_]*kernelEndpoint.Device)
 
 	// Setup the namespaces
 	if err := m.setupNamespaces(); err != nil {
@@ -143,6 +146,14 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
+func (m *Manager) RetrieveTrafficChannels(IP net.IP) (shila.TrafficChannels, bool) {
+	if endpoint, ok := m.Endpoints[_IPv4_(IP.String())]; !ok {
+		return shila.TrafficChannels{}, false
+	} else {
+		return endpoint.TrafficChannels(), true
+	}
+}
+
 // clearKernelEndpoints just empties the mapping
 // but does not deallocate the endpoints beforehand!
 func (m *Manager) clearKernelEndpoints() {
@@ -217,16 +228,16 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 		for i := 0; i < int(n); i++ {
 
 			// First create the identifier..
-			newKerepId := kerep.NewIdentifier(uint(len(m.Endpoints)+1), ns,
+			newKerepId := kernelEndpoint.NewIdentifier(uint(len(m.Endpoints)+1), ns,
 				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
 
 			// ..then create the kernel endpoint..
-			newKerep := kerep.New(newKerepId, m.config.KernelEndpoint)
+			newKerep := kernelEndpoint.New(newKerepId, m.config.KernelEndpoint)
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
-			if _, ok := m.Endpoints[newKerepKey]; !ok {
-				m.Endpoints[newKerepId.Key()] = newKerep
+			if _, ok := m.Endpoints[_IPv4_(newKerepKey)]; !ok {
+				m.Endpoints[_IPv4_(newKerepId.Key())] = newKerep
 				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.

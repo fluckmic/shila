@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"shila/config"
-	"shila/kersi"
+	"shila/kernelSide"
 	"shila/log"
 	"shila/shutdown"
 	"shila/stumps"
@@ -39,7 +39,7 @@ func realMain() int {
 	}
 
 	// Create and setup the kernel side
-	var kernelSide = kersi.New(cfg)
+	var kernelSide = kernelSide.New(cfg)
 	if err = kernelSide.Setup(); err != nil {
 		log.Error.Fatalln("Fatal error -", err.Error())
 	}

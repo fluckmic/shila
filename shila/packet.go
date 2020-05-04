@@ -49,7 +49,7 @@ func NewPacketFromRawIP(ep Endpoint, raw []byte) *Packet {
 func (p *Packet) ID() (*PacketID, error) {
 	if p.id == nil {
 		if err := decodePacketID(p); err != nil {
-			return nil, Error(fmt.Sprint("Could not decode packet id", " - ", err.Error()))
+			return nil, Error(fmt.Sprint("Could not decode packet id - ", err.Error()))
 		}
 	}
 	return p.id, nil
@@ -71,8 +71,17 @@ func (p *Packet) EntryPoint() Endpoint {
 	return p.entryPoint
 }
 
-func (p *Packet) PacketHeader() *PacketHeader {
-	return p.header
+func (p *Packet) PacketHeader() (*PacketHeader, error) {
+	if p.header == nil {
+		if err := decodePacketHeader(p); err != nil {
+			return nil, Error(fmt.Sprint("Could not decode packet header - ", err.Error()))
+		}
+	}
+	return p.header, nil
+}
+
+func (p *Packet) SetPacketHeader(header *PacketHeader) {
+	p.header = header
 }
 
 func decodePacketID(p *Packet) error {
@@ -90,6 +99,10 @@ func decodePacketID(p *Packet) error {
 		p.id.Dst.Port 	= int(tcp.DstPort)
 	}
 
+	return nil
+}
+
+func decodePacketHeader(p *Packet) error {
 	return nil
 }
 
