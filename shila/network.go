@@ -15,8 +15,8 @@ type NetworkPath interface {
 }
 
 type NetworkEndpoint interface {
-	NewClient(connectTo NetworkAddress, connectVia NetworkPath, ingressBuf PacketChannel, egressBuf PacketChannel) ClientNetworkEndpoint
-	NewServer(listenTo NetworkAddress, ingressBuf PacketChannel, egressBuf PacketChannel) ServerNetworkEndpoint
+	NewClient(connectTo NetworkAddress, connectVia NetworkPath, label EndpointLabel, channels TrafficChannels) ClientNetworkEndpoint
+	NewServer(listenTo NetworkAddress, label EndpointLabel, channels TrafficChannels) ServerNetworkEndpoint
 }
 
 type ClientNetworkEndpoint interface {

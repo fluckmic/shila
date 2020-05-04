@@ -16,27 +16,31 @@ var _ shila.NetworkPath = (*Path)(nil)
 
 type Generator struct{}
 
-func (g Generator) NewClient(cT shila.NetworkAddress, cV shila.NetworkPath,
-	iB shila.PacketChannel, eB shila.PacketChannel) shila.ClientNetworkEndpoint {
-	return newClient(cT, cV, iB, eB)
+type Base struct {
+	label shila.EndpointLabel
+	trafficChannels shila.TrafficChannels
 }
 
-func (g Generator) NewServer(lT shila.NetworkAddress, iB shila.PacketChannel,
-	eB shila.PacketChannel) shila.ServerNetworkEndpoint {
-	return newServer(lT, iB, eB)
+func (g Generator) NewClient(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
+	label shila.EndpointLabel, channels shila.TrafficChannels) shila.ClientNetworkEndpoint {
+	return newClient(connectTo, connectVia, label, channels)
+}
+
+func (g Generator) NewServer(listenTo shila.NetworkAddress, label shila.EndpointLabel,
+	channels shila.TrafficChannels) shila.ServerNetworkEndpoint {
+	return newServer(listenTo, label, channels)
 }
 
 type Client struct {
-	connectedTo   Address
-	ingressBuffer shila.PacketChannel
-	egressBuffer  shila.PacketChannel
-	connection    *net.TCPConn
+	connectedTo Address
+	connection  *net.TCPConn
+	Base
 }
 
 func newClient(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
-	ingressBuf shila.PacketChannel, egressBuf shila.PacketChannel) shila.ClientNetworkEndpoint {
+	label shila.EndpointLabel, channels shila.TrafficChannels) shila.ClientNetworkEndpoint {
 	_ = connectVia
-	return &Client{connectedTo: connectTo.(Address), ingressBuffer: ingressBuf, egressBuffer: egressBuf, connection: nil}
+	return &Client{connectTo.(Address), nil, Base{label, channels}}
 }
 
 func (c *Client) SetupAndRun() error {
@@ -71,15 +75,21 @@ func (c *Client) IsSetup() bool {
 	return c.connection != nil
 }
 
-func (c *Client) Label() shila.EndpointLabel {
-	return shila.NetworkClientEndpoint
+func (c *Client) TrafficChannels() shila.TrafficChannels {
+	return c.trafficChannels
 }
 
-type Server struct{}
+func (c *Client) Label() shila.EndpointLabel {
+	return c.label
+}
 
-func newServer(listenTo shila.NetworkAddress, ingressBuf shila.PacketChannel,
-	egressBuf shila.PacketChannel) shila.ServerNetworkEndpoint {
-	panic("implement me")
+type Server struct{
+	listenTo shila.NetworkAddress
+	Base
+}
+
+func newServer(listenTo shila.NetworkAddress, label shila.EndpointLabel, channels shila.TrafficChannels) shila.ServerNetworkEndpoint {
+	return &Server{listenTo, Base{label, channels}}
 }
 
 func (s *Server) SetupAndRun() error {
@@ -90,8 +100,12 @@ func (s *Server) TearDown() error {
 	panic("implement me")
 }
 
-func (c *Server) Label() shila.EndpointLabel {
-	return shila.NetworkServerEndpoint
+func (s *Server) TrafficChannels() shila.TrafficChannels {
+	return s.trafficChannels
+}
+
+func (s *Server) Label() shila.EndpointLabel {
+	return s.label
 }
 
 type Address struct {

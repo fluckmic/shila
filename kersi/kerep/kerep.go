@@ -14,7 +14,7 @@ import (
 
 type Device struct {
 	Id         Identifier
-	Channels   *Channel
+	channels   *Channel
 	config     config.KernelEndpoint
 	packetizer *Device
 	vif        *vif.Device
@@ -24,9 +24,8 @@ type Device struct {
 }
 
 type Channel struct {
-	ingressRaw chan byte
-	Ingress    chan *shila.Packet
-	Egress     chan *shila.Packet
+	ingressRaw 		chan byte
+	trafficChannels shila.TrafficChannels
 }
 
 type Error string
@@ -36,7 +35,7 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
-	var buf = Channel{nil, nil, nil}
+	var buf = Channel{trafficChannels: shila.TrafficChannels{}}
 	return &Device{id, &buf, config, nil, nil, true, false, false}
 }
 
@@ -84,9 +83,9 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the buffers
-	d.Channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.Channels.Ingress = make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.Channels.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
+	d.channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
+	d.channels.trafficChannels.Ingress= make(chan *shila.Packet, d.config.SizeIngressBuff)
+	d.channels.trafficChannels.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
 	d.isSetup = true
 	return nil
@@ -106,8 +105,8 @@ func (d *Device) TearDown() error {
 	err = d.vif.Teardown()
 
 	d.vif = nil
-	d.Channels.Ingress = nil
-	d.Channels.Egress = nil
+	d.channels.trafficChannels.Ingress = nil
+	d.channels.trafficChannels.Egress = nil
 
 	return err
 }
@@ -198,14 +197,14 @@ func (d *Device) serveIngress() {
 			panic("implement me") //TODO!
 		}
 		for _, b := range storage[:nBytesRead] {
-			d.Channels.ingressRaw <- b
+			d.channels.ingressRaw <- b
 		}
 	}
 }
 
 func (d *Device) serveEgress() {
 	writer := io.Writer(d.vif)
-	for p := range d.Channels.Egress {
+	for p := range d.channels.trafficChannels.Egress {
 		_, err := writer.Write(p.RawPayload())
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
@@ -218,4 +217,8 @@ func (d *Device) serveEgress() {
 
 func (d *Device) Label() shila.EndpointLabel {
 	return shila.KernelEndpoint
+}
+
+func (d *Device) TrafficChannels() shila.TrafficChannels {
+	return d.channels.trafficChannels
 }

@@ -3,13 +3,14 @@ package shila
 type EndpointLabel uint8
 
 const (
-	_                 		     		  = iota
-	KernelEndpoint 			EndpointLabel = iota
-	NetworkClientEndpoint
-	NetworkServerEndpoint
+	_                 		    	 		  = iota
+	KernelEndpoint 				EndpointLabel = iota
+	ContactingNetworkEndpoint
+	TrafficNetworkEndpoint
 )
 
 type Endpoint interface {
-	TearDown() 	error
-	Label() 	EndpointLabel
+	TearDown() 			error
+	Label() 			EndpointLabel
+	TrafficChannels()	TrafficChannels
 }
