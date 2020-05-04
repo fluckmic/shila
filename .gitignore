@@ -1,0 +1,19 @@
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+go_*
+_usr_local_go_*
+
+# Test binary, built with `go test -c`
+*.test
+
+# GoLand folders
+.idea/
+
+# Logs
+log-*
