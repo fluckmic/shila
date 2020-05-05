@@ -84,7 +84,7 @@ func (c *Connection) processPacketFromKerep(p *shila.Packet) error {
 
 	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
-		p.SetPacketHeader(c.header)
+							p.SetPacketHeader(c.header)
 							c.channels.NetworkEndpoint.Egress <- p
 							return nil
 
@@ -204,7 +204,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet
 		c.state = Closed
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
-		if channels, ok := c.kernelSide.RetrieveTrafficChannels(id.Dst.IP); ok {
+		if channels, ok := c.kernelSide.GetTrafficChannels(id.Dst.IP); ok {
 			c.channels.KernelEndpoint = channels
 		} else {
 			c.state = Closed

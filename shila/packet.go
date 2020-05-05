@@ -80,6 +80,9 @@ func (p *Packet) PacketHeader() (*PacketHeader, error) {
 	return p.header, nil
 }
 
+// Used by:
+// - Receiving network endpoint
+// - Sending established connection
 func (p *Packet) SetPacketHeader(header *PacketHeader) {
 	p.header = header
 }
@@ -103,6 +106,11 @@ func decodePacketID(p *Packet) error {
 }
 
 func decodePacketHeader(p *Packet) error {
+
+	// Decoding the packet header should just be necessary when a packet
+
+
+	// Determine source and destination address
 	return nil
 }
 

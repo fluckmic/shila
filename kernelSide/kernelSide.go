@@ -11,12 +11,14 @@ import (
 )
 
 type Manager struct {
-	Endpoints map[_IPv4_] *kernelEndpoint.Device
 	config    config.Config
+	endpoints EndpointMapping
 	isRunning bool
+	isSetup   bool
 }
 
 type _IPv4_ string
+type EndpointMapping map[_IPv4_] *kernelEndpoint.Device
 
 type Error string
 
@@ -25,7 +27,8 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config) *Manager {
-	return &Manager{nil, config, false}
+	// Setup the mapping holding the kernel endpoints
+	return &Manager{config,make(EndpointMapping), false, false}
 }
 
 func (m *Manager) Setup() error {
@@ -36,9 +39,6 @@ func (m *Manager) Setup() error {
 	}
 
 	kCfg := m.config.KernelSide
-
-	// Setup the mapping holding the kernel endpoints
-	m.Endpoints = make(map[_IPv4_]*kernelEndpoint.Device)
 
 	// Setup the namespaces
 	if err := m.setupNamespaces(); err != nil {
@@ -82,6 +82,7 @@ func (m *Manager) Setup() error {
 			" - ", err.Error()))
 	}
 
+	m.isSetup = true
 	return nil
 }
 
@@ -99,6 +100,9 @@ func (m *Manager) CleanUp() error {
 	m.clearKernelEndpoints()
 	err = m.clearAdditionalRouting()
 	err = m.removeNamespaces()
+
+	m.isSetup 	= false
+	m.isRunning = false
 
 	log.Info.Println("Kernel side mopped.")
 	return err
@@ -122,6 +126,7 @@ func (m *Manager) Start() error {
 		return Error(fmt.Sprint("Cannot start kernel side",
 			" - ", err.Error()))
 	}
+
 	m.isRunning = true
 
 	log.Verbose.Println("Kernel side started.")
@@ -130,7 +135,7 @@ func (m *Manager) Start() error {
 }
 
 func (m *Manager) IsSetup() bool {
-	return len(m.Endpoints) > 0
+	return m.isSetup
 }
 
 func (m *Manager) IsRunning() bool {
@@ -138,7 +143,7 @@ func (m *Manager) IsRunning() bool {
 }
 
 func (m *Manager) setupKernelEndpoints() error {
-	for _, kerep := range m.Endpoints {
+	for _, kerep := range m.endpoints {
 		if err := kerep.Setup(); err != nil {
 			return err
 		}
@@ -146,8 +151,12 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) RetrieveTrafficChannels(IP net.IP) (shila.TrafficChannels, bool) {
-	if endpoint, ok := m.Endpoints[_IPv4_(IP.String())]; !ok {
+func (m *Manager) GetEndpoints() *EndpointMapping {
+		return &m.endpoints
+}
+
+func (m *Manager) GetTrafficChannels(IP net.IP) (shila.TrafficChannels, bool) {
+	if endpoint, ok := m.endpoints[_IPv4_(IP.String())]; !ok {
 		return shila.TrafficChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
@@ -157,14 +166,14 @@ func (m *Manager) RetrieveTrafficChannels(IP net.IP) (shila.TrafficChannels, boo
 // clearKernelEndpoints just empties the mapping
 // but does not deallocate the endpoints beforehand!
 func (m *Manager) clearKernelEndpoints() {
-	for k := range m.Endpoints {
-		delete(m.Endpoints, k)
+	for k := range m.endpoints {
+		delete(m.endpoints, k)
 	}
 }
 
 func (m *Manager) tearDownKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.Endpoints {
+	for _, kerep := range m.endpoints {
 		if kerep.IsSetup() {
 			_ = kerep.TearDown()
 		}
@@ -174,7 +183,7 @@ func (m *Manager) tearDownKernelEndpoints() error {
 
 func (m *Manager) startKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.Endpoints {
+	for _, kerep := range m.endpoints {
 		if err = kerep.Start(); err != nil {
 			_ = m.tearDownKernelEndpoints()
 			return err
@@ -228,7 +237,7 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 		for i := 0; i < int(n); i++ {
 
 			// First create the identifier..
-			newKerepId := kernelEndpoint.NewIdentifier(uint(len(m.Endpoints)+1), ns,
+			newKerepId := kernelEndpoint.NewIdentifier(uint(len(m.endpoints)+1), ns,
 				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
 
 			// ..then create the kernel endpoint..
@@ -236,8 +245,8 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
-			if _, ok := m.Endpoints[_IPv4_(newKerepKey)]; !ok {
-				m.Endpoints[_IPv4_(newKerepId.Key())] = newKerep
+			if _, ok := m.endpoints[_IPv4_(newKerepKey)]; !ok {
+				m.endpoints[_IPv4_(newKerepId.Key())] = newKerep
 				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.

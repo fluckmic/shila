@@ -1,19 +1,51 @@
 package networkSide
 
 import (
+	"fmt"
+	"shila/config"
 	"shila/shila"
 )
 
 type Manager struct {
-	Endpoints map[_IPv4_] *shila.NetworkEndpoint
+	config    			config.Config
+	contactingServer	shila.ServerNetworkEndpoint
+	serverEndpoints		ServerEndpointMapping
+	clientEndpoints		ClientEndpointMapping
 }
 
 type _IPv4_ string
+type ServerEndpointMapping map[_IPv4_] *shila.ServerNetworkEndpoint
+type ClientEndpointMapping map[_IPv4_] *shila.ClientNetworkEndpoint
 
 type Error string
-
 func (e Error) Error() string {
 	return string(e)
+}
+
+func New(config config.Config) *Manager {
+	return &Manager{config, nil,
+		make(ServerEndpointMapping), make(ClientEndpointMapping)}
+}
+
+func (m *Manager) Setup() error {
+
+	if m.IsSetup() {
+		return Error(fmt.Sprint("Unable to setup kernel side",
+			" - ", "Already setup."))
+	}
+
+	kCfg := m.config.NetworkSide
+	_ = kCfg
+
+	return nil
+}
+
+func (m *Manager) Start() error {
+	return nil
+}
+
+func (m *Manager) CleanUp() {
+
 }
 
 func (m *Manager) EstablishNewServerEndpoint(addr shila.NetworkAddress) (shila.TrafficChannels, error) {
@@ -41,4 +73,12 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(addr shila.NetworkAddress, p
 	// Close the contacting client endpoint as soon as the traffic client endpoint is established.
 
 	return shila.TrafficChannels{}, nil
+}
+
+func (m *Manager) GetContactingServerEndpoint() shila.ServerNetworkEndpoint {
+	return m.contactingServer
+}
+
+func (m *Manager) IsSetup() bool {
+	return false
 }

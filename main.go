@@ -5,8 +5,10 @@ import (
 	"shila/config"
 	"shila/kernelSide"
 	"shila/log"
+	"shila/networkSide"
+	"shila/shila/connection"
 	"shila/shutdown"
-	"shila/stumps"
+	"shila/workingSide"
 )
 
 func main() {
@@ -39,24 +41,44 @@ func realMain() int {
 	}
 
 	// Create and setup the kernel side
-	var kernelSide = kernelSide.New(cfg)
+	kernelSide := kernelSide.New(cfg)
 	if err = kernelSide.Setup(); err != nil {
-		log.Error.Fatalln("Fatal error -", err.Error())
+		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}
+	log.Info.Println("Kernel side setup successfully.")
 	defer kernelSide.CleanUp()
 
-	// TODO: Create and setup the network side
+	// Create and setup the network side
+	networkSide := networkSide.New(cfg)
+	if err = networkSide.Setup(); err != nil {
+		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
+	}
+	log.Info.Println("Network side setup successfully.")
+	defer networkSide.CleanUp()
 
-	// TODO: Create and setup the core
-	stumps.Setup(kernelSide)
+	// Create the mapping holding the connections
+	connections := connection.NewMapping(kernelSide, networkSide)
+
+	// Create and setup the working side
+	workingSide := workingSide.New(cfg, kernelSide, networkSide, connections)
+	if err := workingSide.Setup(); err != nil {
+		log.Error.Fatalln("Unable to setup the working side - ", err.Error())
+	}
+	log.Info.Println("Working side setup successfully.")
+	defer workingSide.CleanUp()
 
 	log.Info.Println("Setup done, starting machinery..")
 
-	// TODO: Run the machinery.
-	_ = stumps.Start()
+	if err = workingSide.Start(); err != nil {
+		log.Error.Fatalln("Unable to start the working side - ", err.Error())
+	}
+
+	if err = networkSide.Start(); err != nil {
+		log.Error.Fatalln("Unable to start the network side - ", err.Error())
+	}
 
 	if err = kernelSide.Start(); err != nil {
-		log.Error.Fatalln("Fatal error -", err.Error())
+		log.Error.Fatalln("Unable to start the kernel side - ", err.Error())
 	}
 
 	log.Info.Println("Machinery up and running.")
