@@ -3,16 +3,19 @@ package networkEndpoint
 import (
 	"fmt"
 	"net"
+	"shila/config"
 	"shila/log"
 	"shila/shila"
 	"strconv"
 )
 
-var _ shila.NetworkEndpoint = (*Generator)(nil)
-var _ shila.ClientNetworkEndpoint = (*Client)(nil)
-var _ shila.ServerNetworkEndpoint = (*Server)(nil)
-var _ shila.NetworkAddress = (*Address)(nil)
-var _ shila.NetworkPath = (*Path)(nil)
+var _ shila.NetworkEndpointGenerator 	= (*Generator)(nil)
+var _ shila.NetworkAddressGenerator  	= (*Generator)(nil)
+var _ shila.NetworkPathGenerator 	 	= (*Generator)(nil)
+var _ shila.ClientNetworkEndpoint 		= (*Client)(nil)
+var _ shila.ServerNetworkEndpoint 		= (*Server)(nil)
+var _ shila.NetworkAddress 				= (*Address)(nil)
+var _ shila.NetworkPath 				= (*Path)(nil)
 
 type Generator struct{}
 
@@ -22,13 +25,25 @@ type Base struct {
 }
 
 func (g Generator) NewClient(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
-	label shila.EndpointLabel, channels shila.TrafficChannels) shila.ClientNetworkEndpoint {
-	return newClient(connectTo, connectVia, label, channels)
+	label shila.EndpointLabel, config config.NetworkEndpoint) shila.ClientNetworkEndpoint {
+	return newClient(connectTo, connectVia, label, config)
 }
 
 func (g Generator) NewServer(listenTo shila.NetworkAddress, label shila.EndpointLabel,
-	channels shila.TrafficChannels) shila.ServerNetworkEndpoint {
-	return newServer(listenTo, label, channels)
+	config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
+	return newServer(listenTo, label, config)
+}
+
+func (g Generator) NewAddress(address string) shila.NetworkAddress {
+	return newAddress(address)
+}
+
+func (g Generator) NewLocalAddress(port string) shila.NetworkAddress {
+	return newLocalNetworkAddress(port)
+}
+
+func (g Generator) NewPath(path string) shila.NetworkPath {
+	return newPath(path)
 }
 
 type Client struct {
@@ -38,9 +53,9 @@ type Client struct {
 }
 
 func newClient(connectTo shila.NetworkAddress, connectVia shila.NetworkPath,
-	label shila.EndpointLabel, channels shila.TrafficChannels) shila.ClientNetworkEndpoint {
+	label shila.EndpointLabel, config config.NetworkEndpoint) shila.ClientNetworkEndpoint {
 	_ = connectVia
-	return &Client{connectTo.(Address), nil, Base{label, channels}}
+	return &Client{connectTo.(Address), nil, Base{label, shila.TrafficChannels{}}}
 }
 
 func (c *Client) SetupAndRun() error {
@@ -88,12 +103,12 @@ type Server struct{
 	Base
 }
 
-func newServer(listenTo shila.NetworkAddress, label shila.EndpointLabel, channels shila.TrafficChannels) shila.ServerNetworkEndpoint {
-	return &Server{listenTo, Base{label, channels}}
+func newServer(listenTo shila.NetworkAddress, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
+	return &Server{listenTo, Base{label, shila.TrafficChannels{}}}
 }
 
 func (s *Server) SetupAndRun() error {
-	panic("implement me")
+	return nil
 }
 
 func (s *Server) TearDown() error {
@@ -112,25 +127,35 @@ type Address struct {
 	Addr net.TCPAddr
 }
 
-// First argument: <ip>
-// Second argument: <port>
-func (a Address) New(s ...string) error {
+// <ip>:<port>
+func newAddress(address string) shila.NetworkAddress {
 
-	var err error
-	if len(s) == 2 {
-		var ip net.IP
-		if ip = net.ParseIP(s[0]); ip != nil {
-			return shila.Error(fmt.Sprint("Invalid IPv4TCPPacket: ", s[0]))
-		}
-		var port int
-		if port, err = strconv.Atoi(s[1]); err != nil {
-			return shila.Error(fmt.Sprint("Invalid Port: ", s[1]))
-		}
-		a.Addr = net.TCPAddr{ip, port, ""}
+	if host, port, err := net.SplitHostPort(address); err != nil {
+		log.Error.Panic(fmt.Sprint("Unable to create new address from ", address, "."))
 		return nil
+	} else {
+		IPv4 := net.ParseIP(host)
+		Port, err := strconv.Atoi(port)
+		if IPv4 != nil || err != nil {
+			log.Error.Panic(fmt.Sprint("Unable to create new address from ", address, "."))
+			return nil
+		} else {
+			return Address{Addr: net.TCPAddr{IP: IPv4, Port: Port}}
+		}
 	}
 
-	return shila.Error(fmt.Sprint("Invalid number of arguments."))
+	return nil
+}
+
+// <port>
+func newLocalNetworkAddress(port string) shila.NetworkAddress {
+	if Port, err := strconv.Atoi(port); err != nil {
+		log.Error.Panic(fmt.Sprint("Unable to create new local address from ", port, "."))
+		return nil
+	} else {
+		return Address{Addr: net.TCPAddr{Port: Port}}
+	}
+return nil
 }
 
 func (a Address) String() string {
@@ -139,14 +164,12 @@ func (a Address) String() string {
 
 type Path struct{}
 
-func (p Path) New(s ...string) error {
+func newPath(path string) shila.NetworkPath {
 	// No path functionality w/ plain TCP.
-	_ = s
-	return nil
+	_ = path; return Path{}
 }
 
 func (p Path) String() string {
 	// No path functionality w/ plain TCP.
-	_ = p
 	return ""
 }

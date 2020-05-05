@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	verbose = false
+	verbose = true
 )
 
 var (

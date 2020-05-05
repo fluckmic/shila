@@ -16,10 +16,11 @@ type config interface {
 }
 
 type Config struct {
-	KernelSide     KernelSide
-	KernelEndpoint KernelEndpoint
-	NetworkSide    NetworkSide
-	WorkingSide	   WorkingSide
+	KernelSide     	KernelSide
+	KernelEndpoint 	KernelEndpoint
+	NetworkSide    	NetworkSide
+	NetworkEndpoint NetworkEndpoint
+	WorkingSide	   	WorkingSide
 }
 
 func (c *Config) InitDefault() (err error) {
@@ -46,6 +47,12 @@ func (c *Config) InitDefault() (err error) {
 	if err = c.NetworkSide.InitDefault(); err != nil {
 		return Error(fmt.Sprint("Unable to initialize default "+
 			"config for network side - ", err.Error()))
+	}
+
+	// Initialize configuration for the network endpoint
+	if err = c.NetworkEndpoint.InitDefault(); err != nil {
+		return Error(fmt.Sprint("Unable to initialize default "+
+			"config for network endpoint - ", err.Error()))
 	}
 
 	// Initialize configuration for the working side

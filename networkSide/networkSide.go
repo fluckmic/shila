@@ -3,6 +3,8 @@ package networkSide
 import (
 	"fmt"
 	"shila/config"
+	"shila/log"
+	"shila/networkSide/networkEndpoint"
 	"shila/shila"
 )
 
@@ -11,11 +13,13 @@ type Manager struct {
 	contactingServer	shila.ServerNetworkEndpoint
 	serverEndpoints		ServerEndpointMapping
 	clientEndpoints		ClientEndpointMapping
+	isRunning			bool
 }
 
-type _IPv4_ string
-type ServerEndpointMapping map[_IPv4_] *shila.ServerNetworkEndpoint
-type ClientEndpointMapping map[_IPv4_] *shila.ClientNetworkEndpoint
+type _NetworkAddress_ string
+type ServerEndpointMapping map[_NetworkAddress_] shila.ServerNetworkEndpoint
+type _NetworkAddressAndPath_ string
+type ClientEndpointMapping map[_NetworkAddressAndPath_] shila.ClientNetworkEndpoint
 
 type Error string
 func (e Error) Error() string {
@@ -23,24 +27,46 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config) *Manager {
-	return &Manager{config, nil,
-		make(ServerEndpointMapping), make(ClientEndpointMapping)}
+	return &Manager{config,nil,nil,nil, false}
 }
 
 func (m *Manager) Setup() error {
 
 	if m.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", "Already setup."))
+		return Error(fmt.Sprint("Unable to setup kernel side - Already setup."))
 	}
 
-	kCfg := m.config.NetworkSide
-	_ = kCfg
+	// Create the contacting server
+	addr := networkEndpoint.Generator{}.NewLocalAddress(m.config.NetworkSide.ContactingServerPort)
+	m.contactingServer = networkEndpoint.Generator{}.NewServer(addr, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+
+	// Create the mappings
+	m.serverEndpoints = make(ServerEndpointMapping)
+	m.clientEndpoints = make(ClientEndpointMapping)
 
 	return nil
 }
 
 func (m *Manager) Start() error {
+
+	if !m.IsSetup() {
+		return Error(fmt.Sprint("Cannot start network side - Network side not yet setup."))
+	}
+
+	if m.IsRunning() {
+		return Error(fmt.Sprint("Cannot start network side - Network side already running."))
+	}
+
+	log.Verbose.Println("Starting network side...")
+
+	if err := m.contactingServer.SetupAndRun(); err != nil {
+		return Error(fmt.Sprint("Cannot start network side - ", err.Error()))
+	}
+
+	m.isRunning = true
+
+	log.Verbose.Println("Network side started.")
+
 	return nil
 }
 
@@ -49,10 +75,25 @@ func (m *Manager) CleanUp() {
 }
 
 func (m *Manager) EstablishNewServerEndpoint(addr shila.NetworkAddress) (shila.TrafficChannels, error) {
-	return shila.TrafficChannels{}, nil
+
+	// If there already exists a server endpoint listening for addr, return its channels
+	if ep, ok := m.serverEndpoints[_NetworkAddress_(addr.String())]; ok {
+		return ep.TrafficChannels(), nil
+	} else {
+	// Otherwise establish a new one
+		newServerEndpoint := networkEndpoint.Generator{}.NewServer(addr, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		if err := newServerEndpoint.SetupAndRun(); err != nil {
+			return shila.TrafficChannels{}, Error(fmt.Sprint("Unable to establish new server endpoint - ", err.Error()))
+		}
+
+		// TODO: Inform worker about new channels!
+
+		return newServerEndpoint.TrafficChannels(), nil
+	}
 }
 
 func (m *Manager) EstablishNewContactingClientEndpoint(addr shila.NetworkAddress) (shila.TrafficChannels, error) {
+
 	/*
 		// TODO: Config!
 		egress  :=  make(shila.PacketChannel, 10)
@@ -80,5 +121,9 @@ func (m *Manager) GetContactingServerEndpoint() shila.ServerNetworkEndpoint {
 }
 
 func (m *Manager) IsSetup() bool {
-	return false
+	return m.contactingServer != nil
+}
+
+func (m *Manager) IsRunning() bool {
+	return m.isRunning
 }
