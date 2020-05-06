@@ -12,12 +12,27 @@ import (
 var _ shila.NetworkEndpointGenerator 	= (*Generator)(nil)
 var _ shila.NetworkAddressGenerator  	= (*Generator)(nil)
 var _ shila.NetworkPathGenerator 	 	= (*Generator)(nil)
+var _ shila.NetworkKeyGenerator			= (*Generator)(nil)
 var _ shila.ClientNetworkEndpoint 		= (*Client)(nil)
 var _ shila.ServerNetworkEndpoint 		= (*Server)(nil)
 var _ shila.NetworkAddress 				= (*Address)(nil)
 var _ shila.NetworkPath 				= (*Path)(nil)
 
 type Generator struct{}
+
+func (g Generator) GetDefaultContactingPath(address shila.NetworkAddress) shila.NetworkPath {
+	_ = address
+	return g.NewPath("")
+}
+
+func (g Generator) GetAddressKey(address shila.NetworkAddress) shila.Key_NetworkAddress_ {
+	return shila.Key_NetworkAddress_(address.String())
+}
+
+func (g Generator) GetAddressPathKey(address shila.NetworkAddress, path shila.NetworkPath) shila.Key_NetworkAddressAndPath_ {
+	_ = path
+	return shila.Key_NetworkAddressAndPath_(address.String())
+}
 
 type Base struct {
 	label shila.EndpointLabel

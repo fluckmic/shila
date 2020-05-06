@@ -6,6 +6,7 @@ import (
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
+	"shila/shila"
 	"shila/shila/connection"
 	"shila/shutdown"
 	"shila/workingSide"
@@ -40,8 +41,11 @@ func realMain() int {
 		log.Error.Fatalln("Fatal error -", err.Error())
 	}
 
+	// Create the channel used to announce new traffic channels
+	trafficChannelAnnouncements := make(chan shila.TrafficChannels)
+
 	// Create and setup the kernel side
-	kernelSide := kernelSide.New(cfg)
+	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)
 	if err = kernelSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}
@@ -49,7 +53,7 @@ func realMain() int {
 	defer kernelSide.CleanUp()
 
 	// Create and setup the network side
-	networkSide := networkSide.New(cfg)
+	networkSide := networkSide.New(cfg, trafficChannelAnnouncements)
 	if err = networkSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
 	}
@@ -60,7 +64,7 @@ func realMain() int {
 	connections := connection.NewMapping(kernelSide, networkSide)
 
 	// Create and setup the working side
-	workingSide := workingSide.New(cfg, kernelSide, networkSide, connections)
+	workingSide := workingSide.New(cfg, connections, trafficChannelAnnouncements)
 	if err := workingSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the working side - ", err.Error())
 	}

@@ -11,10 +11,11 @@ import (
 )
 
 type Manager struct {
-	config    config.Config
-	endpoints EndpointMapping
-	isRunning bool
-	isSetup   bool
+	config    	config.Config
+	endpoints 	EndpointMapping
+	isRunning 	bool
+	isSetup   	bool
+	workingSide chan shila.TrafficChannels
 }
 
 type _IPv4_ string
@@ -26,9 +27,9 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(config config.Config) *Manager {
+func New(config config.Config, workingSide chan shila.TrafficChannels) *Manager {
 	// Setup the mapping holding the kernel endpoints
-	return &Manager{config,make(EndpointMapping), false, false}
+	return &Manager{config,make(EndpointMapping), false, false, workingSide}
 }
 
 func (m *Manager) Setup() error {
@@ -127,6 +128,11 @@ func (m *Manager) Start() error {
 			" - ", err.Error()))
 	}
 
+	// Announce all the traffic channels to the working side
+	for _, kerep := range m.endpoints {
+		m.workingSide <- kerep.TrafficChannels()
+	}
+
 	m.isRunning = true
 
 	log.Verbose.Println("Kernel side started.")
@@ -149,10 +155,6 @@ func (m *Manager) setupKernelEndpoints() error {
 		}
 	}
 	return nil
-}
-
-func (m *Manager) GetEndpoints() *EndpointMapping {
-		return &m.endpoints
 }
 
 func (m *Manager) GetTrafficChannels(IP net.IP) (shila.TrafficChannels, bool) {

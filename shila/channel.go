@@ -7,7 +7,3 @@ type TrafficChannels struct {
 	Egress  PacketChannel
 }
 
-type ContactingChannel struct {
-	Endpoint ClientNetworkEndpoint
-	Channels TrafficChannels
-}
