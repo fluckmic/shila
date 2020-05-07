@@ -10,7 +10,7 @@ type WorkingSide struct {
 
 func (ws *WorkingSide) InitDefault() error {
 
-	ws.NumberOfWorkerPerChannel = 3
+	ws.NumberOfWorkerPerChannel = 1
 
 	return nil
 }

@@ -24,8 +24,8 @@ func (k *KernelEndpoint) InitDefault() error {
 	k.SizeReadBuffer = 1500
 	k.BatchSizeRead = 30
 
-	k.MaxNVifReader = 3
-	k.MaxNVifWriter = 3
+	k.MaxNVifReader = 1
+	k.MaxNVifWriter = 1
 
 	return nil
 }

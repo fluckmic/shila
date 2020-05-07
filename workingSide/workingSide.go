@@ -34,22 +34,24 @@ func (m *Manager) Start() error {
 
 	go func() {
 		for ch := range m.trafficChannelAnnouncements {
-			go m.serveChannel(ch.Ingress, ch.Key, ch.Label, m.config.WorkingSide.NumberOfWorkerPerChannel)
-			go m.serveChannel(ch.Egress,  ch.Key, ch.Label, m.config.WorkingSide.NumberOfWorkerPerChannel)
+			go m.serveChannel(ch.Ingress, ch.Key, ch.Label, "ingress", m.config.WorkingSide.NumberOfWorkerPerChannel)
+			go m.serveChannel(ch.Egress,  ch.Key, ch.Label, "egress",  m.config.WorkingSide.NumberOfWorkerPerChannel)
 		}
 	}()
 
 	return nil
 }
 
-func (m *Manager) serveChannel(buffer model.PacketChannel, endpointKey model.EndpointKey, endpointLabel model.EndpointLabel, numberOfWorker int) {
+func (m *Manager) serveChannel(buffer model.PacketChannel, endpointKey model.EndpointKey,
+	endpointLabel model.EndpointLabel, direction string, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
-		go m.handleChannel(buffer, endpointKey, endpointLabel, id)
+		go m.handleChannel(buffer, endpointKey, endpointLabel, direction, id)
 	}
 }
 
-func (m *Manager) handleChannel(buffer model.PacketChannel, endpointKey model.EndpointKey, endpointLabel model.EndpointLabel, handlerId int) {
-	log.Verbose.Print("Started ", endpointLabel, " packet channel handler #", handlerId, " for ", endpointKey, ".")
+func (m *Manager) handleChannel(buffer model.PacketChannel, endpointKey model.EndpointKey,
+	endpointLabel model.EndpointLabel, direction string, handlerId int) {
+	log.Verbose.Print("Started ", direction, " ", endpointLabel, " packet channel handler #", handlerId, " for ", endpointKey, ".")
 	for p := range buffer {
 		m.processChannel(p)
 	}

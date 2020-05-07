@@ -18,6 +18,7 @@ func (e Error) Error() string {
 type Base struct {
 	label           model.EndpointLabel
 	trafficChannels model.TrafficChannels
+	config 			config.NetworkEndpoint
 }
 type Generator struct{}
 
@@ -56,3 +57,4 @@ func (g Generator) NewLocalAddress(port string) model.NetworkAddress {
 func (g Generator) NewPath(path string) model.NetworkPath {
 	return newPath(path)
 }
+
