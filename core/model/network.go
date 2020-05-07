@@ -1,4 +1,4 @@
-package shila
+package model
 
 import (
 	"shila/config"
@@ -8,9 +8,14 @@ import (
 type Key_NetworkAddress_ 		string
 type Key_NetworkAddressAndPath_ string
 
+type ServerNetworkEndpointAndConnectionCount struct {
+	Endpoint ServerNetworkEndpoint
+	ConnectionCount int
+}
+
 // Mappings
-type ServerEndpointMapping map[Key_NetworkAddress_] ServerNetworkEndpoint
-type ClientEndpointMapping map[Key_NetworkAddressAndPath_] ClientNetworkEndpoint
+type ServerEndpointMapping map[Key_NetworkAddress_] 		ServerNetworkEndpointAndConnectionCount
+type ClientEndpointMapping map[Key_NetworkAddressAndPath_]	ClientNetworkEndpoint
 
 type NetworkEndpointGenerator interface {
 	NewClient(connectTo NetworkAddress, connectVia NetworkPath, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
@@ -19,12 +24,12 @@ type NetworkEndpointGenerator interface {
 
 // Should be able to create a network address from a string.
 type NetworkAddressGenerator interface {
-	NewAddress(string) 		NetworkAddress
+	NewAddress(string) NetworkAddress
 	NewLocalAddress(string) NetworkAddress
 }
 
 type NetworkKeyGenerator interface {
-	GetAddressKey(address NetworkAddress) 						Key_NetworkAddress_
+	GetAddressKey(address NetworkAddress) Key_NetworkAddress_
 	GetAddressPathKey(address NetworkAddress, path NetworkPath) Key_NetworkAddressAndPath_
 }
 

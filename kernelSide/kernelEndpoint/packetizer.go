@@ -3,7 +3,7 @@ package kernelEndpoint
 import (
 	"encoding/binary"
 	"fmt"
-	"shila/shila"
+	"shila/core/model"
 	"shila/shutdown"
 )
 
@@ -46,7 +46,7 @@ func (d *Device) ip4(storage []byte) {
 		storage = append(storage, <-d.channels.ingressRaw)
 	}
 
-	d.channels.trafficChannels.Ingress <- shila.NewPacketFromRawIP(d, storage)
+	d.channels.trafficChannels.Ingress <- model.NewPacketFromRawIP(d, storage)
 }
 
 func (d *Device) ip6(storage []byte) {

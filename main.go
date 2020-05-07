@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 	"shila/config"
+	"shila/core/connection"
+	"shila/core/model"
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
-	"shila/shila"
-	"shila/shila/connection"
 	"shila/shutdown"
 	"shila/workingSide"
 )
@@ -42,7 +42,7 @@ func realMain() int {
 	}
 
 	// Create the channel used to announce new traffic channels
-	trafficChannelAnnouncements := make(chan shila.TrafficChannels)
+	trafficChannelAnnouncements := make(chan model.TrafficChannels)
 
 	// Create and setup the kernel side
 	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)

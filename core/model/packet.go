@@ -1,4 +1,4 @@
-package shila
+package model
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-type PacketPayload  IPv4TCPPacket
+type PacketPayload IPv4TCPPacket
 
 type Packet struct {
 	entryPoint Endpoint

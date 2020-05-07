@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net"
 	"shila/config"
+	"shila/core/model"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/log"
-	"shila/shila"
 )
 
 type Manager struct {
@@ -15,7 +15,7 @@ type Manager struct {
 	endpoints 	EndpointMapping
 	isRunning 	bool
 	isSetup   	bool
-	workingSide chan shila.TrafficChannels
+	workingSide chan model.TrafficChannels
 }
 
 type _IPv4_ string
@@ -27,7 +27,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(config config.Config, workingSide chan shila.TrafficChannels) *Manager {
+func New(config config.Config, workingSide chan model.TrafficChannels) *Manager {
 	// Setup the mapping holding the kernel endpoints
 	return &Manager{config,make(EndpointMapping), false, false, workingSide}
 }
@@ -157,9 +157,9 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) GetTrafficChannels(IP net.IP) (shila.TrafficChannels, bool) {
+func (m *Manager) GetTrafficChannels(IP net.IP) (model.TrafficChannels, bool) {
 	if endpoint, ok := m.endpoints[_IPv4_(IP.String())]; !ok {
-		return shila.TrafficChannels{}, false
+		return model.TrafficChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
 	}

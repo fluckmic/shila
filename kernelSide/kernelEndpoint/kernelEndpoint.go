@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"shila/config"
+	"shila/core/model"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/log"
-	"shila/shila"
 )
 
 type Device struct {
@@ -24,8 +24,8 @@ type Device struct {
 }
 
 type Channel struct {
-	ingressRaw 		chan byte
-	trafficChannels shila.TrafficChannels
+	ingressRaw      chan byte
+	trafficChannels model.TrafficChannels
 }
 
 type Error string
@@ -35,7 +35,7 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
-	var buf = Channel{trafficChannels: shila.TrafficChannels{}}
+	var buf = Channel{trafficChannels: model.TrafficChannels{}}
 	return &Device{id, &buf, config, nil, nil, true, false, false}
 }
 
@@ -84,8 +84,11 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 	d.channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.channels.trafficChannels.Ingress= make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.channels.trafficChannels.Egress = make(chan *shila.Packet, d.config.SizeEgressBuff)
+	d.channels.trafficChannels.Ingress = make(chan *model.Packet, d.config.SizeIngressBuff)
+	d.channels.trafficChannels.Egress  = make(chan *model.Packet, d.config.SizeEgressBuff)
+
+	d.channels.trafficChannels.Key 	  = d.Key()
+	d.channels.trafficChannels.Label  = d.Label()
 
 	d.isSetup = true
 	return nil
@@ -215,10 +218,15 @@ func (d *Device) serveEgress() {
 	}
 }
 
-func (d *Device) Label() shila.EndpointLabel {
-	return shila.KernelEndpoint
+func (d *Device) Label() model.EndpointLabel {
+	return model.KernelEndpoint
 }
 
-func (d *Device) TrafficChannels() shila.TrafficChannels {
+// TODO:
+func (d *Device) Key() model.EndpointKey {
+	return model.EndpointKey(d.Id.Key())
+}
+
+func (d *Device) TrafficChannels() model.TrafficChannels {
 	return d.channels.trafficChannels
 }
