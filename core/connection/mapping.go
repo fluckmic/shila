@@ -17,12 +17,14 @@ func (e Error) Error() string {
 type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
+	routing 	*model.Mapping
 	connections map[model.Key_SrcIPv4DstIPv4_] *Connection
 	lock		sync.Mutex
 }
 
-func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager) *Mapping {
-	m := &Mapping{kernelSide, networkSide, make(map[model.Key_SrcIPv4DstIPv4_] *Connection), sync.Mutex{}}
+func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping) *Mapping {
+	m := &Mapping{kernelSide, networkSide, routing,
+		make(map[model.Key_SrcIPv4DstIPv4_] *Connection), sync.Mutex{}}
 	go m.vacuum()
 	return m
 }
@@ -53,7 +55,7 @@ func (m *Mapping) Retrieve(id model.Key_SrcIPv4DstIPv4_) *Connection {
 	if con, ok := m.connections[id]; ok {
 		return con
 	} else {
-		newCon := New(m.kernelSide, m.networkSide, id)
+		newCon := New(m.kernelSide, m.networkSide, m.routing, id)
 		m.connections[id] = newCon
 		return newCon
 	}

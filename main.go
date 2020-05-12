@@ -60,8 +60,14 @@ func realMain() int {
 	log.Info.Println("Network side setup successfully.")
 	defer networkSide.CleanUp()
 
+	// Create the mapping holding the network addresses
+	routing := model.NewMapping()
+
+	// TODO: Insert target addresses for test cases here.
+	// routing.InsertFromDstIPv4(...)
+
 	// Create the mapping holding the connections
-	connections := connection.NewMapping(kernelSide, networkSide)
+	connections := connection.NewMapping(kernelSide, networkSide, routing)
 
 	// Create and setup the working side
 	workingSide := workingSide.New(cfg, connections, trafficChannelAnnouncements)

@@ -7,7 +7,6 @@ import (
 	"net"
 	"shila/layer"
 	"shila/log"
-	"shila/routing"
 )
 
 type Error string
@@ -77,9 +76,9 @@ func (p *Packet) EntryPoint() Endpoint {
 	return p.entryPoint
 }
 
-func (p *Packet) PacketHeader() (*PacketHeader, error) {
+func (p *Packet) PacketHeader(router *Mapping) (*PacketHeader, error) {
 	if p.header == nil {
-		if err := p.decodePacketHeader(); err != nil {
+		if err := p.decodePacketHeader(router); err != nil {
 			return nil, err
 		}
 	}
@@ -111,7 +110,7 @@ func(p *Packet) decodePacketID() error {
 	return nil
 }
 
-func (p *Packet) decodePacketHeader() error {
+func (p *Packet) decodePacketHeader(router *Mapping) error {
 
 	key, err := p.Key()
 	if err != nil {
@@ -126,10 +125,13 @@ func (p *Packet) decodePacketHeader() error {
 	if token, MP_JOIN, err := p.getMPTCPReceiverToken(); MP_JOIN {
 		if err != nil {
 			// Retrieve address and path from the mapping
-			_ = token
-
+			if packetHeader, ok := router.RetrieveFromReceiverToken(token); ok {
+				p.header = &packetHeader
+			} else {
+				log.Info.Print("No routing entry found for packet {", key, "} and token {", token, "}.")
+			}
 		} else {
-			log.Info.Print("Error while fetching MPTCP receiver token for {", key, "}.")
+			log.Info.Print("Error while fetching MPTCP receiver token for packet {", key, "}.")
 		}
 	}
 
@@ -137,9 +139,9 @@ func (p *Packet) decodePacketHeader() error {
 	// address and path can be fetched via these options
 	if packetHeader, IP_OPTIONS, err := p.getPacketHeaderFromIPOptions(); IP_OPTIONS {
 		if err != nil {
-			p.header = packetHeader
+			p.header = &packetHeader
 		} else {
-			log.Info.Print("Error while fetching packet header from IP options for {", key, "}.")
+			log.Info.Print("Error while fetching packet header from IP options for packet {", key, "}.")
 		}
 	}
 
@@ -147,10 +149,52 @@ func (p *Packet) decodePacketHeader() error {
 	// to do a lookup in the routing table using destination ip and
 	// port as key.
 	destKey := Key_DstIPv4_(p.id.Dst.String())
-	_ = destKey
+	if packetHeader, ok := router.RetrieveFromDstIPv4(destKey); ok {
+		p.header = &packetHeader
+	} else {
+		log.Info.Print("No routing entry found for packet {", key, "} and key {", destKey, "}.")
+	}
 
 	return Error(fmt.Sprint("Unable to decode packet header for {", key, "} - " +
 		"No valid option to retrieve destination network address successful."))
+}
+
+func (p *Packet) getMPTCPReceiverToken() (Key_MPTCPReceiverToken_, bool, error) {
+
+	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
+	// only once at the setup of a new subflow. It should be fine to do this twice.
+	if _, tcp, err := decodeIPv4andTCPLayer(p.payload.Raw); err != nil {
+		if mptcpOptions, err := layer.DecodeMPTCPOptions(tcp); err != nil {
+			for _, mptcpOption := range mptcpOptions {
+				if mptcpJoinOptionSYN, ok := mptcpOption.(layer.MPTCPJoinOptionSYN); ok {
+					return Key_MPTCPReceiverToken_(mptcpJoinOptionSYN.ReceiverToken), true, nil
+				}
+			}
+			// MPTCP options does not contain the receiver token
+			return Key_MPTCPReceiverToken_(0), false, nil
+		} else {
+			// Error in decoding the mptcp options
+			return Key_MPTCPReceiverToken_(0), false, err
+		}
+	} else {
+		// Error in decoding the ipv4/tcp options
+		return Key_MPTCPReceiverToken_(0), false, err
+	}
+}
+
+func (p *Packet) getPacketHeaderFromIPOptions() (PacketHeader, bool, error) {
+	// TODO!
+	/*
+	func DecodeIPv4Options(p *shila.Packet) error {
+		opts, err := layer.DecodeIPv4POptions(p.Payload.Decoded.IPv4Decoding)
+		if err != nil {
+			return Error(fmt.Sprint("Could not decode IPv4TCPPacket options", " - ", err.Error()))
+		}
+		p.Payload.Decoded.IPv4Options = opts
+		return nil
+	}
+	*/
+	return PacketHeader{}, false, nil
 }
 
 // Start slow but correct..
@@ -166,44 +210,6 @@ func decodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 	}
 
 	return ipv4, tcp, nil
-}
-
-func (p *Packet) getMPTCPReceiverToken() (routing.Key_MPTCPReceiverToken_, bool, error) {
-
-	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
-	// only once at the setup of a new subflow. It should be fine to do this twice.
-	if _, tcp, err := decodeIPv4andTCPLayer(p.payload.Raw); err != nil {
-		if mptcpOptions, err := layer.DecodeMPTCPOptions(tcp); err != nil {
-			for _, mptcpOption := range mptcpOptions {
-				if mptcpJoinOptionSYN, ok := mptcpOption.(layer.MPTCPJoinOptionSYN); ok {
-					return routing.Key_MPTCPReceiverToken_(mptcpJoinOptionSYN.ReceiverToken), true, nil
-				}
-			}
-			// MPTCP options does not contain the receiver token
-			return routing.Key_MPTCPReceiverToken_(0), false, nil
-		} else {
-			// Error in decoding the mptcp options
-			return routing.Key_MPTCPReceiverToken_(0), false, err
-		}
-	} else {
-		// Error in decoding the ipv4/tcp options
-		return routing.Key_MPTCPReceiverToken_(0), false, err
-	}
-}
-
-func (p *Packet) getPacketHeaderFromIPOptions() (*PacketHeader, bool, error) {
-	// TODO!
-	/*
-	func DecodeIPv4Options(p *shila.Packet) error {
-		opts, err := layer.DecodeIPv4POptions(p.Payload.Decoded.IPv4Decoding)
-		if err != nil {
-			return Error(fmt.Sprint("Could not decode IPv4TCPPacket options", " - ", err.Error()))
-		}
-		p.Payload.Decoded.IPv4Options = opts
-		return nil
-	}
-	*/
-	return nil, false, nil
 }
 
 

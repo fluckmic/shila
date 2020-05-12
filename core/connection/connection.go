@@ -30,6 +30,7 @@ type Connection struct {
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
+	routing 	*model.Mapping
 }
 
 type Channels struct {
@@ -38,9 +39,10 @@ type Channels struct {
 	Contacting      model.TrafficChannels // End point for connection establishment
 }
 
-func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, id model.Key_SrcIPv4DstIPv4_) *Connection {
-	return &Connection{id, nil ,Raw, Channels{} ,
-		sync.Mutex{}, time.Now(), kernelSide, networkSide}
+func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
+	id model.Key_SrcIPv4DstIPv4_) *Connection {
+	return &Connection{id, nil ,Raw, Channels{} , sync.Mutex{},
+		time.Now(), kernelSide, networkSide, routing}
 }
 
 func (c *Connection) Close() {
@@ -170,7 +172,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}
 
 	// Create the packet header which is associated with the connection
-	if header, err := p.PacketHeader(); err != nil {
+	if header, err := p.PacketHeader(c.routing); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
@@ -231,7 +233,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	c.channels.KernelEndpoint.Egress <- p
 
 	// Create the packet header which is associated with the connection
-	if header, err := p.PacketHeader(); err != nil {
+	if header, err := p.PacketHeader(c.routing); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
