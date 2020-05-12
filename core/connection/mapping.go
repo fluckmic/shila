@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"shila/core/model"
 	"shila/kernelSide"
 	"shila/networkSide"
 	"sync"
@@ -13,17 +14,15 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-type ID string
-
 type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
-	connections map[ID] *Connection
+	connections map[model.Key_SrcIPv4DstIPv4_] *Connection
 	lock		sync.Mutex
 }
 
 func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager) *Mapping {
-	m := &Mapping{kernelSide, networkSide, make(map[ID] *Connection), sync.Mutex{}}
+	m := &Mapping{kernelSide, networkSide, make(map[model.Key_SrcIPv4DstIPv4_] *Connection), sync.Mutex{}}
 	go m.vacuum()
 	return m
 }
@@ -48,7 +47,7 @@ func (m *Mapping) vacuum() {
 	}
 }
 
-func (m *Mapping) Retrieve(id ID) *Connection {
+func (m *Mapping) Retrieve(id model.Key_SrcIPv4DstIPv4_) *Connection {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if con, ok := m.connections[id]; ok {

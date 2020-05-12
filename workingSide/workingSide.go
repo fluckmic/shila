@@ -64,7 +64,7 @@ func (m *Manager) processChannel(p *model.Packet) {
 	if key, err := p.Key(); err != nil {
 		log.Error.Panicln(err.Error())
 	} else {
-		con = m.connections.Retrieve(connection.ID(key))
+		con = m.connections.Retrieve(key)
 	}
 
 	// Process the packet

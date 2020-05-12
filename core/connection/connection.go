@@ -22,7 +22,7 @@ const (
 )
 
 type Connection struct {
-	id          ID
+	id          model.Key_SrcIPv4DstIPv4_
 	header      *model.PacketHeader
 	state       State
 	channels    Channels
@@ -38,7 +38,7 @@ type Channels struct {
 	Contacting      model.TrafficChannels // End point for connection establishment
 }
 
-func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, id ID) *Connection {
+func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, id model.Key_SrcIPv4DstIPv4_) *Connection {
 	return &Connection{id, nil ,Raw, Channels{} ,
 		sync.Mutex{}, time.Now(), kernelSide, networkSide}
 }
@@ -64,8 +64,8 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 	if err != nil {
 		return err
 	}
-	if ID(key) != c.id {
-		return Error(fmt.Sprint("Cannot process packet - ID mismatch: ", ID(key), " ", c.id, "."))
+	if model.Key_SrcIPv4DstIPv4_(key) != c.id {
+		return Error(fmt.Sprint("Cannot process packet - ID mismatch: ", model.Key_SrcIPv4DstIPv4_(key), " ", c.id, "."))
 	}
 
 	// From where was the packet received?
@@ -134,6 +134,7 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 
 	case Raw:				return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
 
+							// A packet from the traffic endpoint is just received if network connection is established
 	case ClientReady:		return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
 
 	case ServerReady:		c.touched = time.Now()
@@ -142,6 +143,10 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 							return nil
 
 	case Established: 		c.touched = time.Now()
+							// In the very first message received on the client side in a MPTCP main flow
+							// the packet contains the receivers key (Key-B). This key is later needed to
+							// be able to find the network destination address and path for a subflow
+							// TODO.
 							c.channels.KernelEndpoint.Egress <- p
 							return nil
 
