@@ -64,7 +64,7 @@ func realMain() int {
 	routing := model.NewMapping()
 
 	// TODO: Insert target addresses for test cases here.
-	// routing.InsertFromDstIPv4(...)
+	// routing.InsertFromIPAddressKey(...)
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)

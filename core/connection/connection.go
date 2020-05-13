@@ -30,8 +30,8 @@ const (
 )
 
 type Connection struct {
-	id          model.Key_SrcIPv4DstIPv4_
-	header      *model.PacketHeader
+	id          model.IPHeaderKey
+	header      *model.NetworkHeader
 	state       State
 	channels    Channels
 	lock        sync.Mutex
@@ -48,7 +48,7 @@ type Channels struct {
 }
 
 func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
-	id model.Key_SrcIPv4DstIPv4_) *Connection {
+	id model.IPHeaderKey) *Connection {
 	return &Connection{id, nil ,Raw, Channels{} , sync.Mutex{},
 		time.Now(), kernelSide, networkSide, routing}
 }
@@ -58,9 +58,12 @@ func (c *Connection) Close() {
 	defer c.lock.Unlock()
 
 	// Tear down all endpoints possibly associated with this connection
+	// TODO: Clean up depends on the "side" of the connection.
+	/*
 	_ = c.networkSide.TeardownContactingClientEndpoint(c.header.Dst)
-	_ = c.networkSide.TeardownTrafficSeverEndpoint(c.header.Dst)
+	_ = c.networkSide.TeardownTrafficSeverEndpoint(c.header.)
 	_ = c.networkSide.TeardownTrafficClientEndpoint(c.header.Dst, c.header.Path)
+	*/
 
 	c.state = Closed
 }
@@ -70,12 +73,12 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key, err := p.Key()
+	key, err := p.IPHeaderKey()
 	if err != nil {
 		return err
 	}
-	if model.Key_SrcIPv4DstIPv4_(key) != c.id {
-		return Error(fmt.Sprint("Cannot process packet - ID mismatch: ", model.Key_SrcIPv4DstIPv4_(key), " ", c.id, "."))
+	if model.IPHeaderKey(key) != c.id {
+		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
 
 	// From where was the packet received?
@@ -93,18 +96,18 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 	switch c.state {
 	case Raw:				return c.processPacketFromKerepStateRaw(p)
 
-	case ClientReady:		p.SetPacketHeader(c.header)
+	case ClientReady:		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
 							c.channels.Contacting.Egress <- p
 							return nil
 
 	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
-							p.SetPacketHeader(c.header)
+							p.SetNetworkHeader(c.header)
 							c.channels.NetworkEndpoint.Egress <- p
 							return nil
 
-	case Established: 		p.SetPacketHeader(c.header)
+	case Established: 		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
 							c.channels.NetworkEndpoint.Egress <- p
 							return nil
@@ -154,7 +157,7 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 
 	case Established: 		c.touched = time.Now()
 							// In the very first message received on the client side in a MPTCP main flow
-							// the packet contains the receivers key (Key-B). This key is later needed to
+							// the packet contains the receivers key (IPHeaderKey-B). This key is later needed to
 							// be able to find the network destination address and path for a subflow
 							// TODO.
 							c.channels.KernelEndpoint.Egress <- p
@@ -180,7 +183,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}
 
 	// Create the packet header which is associated with the connection
-	if header, err := p.PacketHeader(c.routing); err != nil {
+	if header, err := p.GetNetworkHeader(c.routing); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
@@ -224,15 +227,15 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet) error {
 
 	// Get the kernel endpoint from the kernel side manager
-	if id, err := p.ID(); err == nil {
+	if dstKey, err := p.IPHeaderDstKey(); err == nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
-		if channels, ok := c.kernelSide.GetTrafficChannels(id.Dst.IP); ok {
+		if channels, ok := c.kernelSide.GetTrafficChannels(dstKey); ok {
 			c.channels.KernelEndpoint = channels
 		} else {
 			c.state = Closed
-			return Error(fmt.Sprint("Cannot process packet - No kernel endpoint for ", id.Dst.IP))
+			return Error(fmt.Sprint("Cannot process packet - No kernel endpoint for ", dstKey))
 		}
 	}
 
@@ -241,7 +244,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	c.channels.KernelEndpoint.Egress <- p
 
 	// Create the packet header which is associated with the connection
-	if header, err := p.PacketHeader(c.routing); err != nil {
+	if header, err := p.GetNetworkHeader(c.routing); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
@@ -249,6 +252,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	}
 
 	// Request new incoming connection from network side.
+	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
 	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header.Dst); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))

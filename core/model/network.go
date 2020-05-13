@@ -5,8 +5,12 @@ import (
 )
 
 // Keys
-type Key_NetworkAddress_ 		string
-type Key_NetworkAddressAndPath_ string
+// (ipv4:port)
+type IPAddressKey			  string
+// (network-address)
+type NetworkAddressKey		  string
+// (network-address<>path)
+type NetworkAddressAndPathKey string
 
 type ServerNetworkEndpointAndConnectionCount struct {
 	Endpoint ServerNetworkEndpoint
@@ -14,8 +18,8 @@ type ServerNetworkEndpointAndConnectionCount struct {
 }
 
 // Mappings
-type ServerEndpointMapping map[Key_NetworkAddress_] 		ServerNetworkEndpointAndConnectionCount
-type ClientEndpointMapping map[Key_NetworkAddressAndPath_]	ClientNetworkEndpoint
+type ServerEndpointMapping map[NetworkAddressKey] ServerNetworkEndpointAndConnectionCount
+type ClientEndpointMapping map[NetworkAddressAndPathKey]	ClientNetworkEndpoint
 
 type NetworkEndpointGenerator interface {
 	NewClient(connectTo NetworkAddress, connectVia NetworkPath, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
@@ -24,13 +28,13 @@ type NetworkEndpointGenerator interface {
 
 // Should be able to create a network address from a string.
 type NetworkAddressGenerator interface {
-	NewAddress(string) NetworkAddress
+	NewAddress(string) 		NetworkAddress
 	NewLocalAddress(string) NetworkAddress
 }
 
 type NetworkKeyGenerator interface {
-	GetAddressKey(address NetworkAddress) Key_NetworkAddress_
-	GetAddressPathKey(address NetworkAddress, path NetworkPath) Key_NetworkAddressAndPath_
+	GetAddressKey(address NetworkAddress) NetworkAddressKey
+	GetAddressPathKey(address NetworkAddress, path NetworkPath) NetworkAddressAndPathKey
 }
 
 // Should be able to create a network path from a string.

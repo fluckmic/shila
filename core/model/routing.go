@@ -7,25 +7,25 @@ import (
 	"fmt"
 )
 
-type Key_MPTCPReceiverToken_ uint32
-type Key_MPTCPReceiverKey_ 	 uint64
+type MptcpReceiverToken uint32
+type MPTCPReceiverKey   uint64
 
 type Mapping struct {
-	addressesFromToken 	 map[Key_MPTCPReceiverToken_] *PacketHeader
-	addressesFromDstIPv4 map[Key_DstIPv4_]   		  *PacketHeader
+	addressesFromToken 	 map[MptcpReceiverToken] *NetworkHeader
+	addressesFromDstIPv4 map[IPAddressKey]  	 *NetworkHeader
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[Key_MPTCPReceiverToken_] *PacketHeader),
-				   make(map[Key_DstIPv4_]   		   *PacketHeader)}
+	return &Mapping{make(map[MptcpReceiverToken] *NetworkHeader),
+				   make(map[IPAddressKey]       *NetworkHeader)}
 }
 
-func (m Mapping) RetrieveFromReceiverToken(token Key_MPTCPReceiverToken_) (PacketHeader, bool) {
+func (m Mapping) RetrieveFromReceiverToken(token MptcpReceiverToken) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
 	return *packetHeader, ok
 }
 
-func (m Mapping) InsertFromReceiverKey(key Key_MPTCPReceiverKey_, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
+func (m Mapping) InsertFromReceiverKey(key MPTCPReceiverKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
 
 	if token, err := receiverTokenFromKey(key); err != nil {
 		return err
@@ -33,28 +33,28 @@ func (m Mapping) InsertFromReceiverKey(key Key_MPTCPReceiverKey_, srcAddr Networ
 		if _, ok := m.addressesFromToken[token]; ok {
 			return Error(fmt.Sprint("Unable to insert routing entry for receiver key {", key ,"}. - Entry already exists."))
 		} else {
-			m.addressesFromToken[token] = &PacketHeader{srcAddr, path, dstAddr}
+			m.addressesFromToken[token] = &NetworkHeader{srcAddr, path, dstAddr}
 		}
 	}
 	return nil
 }
 
-func (m Mapping) RetrieveFromDstIPv4(key Key_DstIPv4_) (PacketHeader, bool) {
+func (m Mapping) RetrieveFromIPAddressKey(key IPAddressKey) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromDstIPv4[key]
 	return *packetHeader, ok
 }
 
-func (m Mapping) InsertFromDstIPv4(key Key_DstIPv4_, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
+func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
 
 	if _, ok := m.addressesFromDstIPv4[key]; ok {
 		return Error(fmt.Sprint("Unable to insert routing entry for destination IPv4 {", key ,"}. - Entry already exists."))
 	} else {
-		m.addressesFromDstIPv4[key] = &PacketHeader{srcAddr, path, dstAddr}
+		m.addressesFromDstIPv4[key] = &NetworkHeader{srcAddr, path, dstAddr}
 	}
 	return nil
 }
 
-func receiverTokenFromKey(key Key_MPTCPReceiverKey_) (Key_MPTCPReceiverToken_, error) {
+func receiverTokenFromKey(key MPTCPReceiverKey) (MptcpReceiverToken, error) {
 
 	// The token is used to identify the MPTCP connection and is a cryptographic hash of the receiver's key, as
 	// exchanged in the initial MP_CAPABLE handshake (Section 3.1).  In this specification, the tokens presented in
@@ -62,8 +62,8 @@ func receiverTokenFromKey(key Key_MPTCPReceiverKey_) (Key_MPTCPReceiverToken_, e
 	// https://tools.ietf.org/html/rfc6824#section-3.1
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, key); err != nil {
-		return Key_MPTCPReceiverToken_(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
+		return MptcpReceiverToken(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
 	}
 	check := sha1.Sum(buf.Bytes())
-	return Key_MPTCPReceiverToken_(binary.BigEndian.Uint32(check[0:5])), nil
+	return MptcpReceiverToken(binary.BigEndian.Uint32(check[0:5])), nil
 }

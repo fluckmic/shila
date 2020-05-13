@@ -27,13 +27,13 @@ func (g Generator) GetDefaultContactingPath(address model.NetworkAddress) model.
 	return g.NewPath("")
 }
 
-func (g Generator) GetAddressKey(address model.NetworkAddress) model.Key_NetworkAddress_ {
-	return model.Key_NetworkAddress_(address.String())
+func (g Generator) GetAddressKey(address model.NetworkAddress) model.NetworkAddressKey {
+	return model.NetworkAddressKey(address.String())
 }
 
-func (g Generator) GetAddressPathKey(address model.NetworkAddress, path model.NetworkPath) model.Key_NetworkAddressAndPath_ {
+func (g Generator) GetAddressPathKey(address model.NetworkAddress, path model.NetworkPath) model.NetworkAddressAndPathKey {
 	_ = path
-	return model.Key_NetworkAddressAndPath_(address.String())
+	return model.NetworkAddressAndPathKey(address.String())
 }
 
 func (g Generator) NewClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,

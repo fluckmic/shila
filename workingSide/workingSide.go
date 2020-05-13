@@ -61,7 +61,7 @@ func (m *Manager) processChannel(p *model.Packet) {
 
 	// Get the connection
 	var con *connection.Connection
-	if key, err := p.Key(); err != nil {
+	if key, err := p.IPHeaderKey(); err != nil {
 		log.Error.Panicln(err.Error())
 	} else {
 		con = m.connections.Retrieve(key)

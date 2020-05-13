@@ -18,8 +18,7 @@ type Manager struct {
 	workingSide chan model.TrafficChannels
 }
 
-type _IPv4_ string
-type EndpointMapping map[_IPv4_] *kernelEndpoint.Device
+type EndpointMapping map[model.IPAddressKey] *kernelEndpoint.Device
 
 type Error string
 
@@ -157,8 +156,8 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) GetTrafficChannels(IP net.IP) (model.TrafficChannels, bool) {
-	if endpoint, ok := m.endpoints[_IPv4_(IP.String())]; !ok {
+func (m *Manager) GetTrafficChannels(key model.IPAddressKey) (model.TrafficChannels, bool) {
+	if endpoint, ok := m.endpoints[key]; !ok {
 		return model.TrafficChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
@@ -247,8 +246,8 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
-			if _, ok := m.endpoints[_IPv4_(newKerepKey)]; !ok {
-				m.endpoints[_IPv4_(newKerepId.Key())] = newKerep
+			if _, ok := m.endpoints[model.IPAddressKey(newKerepKey)]; !ok {
+				m.endpoints[model.IPAddressKey(newKerepId.Key())] = newKerep
 				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.
