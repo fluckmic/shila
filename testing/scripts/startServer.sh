@@ -1,5 +1,6 @@
 #!/bin/bash
 
 clear
-echo "Starting server."
-ip netns exec shila-ingress iperf -s
+
+printf "Starting iperf server listening at port 2727.. \n"
+ip netns exec shila-ingress iperf -s -p 2727
