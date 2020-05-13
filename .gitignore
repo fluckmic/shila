@@ -8,6 +8,7 @@
 
 go_*
 _usr_local_go_*
+_shila_
 
 # Test binary, built with `go test -c`
 *.test
