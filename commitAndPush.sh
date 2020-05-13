@@ -7,7 +7,7 @@ if [ "$#" -ne 1 ]; then
   exit
 fi
 
-git fetch
+git pull
 git add --all
 git commit -m "$1"
 git push
