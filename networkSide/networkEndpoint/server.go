@@ -89,14 +89,60 @@ func (s *Server) IsRunning() bool {
 func (s *Server) serveIncomingConnections(listener net.Listener){
 	for {
 		if connection, err := listener.Accept(); err != nil {
-			log.Info.Print("Error serving incoming connection in Server {", s.Label(), " ", s.Key(), "}. - ", err.Error())
+			log.Info.Print("Error serving incoming connection in server {", s.Label(), " ", s.Key(), "}. - ", err.Error())
 		} else {
 			go s.handleConnection(connection)
 		}
 	}
 }
 
-func (s *Server) handleConnection(connection net.Conn) {}
+func (s *Server) handleConnection(connection net.Conn) {
+
+	// Get the address from the client side
+	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
+	// Get the path taken from client to this server
+	path := Generator{}.NewPath("")
+
+	// Generate the key
+	key := Generator{}.GetAddressPathKey(srcAddr, path)
+
+	// Add the new connection to the mapping, such that it can be found by the egress handler.
+	if _, ok := s.connections[key]; ok {
+		panic(fmt.Sprint("Trying to add connection with key {", key, "} in " +
+			"server {", s.Key(), "}. There already exists a connection with that key.")) // TODO: Handle panic!
+	} else {
+		s.connections[key] = connection
+	}
+
+	// Start the ingress handler for the connection.
+	go s.serveIngress(connection)
+}
+
+func (s *Server) serveIngress(connection net.Conn) {
+
+	// Prepare everything for the packetizer
+	ingressRaw := make(chan byte, s.config.SizeReadBuffer)
+
+	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
+	path 	:= Generator{}.NewPath("")
+
+	go s.packetize(ingressRaw, srcAddr, path)
+
+	reader := io.Reader(connection)
+	storage := make([]byte, s.config.SizeReadBuffer)
+	for {
+		nBytesRead, err := io.ReadAtLeast(reader, storage, s.config.BatchSizeRead)
+		if err != nil && !s.IsValid() {
+			// Error doesn't matter, kernel endpoint is no longer valid anyway.
+			return
+		} else if err != nil {
+			panic(fmt.Sprint("Error in reading data in server {", s.Key(), "}. - ", err.Error())) // TODO: Handle panic!
+		}
+		for _, b := range storage[:nBytesRead] {
+			ingressRaw <- b
+		}
+	}
+}
 
 func (s *Server) serveEgress() {
 	for p := range s.trafficChannels.Egress {
