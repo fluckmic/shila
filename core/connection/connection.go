@@ -21,6 +21,14 @@ const (
 	Raw
 )
 
+type Type uint8
+const (
+	_				= iota
+	Unknown Type	= iota
+	MainFlow
+	SubFlow
+)
+
 type Connection struct {
 	id          model.Key_SrcIPv4DstIPv4_
 	header      *model.PacketHeader

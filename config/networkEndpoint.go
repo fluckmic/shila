@@ -9,12 +9,19 @@ type NetworkEndpoint struct {
 	SizeIngressBuff int
 	SizeEgressBuff  int
 
+	// kernel <-> kerep (in Byte)
+	SizeReadBuffer int
+	BatchSizeRead  int
+
 }
 
 func (n *NetworkEndpoint) InitDefault() error {
 
 	n.SizeIngressBuff = 10
 	n.SizeEgressBuff = 10
+
+	n.SizeReadBuffer = 1500
+	n.BatchSizeRead = 30
 
 	return nil
 }

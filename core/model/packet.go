@@ -127,6 +127,7 @@ func (p *Packet) decodePacketHeader(router *Mapping) error {
 			// Retrieve address and path from the mapping
 			if packetHeader, ok := router.RetrieveFromReceiverToken(token); ok {
 				p.header = &packetHeader
+				return nil
 			} else {
 				log.Info.Print("No routing entry found for packet {", key, "} and token {", token, "}.")
 			}
@@ -140,6 +141,7 @@ func (p *Packet) decodePacketHeader(router *Mapping) error {
 	if packetHeader, IP_OPTIONS, err := p.getPacketHeaderFromIPOptions(); IP_OPTIONS {
 		if err != nil {
 			p.header = &packetHeader
+			return nil
 		} else {
 			log.Info.Print("Error while fetching packet header from IP options for packet {", key, "}.")
 		}
@@ -151,6 +153,7 @@ func (p *Packet) decodePacketHeader(router *Mapping) error {
 	destKey := Key_DstIPv4_(p.id.Dst.String())
 	if packetHeader, ok := router.RetrieveFromDstIPv4(destKey); ok {
 		p.header = &packetHeader
+		return nil
 	} else {
 		log.Info.Print("No routing entry found for packet {", key, "} and key {", destKey, "}.")
 	}
