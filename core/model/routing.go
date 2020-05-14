@@ -7,31 +7,31 @@ import (
 	"fmt"
 )
 
-type MPTCPReceiverToken uint32
-type MPTCPReceiverKey   uint64
+type MPTCPEndpointToken uint32
+type MPTCPEndpointKey   uint64
 
 type Mapping struct {
-	addressesFromToken 	 map[MPTCPReceiverToken] *NetworkHeader
+	addressesFromToken 	 map[MPTCPEndpointToken] *NetworkHeader
 	addressesFromDstIPv4 map[IPAddressKey]  	 *NetworkHeader
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[MPTCPReceiverToken] *NetworkHeader),
+	return &Mapping{make(map[MPTCPEndpointToken] *NetworkHeader),
 				   make(map[IPAddressKey]       *NetworkHeader)}
 }
 
-func (m Mapping) RetrieveFromReceiverToken(token MPTCPReceiverToken) (NetworkHeader, bool) {
+func (m Mapping) RetrieveFromMPTCPEndpointToken(token MPTCPEndpointToken) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
 	return *packetHeader, ok
 }
 
-func (m Mapping) InsertFromReceiverKey(key MPTCPReceiverKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
+func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
 
-	if token, err := receiverTokenFromKey(key); err != nil {
+	if token, err := mptcpEndpointKeyToToken(key); err != nil {
 		return err
 	} else {
 		if _, ok := m.addressesFromToken[token]; ok {
-			return Error(fmt.Sprint("Unable to insert routing entry for receiver key {", key ,"}. - Entry already exists."))
+			return Error(fmt.Sprint("Unable to insert routing entry for key {", key ,"}. - Entry already exists."))
 		} else {
 			m.addressesFromToken[token] = &NetworkHeader{srcAddr, path, dstAddr}
 		}
@@ -54,7 +54,7 @@ func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress
 	return nil
 }
 
-func receiverTokenFromKey(key MPTCPReceiverKey) (MPTCPReceiverToken, error) {
+func mptcpEndpointKeyToToken(key MPTCPEndpointKey) (MPTCPEndpointToken, error) {
 
 	// The token is used to identify the MPTCP connection and is a cryptographic hash of the receiver's key, as
 	// exchanged in the initial MP_CAPABLE handshake (Section 3.1).  In this specification, the tokens presented in
@@ -62,8 +62,8 @@ func receiverTokenFromKey(key MPTCPReceiverKey) (MPTCPReceiverToken, error) {
 	// https://tools.ietf.org/html/rfc6824#section-3.1
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, key); err != nil {
-		return MPTCPReceiverToken(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
+		return MPTCPEndpointToken(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
 	}
 	check := sha1.Sum(buf.Bytes())
-	return MPTCPReceiverToken(binary.BigEndian.Uint32(check[0:5])), nil
+	return MPTCPEndpointToken(binary.BigEndian.Uint32(check[0:5])), nil
 }

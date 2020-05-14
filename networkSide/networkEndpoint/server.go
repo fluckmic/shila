@@ -8,7 +8,6 @@ import (
 	"shila/core/model"
 	"shila/layer"
 	"shila/log"
-	"shila/shutdown"
 )
 
 var _ model.ServerNetworkEndpoint = (*Server)(nil)
@@ -207,26 +206,20 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
 
-	/*
-		dstAddr 	:= s.listenTo
-		path        := Generator{}.NewPath("")
-		srcNetwAddr := connection.RemoteAddr()
+	// Fetch the parts for the packet network header which are fixed.
+	path 		:= Generator{}.NewPath("")
+	srcAddr 	:= Generator{}.NewAddress(connection.RemoteAddr().String())
 
-		for {
-			rawData := packetizeRawData(ingressRaw, s.config.SizeReadBuffer)
-			if ip4v, tcp, err := layer.DecodeIPv4andTCPLayer(rawData); err != nil {
-
-			} else {
-				p.ipHeader.Src.IP 		= ip4v.SrcIP
-				p.ipHeader.Src.Port 	= int(tcp.SrcPort)
-				p.ipHeader.Dst.IP 		= ip4v.DstIP
-				p.ipHeader.Dst.Port 	= int(tcp.DstPort)
-			}
-
-
-			s.trafficChannels.Ingress <- model.NewPacketFromRawIPAndNetworkHeader(s, &header, rawData)
+	for {
+		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
+		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
+				"}. - ", err.Error())) // TODO: Handle panic!
+		} else {
+			dstAddr := Generator{}.NewAddress(net.JoinHostPort(s.listenTo.Addr.IP.String(), string(iPHeader.Dst.Port)))
+			header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
+			s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 		}
-	*/
-	shutdown.Check() // Fatal error could occur.. :o
+	}
 
 }

@@ -74,25 +74,47 @@ const (
 	MPTCPOptionSubtypeFastClose             = 7
 )
 
-func GetMPTCPReceiverToken(raw []byte) (model.MPTCPReceiverToken, bool, error) {
+func GetMPTCPReceiverToken(raw []byte) (model.MPTCPEndpointToken, bool, error) {
 	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
 	// only once at the setup of a new sub flow. It should be fine to do this twice.
 	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpJoinOptionSYN, ok := mptcpOption.(MPTCPJoinOptionSYN); ok {
-					return model.MPTCPReceiverToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
+					return model.MPTCPEndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
 				}
 			}
 			// MPTCP options does not contain the receiver token
-			return model.MPTCPReceiverToken(0), false, nil
+			return model.MPTCPEndpointToken(0), false, nil
 		} else {
 			// Error in decoding the mptcp options
-			return model.MPTCPReceiverToken(0), false, err
+			return model.MPTCPEndpointToken(0), false, err
 		}
 	} else {
 		// Error in decoding the ipv4/tcp options
-		return model.MPTCPReceiverToken(0), false, err
+		return model.MPTCPEndpointToken(0), false, err
+	}
+}
+
+func GetMPTCPSenderKey(raw []byte) (model.MPTCPEndpointKey, bool, error) {
+	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
+	// only once at the setup of a new sub flow. It should be fine to do this twice.
+	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
+		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
+			for _, mptcpOption := range mptcpOptions {
+				if mptcpCapableOptionSender, ok := mptcpOption.(MPTCPCapableOptionSender); ok {
+					return model.MPTCPEndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
+				}
+			}
+			// MPTCP options does not contain the senders key
+			return model.MPTCPEndpointKey(0), false, nil
+		} else {
+			// Error in decoding the mptcp options
+			return model.MPTCPEndpointKey(0), false, err
+		}
+	} else {
+		// Error in decoding the ipv4/tcp options
+		return model.MPTCPEndpointKey(0), false, err
 	}
 }
 

@@ -18,16 +18,9 @@ const (
 	Established State = iota
 	ServerReady
 	ClientReady
+	ClientEstablished
 	Closed
 	Raw
-)
-
-type Type uint8
-const (
-	_				= iota
-	Unknown Type	= iota
-	MainFlow
-	SubFlow
 )
 
 type Connection struct {
@@ -37,6 +30,8 @@ type Connection struct {
 	channels    Channels
 	lock        sync.Mutex
 	touched     time.Time
+	sent 		bool
+	received 	bool
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
 	routing 	*model.Mapping
@@ -50,8 +45,14 @@ type Channels struct {
 
 func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
 	id model.IPHeaderKey) *Connection {
-	return &Connection{id: id, header: model.NetworkHeader{} , state: Raw,
-		touched: time.Now(), kernelSide: kernelSide, networkSide: networkSide, routing: routing}
+	return &Connection{
+		id: 			id,
+		state: 			Raw,
+		touched: 		time.Now(),
+		kernelSide:	 	kernelSide,
+		networkSide: 	networkSide,
+		routing: 		routing,
+	}
 }
 
 func (c *Connection) Close() {
@@ -59,12 +60,10 @@ func (c *Connection) Close() {
 	defer c.lock.Unlock()
 
 	// Tear down all endpoints possibly associated with this connection
-	// TODO: Clean up depends on the "side" of the connection.
-	/*
+	// TODO: Rethink
 	_ = c.networkSide.TeardownContactingClientEndpoint(c.header.Dst)
-	_ = c.networkSide.TeardownTrafficSeverEndpoint(c.header.)
+	_ = c.networkSide.TeardownTrafficSeverEndpoint(c.header.Src)
 	_ = c.networkSide.TeardownTrafficClientEndpoint(c.header.Dst, c.header.Path)
-	*/
 
 	c.state = Closed
 }
@@ -105,7 +104,8 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 							c.channels.NetworkEndpoint.Egress <- p
 							return nil
 
-	case Established: 		p.SetNetworkHeader(c.header)
+	case ClientEstablished, Established:
+					 		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
 							c.channels.NetworkEndpoint.Egress <- p
 							return nil
@@ -153,11 +153,25 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 							c.state = Established
 							return nil
 
+	case ClientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
+							// which we need later to be able to get the network destination address for the sub flows.
+							if key, ok, err := layer.GetMPTCPSenderKey(p.GetRawPayload()); ok {
+								if err == nil {
+									if err := c.routing.InsertFromMPTCPEndpointKey(key, c.header.Src, c.header.Dst, c.header.Path); err != nil {
+										panic(fmt.Sprint("Error in fetching receiver key in connection {", c.ID(), "}. - ", err.Error())) // TODO: Handle panic!
+									}
+								} else {
+									panic(fmt.Sprint("Error in fetching receiver key in connection {", c.ID(), "} beside " +
+										"having packet {", p.GetIPHeader(), "} containing it. - ", err.Error())) // TODO: Handle panic!
+								}
+							}
+
+							c.touched = time.Now()
+							c.channels.KernelEndpoint.Egress <- p
+							c.state = Established
+							return nil
+
 	case Established: 		c.touched = time.Now()
-							// In the very first message received on the client side in a MPTCP main flow
-							// the packet contains the receivers key (IPHeaderKey-B). This key is later needed to
-							// be able to find the network destination address and path for a subflow
-							// TODO.
 							c.channels.KernelEndpoint.Egress <- p
 							return nil
 
@@ -184,7 +198,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	// If the packet contains a receiver token, then the new connection is a MPTCP sub flow.
 	if token, ok, err := layer.GetMPTCPReceiverToken(p.GetRawPayload()); ok {
 		if err == nil {
-			if networkHeader, ok := c.routing.RetrieveFromReceiverToken(token); ok {
+			if networkHeader, ok := c.routing.RetrieveFromMPTCPEndpointToken(token); ok {
 				c.header = networkHeader
 				p.SetNetworkHeader(networkHeader)
 			} else {
@@ -232,7 +246,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			c.channels.NetworkEndpoint = channels
 			c.lock.Lock()
 			defer c.lock.Unlock()
-			c.state = Established
+			c.state = ClientEstablished
 			// The contacting client endpoint is no longer needed.
 			_ = c.networkSide.TeardownContactingClientEndpoint(c.header.Dst)
 			log.Verbose.Print("Established traffic connection from ", c.header.Src, " to ", c.header.Dst, " via ", c.header.Path, ".")
@@ -260,15 +274,9 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	// --> 	Could still be that connection cannot be established, since we have no idea if there is actually a server listening
 	c.channels.KernelEndpoint.Egress <- p
 
-	/*
-	// Create the packet header which is associated with the connection
-	if header, err := p.GetNetworkHeader(c.routing); err != nil {
-		c.state = Closed
-		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
-	} else {
-		c.header = header
-	}
-	*/
+	// If the packet is received through the contacting endpoint (server), then it's network header
+	// is already set. This is the responsibility of the corresponding network server implementation.
+	c.header = p.GetNetworkHeader()
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
