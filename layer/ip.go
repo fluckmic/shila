@@ -32,9 +32,8 @@ func GetIPHeader(raw []byte) (model.IPHeader, error) {
 	}
 }
 
-func GetNetworkHeaderFromIPOptions(raw []byte) (model.NetworkHeader, error) {
-	panic(fmt.Sprint("To be implemented.")) // TODO: Handle panic!
-	return model.NetworkHeader{}, nil
+func GetNetworkHeaderFromIPOptions(raw []byte) (model.NetworkHeader, bool, error) {
+	return model.NetworkHeader{}, false, nil
 }
 
 // Start slow but correct..

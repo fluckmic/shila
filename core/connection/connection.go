@@ -5,6 +5,7 @@ import (
 	"shila/core/model"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
+	"shila/layer"
 	"shila/log"
 	"shila/networkSide"
 	"sync"
@@ -180,16 +181,35 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}
 
 	// Create the packet header which is associated with the connection
-	
-
-	/*
-	if header, err := p.GetNetworkHeader(c.routing); err != nil {
-		c.state = Closed
-		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
+	// If the packet contains a receiver token, then the new connection is a MPTCP sub flow.
+	if token, ok, err := layer.GetMPTCPReceiverToken(p.GetRawPayload()); ok {
+		if err == nil {
+			if networkHeader, ok := c.routing.RetrieveFromReceiverToken(token); ok {
+				c.header = networkHeader
+				p.SetNetworkHeader(networkHeader)
+			} else {
+				panic(fmt.Sprint("No network header available in routing for receiver token {", token,"} beside " +
+					"having packet {", p.GetIPHeader(), "} containing it.")) // TODO: Handle panic!
+			}
+		} else {
+			panic(fmt.Sprint("Unable to get receiver token for packet {", p.GetIPHeader(), "}. - ", err.Error())) // TODO: Handle panic!
+		}
+	// For a MPTCP main flow the network header can probably be extracted from the IP options
+	} else if networkHeader, ok, err := layer.GetNetworkHeaderFromIPOptions(p.GetRawPayload()); ok {
+		if err == nil {
+			c.header = networkHeader
+			p.SetNetworkHeader(networkHeader)
+		} else {
+			panic(fmt.Sprint("Unable to get IP options for packet {", p.GetIPHeader(), "}. - ", err.Error())) // TODO: Handle panic!
+		}
+	// For a MPTCP main flow the network header is probably available in the routing table
+	} else if networkHeader, ok := c.routing.RetrieveFromIPAddressKey(p.IPHeaderDstKey()); ok {
+		c.header = networkHeader
+		p.SetNetworkHeader(networkHeader)
+	// No valid option to get network header :(
 	} else {
-		c.header = header
+		panic(fmt.Sprint("No valid option to create network header for packet {", p.GetIPHeader(), "}.")) // TODO: Handle panic!
 	}
-	*/
 
 	// Create the contacting connection
 	if channels, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
