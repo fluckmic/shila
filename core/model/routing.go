@@ -7,20 +7,20 @@ import (
 	"fmt"
 )
 
-type MptcpReceiverToken uint32
+type MPTCPReceiverToken uint32
 type MPTCPReceiverKey   uint64
 
 type Mapping struct {
-	addressesFromToken 	 map[MptcpReceiverToken] *NetworkHeader
+	addressesFromToken 	 map[MPTCPReceiverToken] *NetworkHeader
 	addressesFromDstIPv4 map[IPAddressKey]  	 *NetworkHeader
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[MptcpReceiverToken] *NetworkHeader),
+	return &Mapping{make(map[MPTCPReceiverToken] *NetworkHeader),
 				   make(map[IPAddressKey]       *NetworkHeader)}
 }
 
-func (m Mapping) RetrieveFromReceiverToken(token MptcpReceiverToken) (NetworkHeader, bool) {
+func (m Mapping) RetrieveFromReceiverToken(token MPTCPReceiverToken) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
 	return *packetHeader, ok
 }
@@ -54,7 +54,7 @@ func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress
 	return nil
 }
 
-func receiverTokenFromKey(key MPTCPReceiverKey) (MptcpReceiverToken, error) {
+func receiverTokenFromKey(key MPTCPReceiverKey) (MPTCPReceiverToken, error) {
 
 	// The token is used to identify the MPTCP connection and is a cryptographic hash of the receiver's key, as
 	// exchanged in the initial MP_CAPABLE handshake (Section 3.1).  In this specification, the tokens presented in
@@ -62,8 +62,8 @@ func receiverTokenFromKey(key MPTCPReceiverKey) (MptcpReceiverToken, error) {
 	// https://tools.ietf.org/html/rfc6824#section-3.1
 	buf := new(bytes.Buffer)
 	if err := binary.Write(buf, binary.BigEndian, key); err != nil {
-		return MptcpReceiverToken(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
+		return MPTCPReceiverToken(0), Error(fmt.Sprint("Unable to create token from receiver key {", key ,"}. - ", err.Error()))
 	}
 	check := sha1.Sum(buf.Bytes())
-	return MptcpReceiverToken(binary.BigEndian.Uint32(check[0:5])), nil
+	return MPTCPReceiverToken(binary.BigEndian.Uint32(check[0:5])), nil
 }

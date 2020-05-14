@@ -9,6 +9,7 @@ import (
 	"shila/core/model"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint/vif"
+	"shila/layer"
 	"shila/log"
 )
 
@@ -208,12 +209,24 @@ func (d *Device) serveIngress() {
 func (d *Device) serveEgress() {
 	writer := io.Writer(d.vif)
 	for p := range d.channels.trafficChannels.Egress {
-		_, err := writer.Write(p.RawPayload())
+		_, err := writer.Write(p.GetRawPayload())
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
 		} else if err != nil {
 			panic("implement me") //TODO!
+		}
+	}
+}
+
+func (d *Device) packetize() {
+	for {
+		rawData  := layer.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)
+		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
+				"}. - ", err.Error())) // TODO: Handle panic!
+		} else {
+			d.channels.trafficChannels.Ingress <- model.NewPacket(d, iPHeader, rawData)
 		}
 	}
 }

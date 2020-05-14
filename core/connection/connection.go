@@ -31,7 +31,7 @@ const (
 
 type Connection struct {
 	id          model.IPHeaderKey
-	header      *model.NetworkHeader
+	header      model.NetworkHeader
 	state       State
 	channels    Channels
 	lock        sync.Mutex
@@ -49,8 +49,8 @@ type Channels struct {
 
 func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
 	id model.IPHeaderKey) *Connection {
-	return &Connection{id, nil ,Raw, Channels{} , sync.Mutex{},
-		time.Now(), kernelSide, networkSide, routing}
+	return &Connection{id: id, header: model.NetworkHeader{} , state: Raw,
+		touched: time.Now(), kernelSide: kernelSide, networkSide: networkSide, routing: routing}
 }
 
 func (c *Connection) Close() {
@@ -73,16 +73,13 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	key, err := p.IPHeaderKey()
-	if err != nil {
-		return err
-	}
-	if model.IPHeaderKey(key) != c.id {
+	key := p.IPHeaderKey()
+	if key != c.id {
 		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
 
 	// From where was the packet received?
-	switch p.EntryPoint().Label() {
+	switch p.GetEntryPoint().Label() {
 		case model.KernelEndpoint: 				return c.processPacketFromKerep(p)
 		case model.ContactingNetworkEndpoint: 	return c.processPacketFromContactingEndpoint(p)
 		case model.TrafficNetworkEndpoint:		return c.processPacketFromTrafficEndpoint(p)
@@ -173,7 +170,7 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Assign the channels from the device through which the packet was received.
-	var ep interface{} = p.EntryPoint()
+	var ep interface{} = p.GetEntryPoint()
 	if entryPoint, ok := ep.(*kernelEndpoint.Device); ok {
 		c.channels.KernelEndpoint.Ingress = entryPoint.TrafficChannels().Ingress // ingress from kernel end point
 		c.channels.KernelEndpoint.Egress  = entryPoint.TrafficChannels().Egress  // egress towards kernel end point
@@ -183,12 +180,16 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}
 
 	// Create the packet header which is associated with the connection
+	
+
+	/*
 	if header, err := p.GetNetworkHeader(c.routing); err != nil {
 		c.state = Closed
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
 		c.header = header
 	}
+	*/
 
 	// Create the contacting connection
 	if channels, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
@@ -227,22 +228,19 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet) error {
 
 	// Get the kernel endpoint from the kernel side manager
-	if dstKey, err := p.IPHeaderDstKey(); err == nil {
-		c.state = Closed
-		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
+	dstKey := p.IPHeaderDstKey()
+	if channels, ok := c.kernelSide.GetTrafficChannels(dstKey); ok {
+		c.channels.KernelEndpoint = channels
 	} else {
-		if channels, ok := c.kernelSide.GetTrafficChannels(dstKey); ok {
-			c.channels.KernelEndpoint = channels
-		} else {
-			c.state = Closed
-			return Error(fmt.Sprint("Cannot process packet - No kernel endpoint for ", dstKey))
-		}
+		c.state = Closed
+		return Error(fmt.Sprint("Cannot process packet - No kernel endpoint for ", dstKey))
 	}
 
 	// Send packet to kernel endpoint
 	// --> 	Could still be that connection cannot be established, since we have no idea if there is actually a server listening
 	c.channels.KernelEndpoint.Egress <- p
 
+	/*
 	// Create the packet header which is associated with the connection
 	if header, err := p.GetNetworkHeader(c.routing); err != nil {
 		c.state = Closed
@@ -250,6 +248,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	} else {
 		c.header = header
 	}
+	*/
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !

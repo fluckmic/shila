@@ -6,7 +6,9 @@ import (
 	"net"
 	"shila/config"
 	"shila/core/model"
+	"shila/layer"
 	"shila/log"
+	"shila/shutdown"
 )
 
 var _ model.ServerNetworkEndpoint = (*Server)(nil)
@@ -123,10 +125,21 @@ func (s *Server) serveIngress(connection net.Conn) {
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, s.config.SizeReadBuffer)
 
-	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
-	path 	:= Generator{}.NewPath("")
+	if s.Label() == model.ContactingNetworkEndpoint {
+		// Server is the contacting server, it is his responsibility
+		// to extract the necessary data from the ip packet to be able
+		// to set the correct network header.
+		go s.packetizeContacting(ingressRaw, connection)
 
-	go s.packetize(ingressRaw, srcAddr, path)
+	} else if s.Label() == model.TrafficNetworkEndpoint {
+		// Server receives normal traffic, the connection over which the
+		// packet was received contains enough information to set
+		// the correct network header.
+		go s.packetizeTraffic(ingressRaw, connection)
+	} else {
+		panic(fmt.Sprint("Wrong server label {", s.Label(), "} in serving ingress functionality of " +
+			"server {", s.Key(), "}.")) // TODO: Handle panic!
+	}
 
 	reader := io.Reader(connection)
 	storage := make([]byte, s.config.SizeReadBuffer)
@@ -147,25 +160,20 @@ func (s *Server) serveIngress(connection net.Conn) {
 func (s *Server) serveEgress() {
 	for p := range s.trafficChannels.Egress {
 		// Retrieve key to get the correct connection
-		if key, err := p.NetworkHeaderDstAndPathKey(); err == nil {
-			if con, ok := s.connections[key]; ok {
-				writer := io.Writer(con)
-				_, err := writer.Write(p.RawPayload())
-				if err != nil && !s.IsValid() {
-					// Error doesn't matter, kernel endpoint is no longer valid anyway.
-					return
-				} else if err != nil {
-					packetKey, _ := p.IPHeaderKey()
-					panic(fmt.Sprint("Unable to send data for packet {", packetKey,"} in the " +
-						"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
-				}
-			} else {
-				packetKey, _ := p.IPHeaderKey()
-				panic(fmt.Sprint("Can't find an egress connection for packet {", packetKey,"} in the " +
-					"server {", s.Key(), "} for connection key {", key,"}.")) // TODO: Handle panic!
+		key := p.NetworkHeaderDstAndPathKey()
+		if con, ok := s.connections[key]; ok {
+			writer := io.Writer(con)
+			_, err := writer.Write(p.GetRawPayload())
+			if err != nil && !s.IsValid() {
+				// Error doesn't matter, kernel endpoint is no longer valid anyway.
+				return
+			} else if err != nil {
+				panic(fmt.Sprint("Unable to send data for packet {", p.IPHeaderKey(), "} in the " +
+					"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
 			}
 		} else {
-			panic(fmt.Sprint("Unable to fetch egress connection key in server {", s.Key(), "}.")) // TODO: Handle panic!
+			panic(fmt.Sprint("Can't find an egress connection for packet {", p.IPHeaderKey(), "} in the " +
+				"server {", s.Key(), "} for connection key {", key,"}.")) // TODO: Handle panic!
 		}
 	}
 }
@@ -176,4 +184,49 @@ func (s *Server) IsSetup() bool {
 
 func (s *Server) IsValid() bool {
 	return s.isValid
+}
+
+func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
+
+	// Create the packet network header
+	dstAddr := s.listenTo
+	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
+	path 	:= Generator{}.NewPath("")
+	header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr }
+
+	for {
+		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
+		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
+				"}. - ", err.Error())) // TODO: Handle panic!
+		} else {
+			s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+		}
+	}
+}
+
+func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
+
+	/*
+		dstAddr 	:= s.listenTo
+		path        := Generator{}.NewPath("")
+		srcNetwAddr := connection.RemoteAddr()
+
+		for {
+			rawData := packetizeRawData(ingressRaw, s.config.SizeReadBuffer)
+			if ip4v, tcp, err := layer.DecodeIPv4andTCPLayer(rawData); err != nil {
+
+			} else {
+				p.ipHeader.Src.IP 		= ip4v.SrcIP
+				p.ipHeader.Src.Port 	= int(tcp.SrcPort)
+				p.ipHeader.Dst.IP 		= ip4v.DstIP
+				p.ipHeader.Dst.Port 	= int(tcp.DstPort)
+			}
+
+
+			s.trafficChannels.Ingress <- model.NewPacketFromRawIPAndNetworkHeader(s, &header, rawData)
+		}
+	*/
+	shutdown.Check() // Fatal error could occur.. :o
+
 }

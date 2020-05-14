@@ -6,6 +6,7 @@ import (
 	"net"
 	"shila/config"
 	"shila/core/model"
+	"shila/layer"
 	"shila/log"
 )
 
@@ -110,12 +111,24 @@ func (c *Client) serveIngress() {
 func (c *Client) serveEgress() {
 	writer := io.Writer(c.connection)
 	for p := range c.trafficChannels.Egress {
-		_, err := writer.Write(p.RawPayload())
+		_, err := writer.Write(p.GetRawPayload())
 		if err != nil && !c.IsValid() {
 			// Error doesn't matter, client is no longer valid anyway.
 			return
 		} else if err != nil {
 			panic("implement me") //TODO!
+		}
+	}
+}
+
+func (c *Client) packetize() {
+	for {
+		rawData  := layer.PacketizeRawData(c.ingressRaw, c.config.SizeReadBuffer)
+		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+			panic(fmt.Sprint("Unable to get IP header in packetizer of client {", c.Key(),
+				"}. - ", err.Error())) // TODO: Handle panic!
+		} else {
+			c.trafficChannels.Ingress <- model.NewPacket(c, iPHeader, rawData)
 		}
 	}
 }

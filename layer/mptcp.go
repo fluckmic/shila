@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/google/gopacket/layers"
+	"shila/core/model"
 	"shila/log"
 )
 
@@ -73,7 +74,29 @@ const (
 	MPTCPOptionSubtypeFastClose             = 7
 )
 
-func DecodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
+func GetMPTCPReceiverToken(raw []byte) (model.MPTCPReceiverToken, bool, error) {
+	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
+	// only once at the setup of a new sub flow. It should be fine to do this twice.
+	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
+		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
+			for _, mptcpOption := range mptcpOptions {
+				if mptcpJoinOptionSYN, ok := mptcpOption.(MPTCPJoinOptionSYN); ok {
+					return model.MPTCPReceiverToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
+				}
+			}
+			// MPTCP options does not contain the receiver token
+			return model.MPTCPReceiverToken(0), false, nil
+		} else {
+			// Error in decoding the mptcp options
+			return model.MPTCPReceiverToken(0), false, err
+		}
+	} else {
+		// Error in decoding the ipv4/tcp options
+		return model.MPTCPReceiverToken(0), false, err
+	}
+}
+
+func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 
 	options = []MPTCPOption{}
 
