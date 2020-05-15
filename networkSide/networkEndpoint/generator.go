@@ -15,6 +15,9 @@ func (e Error) Error() string {
 	return string(e)
 }
 
+const defaultPath 			= ""
+const defaultContactingPort = 9876
+
 type Base struct {
 	label           model.EndpointLabel
 	trafficChannels model.TrafficChannels
@@ -62,3 +65,6 @@ func (g Generator) NewPath(path string) model.NetworkPath {
 	return newPath(path)
 }
 
+func (g Generator) GenerateContactingAddress(address model.NetworkAddress) model.NetworkAddress {
+	return generateContactingAddress(address, defaultContactingPort)
+}

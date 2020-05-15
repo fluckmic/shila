@@ -25,9 +25,12 @@ type Client struct {
 func newClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
 	label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
 	_ = connectVia
-	return &Client{connectTo.(Address),nil,Base{label,
-		model.TrafficChannels{}, config},make(chan byte, config.SizeReadBuffer),
-		true, false, false}
+	return &Client{
+		connectedTo: connectTo.(Address),
+		Base: Base{label, model.TrafficChannels{}, config},
+		ingressRaw: make(chan byte, config.SizeReadBuffer),
+		isValid: true,
+	}
 }
 
 func (c *Client) Key() model.EndpointKey {

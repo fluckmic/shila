@@ -45,11 +45,26 @@ func newLocalNetworkAddress(port string) model.NetworkAddress {
 	return nil
 }
 
+func generateContactingAddress(address model.NetworkAddress, port int) model.NetworkAddress {
+	if host, _, err := net.SplitHostPort(address.String()); err != nil {
+		log.Error.Panic(fmt.Sprint("Unable to generate contacting address from {", address, "}."))
+		return nil
+	} else {
+		if IPv4 := net.ParseIP(host); IPv4 == nil {
+			log.Error.Panic(fmt.Sprint("Unable to generate contacting address from {", address, "}."))
+			return nil
+		} else {
+			return Address{Addr: net.TCPAddr{IP: IPv4, Port: port}}
+		}
+	}
+}
+
 func newEmptyNetworkAddress() model.NetworkAddress {
 	return Address{Addr: net.TCPAddr{}}
 }
 
+
+
 func (a Address) String() string {
 	return a.Addr.String()
 }
-

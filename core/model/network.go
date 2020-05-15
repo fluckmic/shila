@@ -28,8 +28,9 @@ type NetworkEndpointGenerator interface {
 
 // Should be able to create a network address from a string.
 type NetworkAddressGenerator interface {
-	NewAddress(string) 		NetworkAddress
-	NewLocalAddress(string) NetworkAddress
+	NewAddress(string) 								  NetworkAddress 		// Generates a new network address from a string
+	NewLocalAddress(string) 						  NetworkAddress
+	GenerateContactingAddress(address NetworkAddress) NetworkAddress 		// Generates the contacting network address from (traffic) network address
 }
 
 type NetworkKeyGenerator interface {

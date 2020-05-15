@@ -131,19 +131,20 @@ func (m *Manager) EstablishNewContactingClientEndpoint(addr model.NetworkAddress
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	// Fetch the default contacting path and check if there already exists
+	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
-	path := networkEndpoint.Generator{}.GetDefaultContactingPath(addr)
-	if _, ok := m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, path)]; ok {
+	contactingPath := networkEndpoint.Generator{}.GetDefaultContactingPath(addr)
+	if _, ok := m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, contactingPath)]; ok {
 		return model.TrafficChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - Endpoint already exists."))
 	} else {
 		// Establish a new contacting client endpoint
-		newClientContactingEndpoint := networkEndpoint.Generator{}.NewClient(addr, path, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+		contactingAddr := networkEndpoint.Generator{}.GenerateContactingAddress(addr)
+		newClientContactingEndpoint := networkEndpoint.Generator{}.NewClient(contactingAddr, contactingPath, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
 		if err := newClientContactingEndpoint.SetupAndRun(); err != nil {
 			return model.TrafficChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - ", err.Error()))
 		}
 		// Add it to the corresponding mapping
-		m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, path)] = newClientContactingEndpoint
+		m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, contactingPath)] = newClientContactingEndpoint
 		// Announce the new traffic channels to the working side
 		m.workingSide <- newClientContactingEndpoint.TrafficChannels()
 
