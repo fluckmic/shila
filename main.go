@@ -65,7 +65,7 @@ func realMain() int {
 	routing := model.NewMapping()
 
 	// TODO. ############## Testing ##############
-	key := "10.7.0.9:2727"
+	key := "(10.7.0.9:2727)"
 	path := networkEndpoint.Generator{}.NewPath("")
 	dstAddr := networkEndpoint.Generator{}.NewAddress("192.168.34.189:2727")
 	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()

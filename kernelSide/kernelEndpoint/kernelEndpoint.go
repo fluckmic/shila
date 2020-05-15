@@ -13,6 +13,14 @@ import (
 	"shila/log"
 )
 
+const doVerbosePackageLogging = false
+
+func verbolog(loggingMessage string) {
+	if doVerbosePackageLogging {
+		log.Verbose.Print(loggingMessage)
+	}
+}
+
 type Device struct {
 	Id         Identifier
 	channels   *Channel
@@ -133,15 +141,12 @@ func (d *Device) Start() error {
 
 	}
 
-	log.Verbose.Print("Starting kernel endpoint: ", d.Id.Key(), ".")
-
 	go d.packetize()
 	go d.serveIngress()
 	go d.serveEgress()
 
 	d.isRunning = true
 
-	log.Verbose.Print("Started kernel endpoint: ", d.Id.Key(), ".")
 	return nil
 }
 
@@ -194,6 +199,8 @@ func (d *Device) serveIngress() {
 	storage := make([]byte, d.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, d.config.BatchSizeRead)
+		verbolog(fmt.Sprint("Kernel endpoint {", d.Key() ,"} has read {", nBytesRead, "} " +
+			"bytes which are now send to the ingress raw."))
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
@@ -226,6 +233,7 @@ func (d *Device) packetize() {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
+			verbolog(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
 			d.channels.trafficChannels.Ingress <- model.NewPacket(d, iPHeader, rawData)
 		}
 	}

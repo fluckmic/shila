@@ -13,7 +13,6 @@ import (
 // TODO: ByteOrder!
 var hostByteOrder = binary.BigEndian
 
-
 type IPv4Option interface{}
 
 func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
@@ -69,6 +68,7 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
 			}
 			return rawData
 		} else if b >> 4 == 6 {
+			rawData = append(rawData, b)
 			// Read 7 more bytes
 			for cnt := 0; cnt < 7; cnt++ {
 				rawData = append(rawData, <-ingressRaw)

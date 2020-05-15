@@ -51,7 +51,7 @@ func (m *Manager) serveChannel(buffer model.PacketChannel, endpointKey model.End
 
 func (m *Manager) handleChannel(buffer model.PacketChannel, endpointKey model.EndpointKey,
 	endpointLabel model.EndpointLabel, direction string, handlerId int) {
-	log.Verbose.Print("Started ", direction, " ", endpointLabel, " packet channel handler #", handlerId, " for ", endpointKey, ".")
+	// log.Verbose.Print("Started ", direction, " ", endpointLabel, " packet channel handler #", handlerId, " for ", endpointKey, ".")
 	for p := range buffer {
 		m.processChannel(p)
 	}

@@ -11,18 +11,18 @@ type MPTCPEndpointToken uint32
 type MPTCPEndpointKey   uint64
 
 type Mapping struct {
-	addressesFromToken 	 map[MPTCPEndpointToken] *NetworkHeader
-	addressesFromDstIPv4 map[IPAddressKey]  	 *NetworkHeader
+	addressesFromToken 	 map[MPTCPEndpointToken] NetworkHeader
+	addressesFromDstIPv4 map[IPAddressKey]  	 NetworkHeader
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[MPTCPEndpointToken] *NetworkHeader),
-				   make(map[IPAddressKey]       *NetworkHeader)}
+	return &Mapping{make(map[MPTCPEndpointToken] NetworkHeader),
+				   make(map[IPAddressKey]       NetworkHeader)}
 }
 
 func (m Mapping) RetrieveFromMPTCPEndpointToken(token MPTCPEndpointToken) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
-	return *packetHeader, ok
+	return packetHeader, ok
 }
 
 func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
@@ -33,7 +33,7 @@ func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr Networ
 		if _, ok := m.addressesFromToken[token]; ok {
 			return Error(fmt.Sprint("Unable to insert routing entry for key {", key ,"}. - Entry already exists."))
 		} else {
-			m.addressesFromToken[token] = &NetworkHeader{srcAddr, path, dstAddr}
+			m.addressesFromToken[token] = NetworkHeader{srcAddr, path, dstAddr}
 		}
 	}
 	return nil
@@ -41,7 +41,7 @@ func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr Networ
 
 func (m Mapping) RetrieveFromIPAddressKey(key IPAddressKey) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromDstIPv4[key]
-	return *packetHeader, ok
+	return packetHeader, ok
 }
 
 func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
@@ -49,7 +49,7 @@ func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress
 	if _, ok := m.addressesFromDstIPv4[key]; ok {
 		return Error(fmt.Sprint("Unable to insert routing entry for destination IPv4 {", key ,"}. - Entry already exists."))
 	} else {
-		m.addressesFromDstIPv4[key] = &NetworkHeader{srcAddr, path, dstAddr}
+		m.addressesFromDstIPv4[key] = NetworkHeader{srcAddr, path, dstAddr}
 	}
 	return nil
 }
