@@ -100,10 +100,13 @@ func (c *Client) serveIngress() {
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
 		if err != nil && !c.IsValid() {
-			// Error doesn't matter, client is no longer valid anyway.
+			// Client is no longer valid, there is no need to try to stay alive.
 			return
 		} else if err != nil {
-			panic("implement me") //TODO!
+			// Client is still valid, that is, a connection relies on this client.
+			// Client should try to recover somehow to reestablish a connection.
+			panic(fmt.Sprint("Client {", c.Label()," ",c.Key(), "} unable to read data from underlying connection. - ",
+				err.Error())) // TODO: Handle panic!
 		}
 		for _, b := range storage[:nBytesRead] {
 			c.ingressRaw <- b
@@ -119,7 +122,10 @@ func (c *Client) serveEgress() {
 			// Error doesn't matter, client is no longer valid anyway.
 			return
 		} else if err != nil {
-			panic("implement me") //TODO!
+			// Client is still valid, that is, a connection relies on this client.
+			// Client should try to recover somehow to reestablish a connection.
+			panic(fmt.Sprint("Client {", c.Label()," ",c.Key(), "} unable to write data to underlying connection. - ",
+				err.Error())) // TODO: Handle panic!
 		}
 	}
 }
