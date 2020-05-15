@@ -217,7 +217,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			panic(fmt.Sprint("Unable to get IP options for packet {", p.GetIPHeader(), "}. - ", err.Error())) // TODO: Handle panic!
 		}
 	// For a MPTCP main flow the network header is probably available in the routing table
-	} else if networkHeader, ok := c.routing.RetrieveFromIPAddressKey(p.IPHeaderDstKey()); ok {
+	} else if networkHeader, ok := c.routing.RetrieveFromIPAddressPortKey(p.IPHeaderDstKey()); ok {
 		c.header = networkHeader
 		p.SetNetworkHeader(networkHeader)
 	// No valid option to get network header :(
@@ -262,7 +262,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet) error {
 
 	// Get the kernel endpoint from the kernel side manager
-	dstKey := p.IPHeaderDstKey()
+	dstKey := p.IPHeaderDstIPKey()
 	if channels, ok := c.kernelSide.GetTrafficChannels(dstKey); ok {
 		c.channels.KernelEndpoint = channels
 	} else {

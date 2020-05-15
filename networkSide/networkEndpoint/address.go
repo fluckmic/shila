@@ -30,7 +30,6 @@ func newAddress(address string) model.NetworkAddress {
 			return Address{Addr: net.TCPAddr{IP: IPv4, Port: Port}}
 		}
 	}
-
 	return nil
 }
 

@@ -4,14 +4,6 @@ import (
 	"shila/config"
 )
 
-// Keys
-// (ipv4:port)
-type IPAddressKey			  string
-// (network-address)
-type NetworkAddressKey		  string
-// (network-address<>path)
-type NetworkAddressAndPathKey string
-
 type ServerNetworkEndpointAndConnectionCount struct {
 	Endpoint ServerNetworkEndpoint
 	ConnectionCount int

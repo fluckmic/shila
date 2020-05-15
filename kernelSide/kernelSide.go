@@ -246,8 +246,8 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
-			if _, ok := m.endpoints[model.IPAddressKey(newKerepKey)]; !ok {
-				m.endpoints[model.IPAddressKey(newKerepId.Key())] = newKerep
+			if _, ok := m.endpoints[newKerepKey]; !ok {
+				m.endpoints[newKerepId.Key()] = newKerep
 				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.

@@ -71,7 +71,7 @@ func realMain() int {
 	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
 	// TODO. ############## Testing ##############
 
-	routing.InsertFromIPAddressKey(model.IPAddressKey(key), srcAddr, dstAddr, path)
+	routing.InsertFromIPAddressPortKey(model.IPAddressPortKey(key), srcAddr, dstAddr, path)
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)

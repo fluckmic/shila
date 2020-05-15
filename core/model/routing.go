@@ -12,12 +12,12 @@ type MPTCPEndpointKey   uint64
 
 type Mapping struct {
 	addressesFromToken 	 map[MPTCPEndpointToken] NetworkHeader
-	addressesFromDstIPv4 map[IPAddressKey]  	 NetworkHeader
+	addressesFromDstIPv4 map[IPAddressPortKey] 	 NetworkHeader
 }
 
 func NewMapping() *Mapping {
 	return &Mapping{make(map[MPTCPEndpointToken] NetworkHeader),
-				   make(map[IPAddressKey]       NetworkHeader)}
+				   make(map[IPAddressPortKey]   NetworkHeader)}
 }
 
 func (m Mapping) RetrieveFromMPTCPEndpointToken(token MPTCPEndpointToken) (NetworkHeader, bool) {
@@ -39,12 +39,12 @@ func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr Networ
 	return nil
 }
 
-func (m Mapping) RetrieveFromIPAddressKey(key IPAddressKey) (NetworkHeader, bool) {
+func (m Mapping) RetrieveFromIPAddressPortKey(key IPAddressPortKey) (NetworkHeader, bool) {
 	packetHeader, ok := m.addressesFromDstIPv4[key]
 	return packetHeader, ok
 }
 
-func (m Mapping) InsertFromIPAddressKey(key IPAddressKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
+func (m Mapping) InsertFromIPAddressPortKey(key IPAddressPortKey, srcAddr NetworkAddress, dstAddr NetworkAddress, path NetworkPath) error {
 
 	if _, ok := m.addressesFromDstIPv4[key]; ok {
 		return Error(fmt.Sprint("Unable to insert routing entry for destination IPv4 {", key ,"}. - Entry already exists."))

@@ -8,6 +8,7 @@ import (
 	"shila/core/model"
 	"shila/layer"
 	"shila/log"
+	"strconv"
 )
 
 var _ model.ServerNetworkEndpoint = (*Server)(nil)
@@ -209,6 +210,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	// Fetch the parts for the packet network header which are fixed.
 	path 		:= Generator{}.NewPath("")
 	srcAddr 	:= Generator{}.NewAddress(connection.RemoteAddr().String())
+	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
 		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
@@ -216,7 +218,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			dstAddr := Generator{}.NewAddress(net.JoinHostPort(s.listenTo.Addr.IP.String(), string(iPHeader.Dst.Port)))
+			dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
 			header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
 			s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 		}

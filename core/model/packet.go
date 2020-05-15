@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -26,20 +25,24 @@ type IPHeader struct {
 	Dst net.TCPAddr
 }
 
-// (src-ipv4-address:port<>dst-ipv4-address:port)
-type IPHeaderKey   string
 func (iph *IPHeader) key() IPHeaderKey {
-	return IPHeaderKey(fmt.Sprint("(", iph.Src.String(), "<>", iph.Dst.String(), ")"))
+	return KeyGenerator{}.IPHeaderKey(*iph)
 }
 
-// (src-ipv4-address:port)
-func (iph *IPHeader) srcKey() IPAddressKey {
-	return IPAddressKey(fmt.Sprint("(", iph.Src.String(),")"))
+func (iph *IPHeader) srcKey() IPAddressPortKey {
+	return KeyGenerator{}.IPAddressPortKey(iph.Src)
 }
 
-// (dst-ipv4-address:port)
-func (iph *IPHeader) dstKey() IPAddressKey {
-	return IPAddressKey(fmt.Sprint("(", iph.Dst.String(),")"))
+func (iph *IPHeader) srcIPKey() IPAddressKey {
+	return KeyGenerator{}.IPAddressKey(iph.Src.IP)
+}
+
+func (iph *IPHeader) dstKey() IPAddressPortKey {
+	return KeyGenerator{}.IPAddressPortKey(iph.Dst)
+}
+
+func (iph *IPHeader) dstIPKey() IPAddressKey {
+	return KeyGenerator{}.IPAddressKey(iph.Dst.IP)
 }
 
 type NetworkHeader struct {
@@ -48,14 +51,12 @@ type NetworkHeader struct {
 	Dst  NetworkAddress
 }
 
-// (src-network-address<>path<>dst-network-address)
-type NetworkHeaderKey string
 func (nh *NetworkHeader) key() NetworkHeaderKey {
-	return NetworkHeaderKey(fmt.Sprint("(",nh.Src.String(),"<>",nh.Path.String(),"<>",nh.Dst.String(),")"))
+	return KeyGenerator{}.NetworkHeaderKey(*nh)
 }
 
 func (nh *NetworkHeader) destAndPathKey() NetworkAddressAndPathKey {
-	return NetworkAddressAndPathKey(fmt.Sprint("(",nh.Dst.String(),"<>",nh.Path.String(),")"))
+	return KeyGenerator{}.NetworkAddressAndPathKey(*nh)
 }
 
 type IPv4TCPPacket struct {
@@ -78,12 +79,20 @@ func (p *Packet) IPHeaderKey() IPHeaderKey {
 	return p.ipHeader.key()
 }
 
-func (p *Packet) IPHeaderDstKey() IPAddressKey {
+func (p *Packet) IPHeaderDstKey() IPAddressPortKey {
 	return p.ipHeader.dstKey()
 }
 
-func (p *Packet) IPHeaderSrcKey() IPAddressKey {
+func (p *Packet) IPHeaderSrcKey() IPAddressPortKey {
 	return p.ipHeader.srcKey()
+}
+
+func (p *Packet) IPHeaderDstIPKey() IPAddressKey {
+	return p.ipHeader.dstIPKey()
+}
+
+func (p *Packet) IPHeaderSrcIPKey() IPAddressKey {
+	return p.ipHeader.srcIPKey()
 }
 
 func (p *Packet) GetNetworkHeader() NetworkHeader {

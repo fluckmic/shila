@@ -3,6 +3,7 @@ package kernelEndpoint
 import (
 	"fmt"
 	"net"
+	"shila/core/model"
 	"shila/helper"
 )
 
@@ -41,6 +42,6 @@ func (id *Identifier) IP() string {
 }
 
 // TODO: What is the best key to use?
-func (id *Identifier) Key() string {
-	return id.IP()
+func (id *Identifier) Key() model.IPAddressKey {
+	return model.KeyGenerator{}.IPAddressKey(id.ip)
 }
