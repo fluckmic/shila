@@ -54,6 +54,10 @@ func (g Generator) NewLocalAddress(port string) model.NetworkAddress {
 	return newLocalNetworkAddress(port)
 }
 
+func (g Generator) NewEmptyAddress() model.NetworkAddress {
+	return newEmptyNetworkAddress()
+}
+
 func (g Generator) NewPath(path string) model.NetworkPath {
 	return newPath(path)
 }

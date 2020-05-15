@@ -45,6 +45,10 @@ func newLocalNetworkAddress(port string) model.NetworkAddress {
 	return nil
 }
 
+func newEmptyNetworkAddress() model.NetworkAddress {
+	return Address{Addr: net.TCPAddr{}}
+}
+
 func (a Address) String() string {
 	return a.Addr.String()
 }

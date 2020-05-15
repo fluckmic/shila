@@ -8,6 +8,7 @@ import (
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
+	"shila/networkSide/networkEndpoint"
 	"shila/shutdown"
 	"shila/workingSide"
 )
@@ -63,8 +64,14 @@ func realMain() int {
 	// Create the mapping holding the network addresses
 	routing := model.NewMapping()
 
-	// TODO: Insert target addresses for test cases here.
-	// routing.InsertFromIPAddressKey(...)
+	// TODO. ############## Testing ##############
+	key  	:= "10.7.0.9:2727"
+	path 	:= networkEndpoint.Generator{}.NewPath("")
+	dstAddr := networkEndpoint.Generator{}.NewAddress("192.168.34.189:2727")
+	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
+	// TODO. ############## Testing ##############
+
+	routing.InsertFromIPAddressKey(model.IPAddressKey(key), srcAddr, dstAddr, path)
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)
