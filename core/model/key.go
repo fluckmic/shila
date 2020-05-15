@@ -31,7 +31,12 @@ func (g KeyGenerator) IPAddressPortKey(addr net.TCPAddr) IPAddressPortKey {
 }
 
 func (g KeyGenerator) IPHeaderKey(iph IPHeader) IPHeaderKey {
-	return IPHeaderKey(fmt.Sprint("(", iph.Src.String(), "<>", iph.Dst.String(), ")"))
+	srcString := iph.Src.String(); dstString := iph.Dst.String()
+	if srcString < dstString {
+		return IPHeaderKey(fmt.Sprint("(", srcString, "<>", dstString, ")"))
+	} else {
+		return IPHeaderKey(fmt.Sprint("(", dstString, "<>", srcString, ")"))
+	}
 }
 
 func (g KeyGenerator) NetworkHeaderKey(nh NetworkHeader) NetworkHeaderKey {
