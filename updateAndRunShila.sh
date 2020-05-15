@@ -9,5 +9,5 @@ printf "Compile..\n"
 go build
 
 printf "Run shila..\n"
-./shila
+sudo ./shila
 

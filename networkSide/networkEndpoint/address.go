@@ -18,13 +18,13 @@ type Address struct {
 func newAddress(address string) model.NetworkAddress {
 
 	if host, port, err := net.SplitHostPort(address); err != nil {
-		log.Error.Panic(fmt.Sprint("Unable to create new address from ", address, "."))
+		log.Error.Panic(fmt.Sprint("Unable to create new network address from {", address, "}."))
 		return nil
 	} else {
 		IPv4 := net.ParseIP(host)
 		Port, err := strconv.Atoi(port)
-		if IPv4 != nil || err != nil {
-			log.Error.Panic(fmt.Sprint("Unable to create new address from ", address, "."))
+		if IPv4 == nil || err != nil {
+			log.Error.Panic(fmt.Sprint("Unable to create new network address from {", address, "}."))
 			return nil
 		} else {
 			return Address{Addr: net.TCPAddr{IP: IPv4, Port: Port}}
