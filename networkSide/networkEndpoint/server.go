@@ -19,6 +19,7 @@ type Server struct{
 	connections map[model.NetworkAddressAndPathKey]  net.Conn
 	lock        sync.Mutex
 	listenTo 	Address
+	holdingArea []*model.Packet
 	isValid     bool
 	isSetup     bool // TODO: merge to "state" object
 	isRunning   bool
@@ -33,6 +34,7 @@ func newServer(listenTo model.NetworkAddress, label model.EndpointLabel, config 
 		connections: 	make(map[model.NetworkAddressAndPathKey]  net.Conn),
 		lock: 			sync.Mutex{},
 		listenTo: 		listenTo.(Address),
+		holdingArea:    make([]*model.Packet, 0, config.SizeHoldingArea),
 		isValid: 		true,
 	}
 }
@@ -127,6 +129,10 @@ func (s *Server) handleConnection(connection net.Conn) {
 		s.lock.Unlock()
 	}
 
+	// A new connection was established. This is good news for
+	// all packets waiting in the holding area.
+	go s.flushHoldingArea()
+
 	// Start the ingress handler for the connection.
 	log.Verbose.Print("Server {", s.Label(),"} started handling a new connection {",key,"}.")
 	s.serveIngress(connection)
@@ -139,6 +145,13 @@ func (s *Server) handleConnection(connection net.Conn) {
 	log.Verbose.Print("Server {",s.Label(),"} removed connection {",key,"}.")
 
 	return
+}
+
+func (s *Server) flushHoldingArea() {
+	log.Verbose.Print("Server {",s.Label(),"} flushes the holding area.")
+	for _, p := range s.holdingArea {
+		s.egress <- p
+	}
 }
 
 func (s *Server) serveIngress(connection net.Conn) {
@@ -195,8 +208,10 @@ func (s *Server) serveEgress() {
 					"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
 			}
 		} else {
-			panic(fmt.Sprint("Can't find an egress connection for packet {", p.IPHeaderKey(), "} in the " +
-				"server {", s.Key(), "} for connection key {", key,"}.")) // TODO: Handle panic!
+		// Currently there is no connection available to send the packet, the packet has therefore to wait
+		// in the holding area. Whenever a new connection is established all the packets in the holding area
+		// are again processed; hopefully they can be send out this time.
+			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
 }

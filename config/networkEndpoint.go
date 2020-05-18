@@ -13,6 +13,8 @@ type NetworkEndpoint struct {
 	SizeReadBuffer int
 	BatchSizeRead  int
 
+	SizeHoldingArea int
+
 }
 
 func (n *NetworkEndpoint) InitDefault() error {
@@ -22,6 +24,8 @@ func (n *NetworkEndpoint) InitDefault() error {
 
 	n.SizeReadBuffer = 1500
 	n.BatchSizeRead = 30
+
+	n.SizeHoldingArea = 100
 
 	return nil
 }
