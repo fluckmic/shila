@@ -339,7 +339,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header.Dst); err != nil {
+	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header.Src); err != nil {
 		c.state.Set(Closed)
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
