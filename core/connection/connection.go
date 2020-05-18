@@ -12,10 +12,10 @@ import (
 	"time"
 )
 
-type State uint8
+type StateIdentifier uint8
 const (
-	_                 = iota
-	Established State = iota
+	_                           = iota
+	Established StateIdentifier = iota
 	ServerReady
 	ClientReady
 	ClientEstablished
@@ -23,7 +23,12 @@ const (
 	Raw
 )
 
-func(s State) String() string {
+type State struct {
+	previous StateIdentifier
+	current  StateIdentifier
+}
+
+func(s StateIdentifier) String() string {
 	switch s {
 	case Established: 			return "Established"
 	case ServerReady: 			return "ServerReady"
@@ -35,6 +40,23 @@ func(s State) String() string {
 	return "Unknown"
 }
 
+func NewState() State {
+	return State{Raw,Raw}
+}
+
+func (s State) Set(newState StateIdentifier) {
+	s.previous = s.current
+	s.current = newState
+}
+
+func (s State) Current() StateIdentifier {
+	return s.current
+}
+
+func (s State) Previous() StateIdentifier {
+	return s.previous
+}
+
 type Connection struct {
 	id          model.IPHeaderKey
 	header      model.NetworkHeader
@@ -42,11 +64,11 @@ type Connection struct {
 	channels    Channels
 	lock        sync.Mutex
 	touched     time.Time
-	sent 		bool
-	received 	bool
+	sent        bool
+	received    bool
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing 	*model.Mapping
+	routing     *model.Mapping
 }
 
 type Channels struct {
@@ -59,7 +81,7 @@ func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routi
 	id model.IPHeaderKey) *Connection {
 	return &Connection{
 		id: 			id,
-		state: 			Raw,
+		state: 			NewState(),
 		lock:			sync.Mutex{},
 		touched: 		time.Now(),
 		kernelSide:	 	kernelSide,
@@ -78,7 +100,7 @@ func (c *Connection) Close() {
 	_ = c.networkSide.TeardownTrafficSeverEndpoint(c.header.Src)
 	_ = c.networkSide.TeardownTrafficClientEndpoint(c.header.Dst, c.header.Path)
 
-	c.state = Closed
+	c.state.Set(Closed)
 }
 
 func (c *Connection) ProcessPacket(p *model.Packet) error {
@@ -91,7 +113,9 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
 
-	log.Verbose.Print("Process packet {", p.GetIPHeader(), "} in connection {", c.ID(), " ", c.state, "}.")
+	if c.state.Previous() != c.state.Current() {
+		log.Verbose.Print("Connection {", c.ID(), "} changed state from {", c.state.Previous(), "} to {", c.state.Current(), "}.")
+	}
 
 	// From where was the packet received?
 	switch p.GetEntryPoint().Label() {
@@ -105,7 +129,7 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 }
 
 func (c *Connection) processPacketFromKerep(p *model.Packet) error {
-	switch c.state {
+	switch c.state.Current() {
 	case Raw:				return c.processPacketFromKerepStateRaw(p)
 
 	case ClientReady:		p.SetNetworkHeader(c.header)
@@ -133,7 +157,7 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 }
 
 func (c *Connection) processPacketFromContactingEndpoint(p *model.Packet) error {
-	switch c.state {
+	switch c.state.Current() {
 
 	case Raw:				return c.processPacketFromContactingEndpointStateRaw(p)
 
@@ -156,7 +180,7 @@ func (c *Connection) processPacketFromContactingEndpoint(p *model.Packet) error 
 }
 
 func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
-	switch c.state {
+	switch c.state.Current() {
 
 	case Raw:				return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
 
@@ -165,7 +189,7 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 
 	case ServerReady:		c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
-							c.state = Established
+							c.state.Set(Established)
 							return nil
 
 	case ClientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
@@ -183,7 +207,7 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 
 							c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
-							c.state = Established
+							c.state.Set(Established)
 							return nil
 
 	case Established: 		c.touched = time.Now()
@@ -205,7 +229,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 		c.channels.KernelEndpoint.Ingress = entryPoint.TrafficChannels().Ingress // ingress from kernel end point
 		c.channels.KernelEndpoint.Egress  = entryPoint.TrafficChannels().Egress  // egress towards kernel end point
 	} else {
-		c.state = Closed
+		c.state.Set(Closed)
 		return Error(fmt.Sprint("Error in packet processing. - Invalid entry point type."))
 	}
 
@@ -242,7 +266,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Create the contacting connection
 	if channels, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
-		c.state = Closed
+		c.state.Set(Closed)
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
 		c.channels.Contacting = channels
@@ -261,7 +285,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			c.channels.NetworkEndpoint = channels
 			c.lock.Lock()
 			defer c.lock.Unlock()
-			c.state = ClientEstablished
+			c.state.Set(ClientEstablished)
 			// The contacting client endpoint is no longer needed.
 			_ = c.networkSide.TeardownContactingClientEndpoint(c.header.Dst)
 			log.Verbose.Print("Established traffic connection from ", c.header.Src, " to ", c.header.Dst, " via ", c.header.Path, ".")
@@ -269,7 +293,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}()
 
 	// Set new state
-	c.state = ClientReady
+	c.state.Set(ClientReady)
 
 	return nil
 }
@@ -281,7 +305,7 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	if channels, ok := c.kernelSide.GetTrafficChannels(dstKey); ok {
 		c.channels.KernelEndpoint = channels
 	} else {
-		c.state = Closed
+		c.state.Set(Closed)
 		return Error(fmt.Sprint("Cannot process packet - No kernel endpoint for ", dstKey))
 	}
 
@@ -296,14 +320,14 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
 	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header.Dst); err != nil {
-		c.state = Closed
+		c.state.Set(Closed)
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {
 		c.channels.NetworkEndpoint = channels
 	}
 
 	// Set new state
-	c.state = ServerReady
+	c.state.Set(ServerReady)
 
 	return nil
 }
