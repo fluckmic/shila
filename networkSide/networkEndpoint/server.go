@@ -69,6 +69,7 @@ func (s *Server) SetupAndRun() error {
 }
 
 func (s *Server) TearDown() error {
+	// TODO!
 	return nil
 }
 
@@ -118,6 +119,8 @@ func (s *Server) handleConnection(connection net.Conn) {
 
 	// Start the ingress handler for the connection.
 	go s.serveIngress(connection)
+
+	log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} started handling a new connection {", key ,"}.")
 }
 
 func (s *Server) serveIngress(connection net.Conn) {

@@ -77,6 +77,8 @@ func (c *Client) SetupAndRun() error {
 
 func (c *Client) TearDown() error {
 
+	log.Verbose.Print("Tearing down client {", c.Label()," ", c.Key(), "}.")
+
 	c.isValid = false
 	c.isRunning = false
 	c.isSetup = false
@@ -105,7 +107,7 @@ func (c *Client) serveIngress() {
 		} else if err != nil {
 			// Client is still valid, that is, a connection relies on this client.
 			// Client should try to recover somehow to reestablish a connection.
-			panic(fmt.Sprint("Client {", c.Label()," ",c.Key(), "} unable to read data from underlying connection. - ",
+			panic(fmt.Sprint("Client {", c.Label()," ", c.Key(), "} unable to read data from underlying connection. - ",
 				err.Error())) // TODO: Handle panic!
 		}
 		for _, b := range storage[:nBytesRead] {
