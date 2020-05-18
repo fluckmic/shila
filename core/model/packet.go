@@ -119,7 +119,6 @@ func (p *Packet) GetEntryPoint() Endpoint {
 func (p *Packet) PrintAllInfo() {
 	log.Verbose.Print("########################################################")
 	log.Verbose.Print("IP Header: ", KeyGenerator{}.IPHeaderKey(p.ipHeader))
-	log.Verbose.Print("Network Header: ", KeyGenerator{}.NetworkHeaderKey(p.networkHeader))
 	log.Verbose.Print("Entry point: ", p.GetEntryPoint().Label())
 	log.Verbose.Print("########################################################")
 }
