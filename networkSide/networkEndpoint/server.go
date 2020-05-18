@@ -46,7 +46,7 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	if !s.IsValid() {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label()," ",s.Key(), "}. - Server no longer valid."))
+		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), " ", s.Key(), "}. - Server no longer valid."))
 	}
 
 	if s.IsSetup() {
@@ -67,7 +67,7 @@ func (s *Server) SetupAndRun() error {
 	// Start listening for incoming connections.
 	go s.serveIncomingConnections(listener)
 
-	log.Verbose.Print("Server {", s.Label(),"} started to listen for incoming connections on {",s.Key(),"}.")
+	log.Verbose.Print("Server {",s.Label()," ",s.Key(),"} started to listen for incoming backbone connections on {", s.Key(), "}.")
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -101,7 +101,7 @@ func (s *Server) IsRunning() bool {
 func (s *Server) serveIncomingConnections(listener net.Listener){
 	for {
 		if connection, err := listener.Accept(); err != nil {
-			log.Info.Print("Error serving incoming connection in server {", s.Label(), " ", s.Key(), "}. - ", err.Error())
+			log.Info.Print("Error serving incoming backbone connection in server {" ,s.Label(), " ", s.Key(), "}. - ",err.Error())
 		} else {
 			go s.handleConnection(connection)
 		}
@@ -122,8 +122,8 @@ func (s *Server) handleConnection(connection net.Conn) {
 	s.lock.Lock()
 	if _, ok := s.connections[key]; ok {
 		s.lock.Unlock()
-		panic(fmt.Sprint("Trying to add connection with key {", key, "} in " +
-			"server {", s.Key(), "}. There already exists a connection with that key.")) // TODO: Handle panic!
+		panic(fmt.Sprint("Trying to add backbone connection with key {", key, "} in " +
+			"server {", s.Label(), " ", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
 	} else {
 		s.connections[key] = connection
 		s.lock.Unlock()
@@ -134,7 +134,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	go s.flushHoldingArea()
 
 	// Start the ingress handler for the connection.
-	log.Verbose.Print("Server {", s.Label(),"} started handling a new connection {",key,"}.")
+	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} started handling a new backbone connection {", key, "}.")
 	s.serveIngress(connection)
 
 	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
@@ -142,13 +142,13 @@ func (s *Server) handleConnection(connection net.Conn) {
 	delete(s.connections, key)
 	s.lock.Unlock()
 
-	log.Verbose.Print("Server {",s.Label(),"} removed connection {",key,"}.")
+	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} removed backbone connection {", key, "}.")
 
 	return
 }
 
 func (s *Server) flushHoldingArea() {
-	log.Verbose.Print("Server {",s.Label(),"} flushes the holding area.")
+	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} flushes the holding area.")
 	for _, p := range s.holdingArea {
 		s.egress <- p
 	}
@@ -194,7 +194,6 @@ func (s *Server) serveIngress(connection net.Conn) {
 
 func (s *Server) serveEgress() {
 	for p := range s.egress {
-		log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} processes egress packet.")
 		// Retrieve key to get the correct connection
 		key := p.NetworkHeaderDstAndPathKey()
 		if con, ok := s.connections[key]; ok {
@@ -205,14 +204,15 @@ func (s *Server) serveEgress() {
 				return
 			} else if err != nil {
 				panic(fmt.Sprint("Unable to send data for packet {", p.IPHeaderKey(), "} in the " +
-					"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
+					"server {", s.Label(), " ", s.Key(), "} for backbone connection key {", key ,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} wrote {",nBytesWritten,"}.")
+				log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} wrote {", nBytesWritten, "}.")
 			}
 		} else {
 		// Currently there is no connection available to send the packet, the packet has therefore to wait
 		// in the holding area. Whenever a new connection is established all the packets in the holding area
 		// are again processed; hopefully they can be send out this time.
+			log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} directs packet with backbone connection key {", key, "} in holding area.")
 			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
