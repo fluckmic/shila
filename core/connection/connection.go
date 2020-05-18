@@ -301,7 +301,7 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			c.state.Set(ClientEstablished)
 			// The contacting client endpoint is no longer needed.
 			_ = c.networkSide.TeardownContactingClientEndpoint(c.header.Dst)
-			log.Verbose.Print("Established traffic connection from ", c.header.Src, " to ", c.header.Dst, " via ", c.header.Path, ".")
+			log.Verbose.Print("Established traffic connection to {",c.header.Dst," via ",c.header.Path,"}.")
 		}
 	}()
 

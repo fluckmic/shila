@@ -64,7 +64,7 @@ func (s *Server) SetupAndRun() error {
 	// Start listening for incoming connections.
 	go s.serveIncomingConnections(listener)
 
-	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} started to listen for incoming connections.")
+	log.Verbose.Print("Server {", s.Label(),"} started to listen for incoming connections on {",s.Key(),"}.")
 
 	s.isSetup   = true
 	s.isRunning = true
@@ -124,7 +124,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	}
 
 	// Start the ingress handler for the connection.
-	log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} started handling a new connection {", key ,"}.")
+	log.Verbose.Print("Server {", s.Label(),"} started handling a new connection {",key,"}.")
 	s.serveIngress(connection)
 
 	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
@@ -132,7 +132,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	delete(s.connections, key)
 	s.lock.Unlock()
 
-	log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} removed connection {", key ,"}.")
+	log.Verbose.Print("Server {",s.Label(),"} removed connection {",key,"}.")
 
 	return
 }

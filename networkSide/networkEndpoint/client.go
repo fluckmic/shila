@@ -68,7 +68,7 @@ func (c *Client) SetupAndRun() error {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {", c.Label(), " ", c.Key(), "} established connection to ", c.connectedTo.String(), ".")
+	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {",c.connectedTo.String(),"}.")
 
 	c.isSetup   = true
 	c.isRunning = true
@@ -77,7 +77,7 @@ func (c *Client) SetupAndRun() error {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tearing down client {", c.Label()," ", c.Key(), "}.")
+	log.Verbose.Print("Tear down client {",c.Label(),"} connecting to {",c.connectedTo.String(),"}.")
 
 	c.isValid = false
 	c.isRunning = false

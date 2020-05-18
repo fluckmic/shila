@@ -2,6 +2,7 @@ package model
 
 import (
 	"net"
+	"shila/log"
 )
 
 type Error string
@@ -113,4 +114,12 @@ func (p *Packet) GetRawPayload() []byte {
 
 func (p *Packet) GetEntryPoint() Endpoint {
 	return p.entryPoint
+}
+
+func (p *Packet) PrintAllInfo() {
+	log.Verbose.Print("########################################################")
+	log.Verbose.Print("IP Header: ", KeyGenerator{}.IPHeaderKey(p.ipHeader))
+	log.Verbose.Print("Network Header: ", KeyGenerator{}.NetworkHeaderKey(p.networkHeader))
+	log.Verbose.Print("Entry point: ", p.GetEntryPoint().Label())
+	log.Verbose.Print("########################################################")
 }
