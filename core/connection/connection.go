@@ -68,9 +68,9 @@ type Connection struct {
 }
 
 type Channels struct {
-	KernelEndpoint  model.TrafficChannels // Kernel end point
-	NetworkEndpoint model.TrafficChannels // Network end point
-	Contacting      model.TrafficChannels // End point for connection establishment
+	KernelEndpoint  model.PacketChannels // Kernel end point
+	NetworkEndpoint model.PacketChannels // Network end point
+	Contacting      model.PacketChannels // End point for connection establishment
 }
 
 func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,

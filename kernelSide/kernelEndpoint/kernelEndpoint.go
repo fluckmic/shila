@@ -23,7 +23,7 @@ func verbolog(loggingMessage string) {
 
 type Device struct {
 	Id         Identifier
-	channels   *Channel
+	channels   Channels
 	config     config.KernelEndpoint
 	packetizer *Device
 	vif        *vif.Device
@@ -32,9 +32,10 @@ type Device struct {
 	isRunning  bool
 }
 
-type Channel struct {
+type Channels struct {
 	ingressRaw      chan byte
-	trafficChannels model.TrafficChannels
+	ingress 		model.PacketChannel
+	egress 			model.PacketChannel
 }
 
 type Error string
@@ -44,8 +45,11 @@ func (e Error) Error() string {
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
-	var buf = Channel{trafficChannels: model.TrafficChannels{}}
-	return &Device{id, &buf, config, nil, nil, true, false, false}
+	return &Device{
+		Id: 		id,
+		config: 	config,
+		isValid: 	true,
+	}
 }
 
 func (d *Device) Setup() error {
@@ -93,11 +97,8 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 	d.channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.channels.trafficChannels.Ingress = make(chan *model.Packet, d.config.SizeIngressBuff)
-	d.channels.trafficChannels.Egress  = make(chan *model.Packet, d.config.SizeEgressBuff)
-
-	d.channels.trafficChannels.Key 	  = d.Key()
-	d.channels.trafficChannels.Label  = d.Label()
+	d.channels.ingress    = make(chan *model.Packet, d.config.SizeIngressBuff)
+	d.channels.egress  	  = make(chan *model.Packet, d.config.SizeEgressBuff)
 
 	d.isSetup = true
 	return nil
@@ -117,8 +118,9 @@ func (d *Device) TearDown() error {
 	err = d.vif.Teardown()
 
 	d.vif = nil
-	d.channels.trafficChannels.Ingress = nil
-	d.channels.trafficChannels.Egress = nil
+	d.channels.ingressRaw 	= nil
+	d.channels.ingress 		= nil
+	d.channels.egress 		= nil
 
 	return err
 }
@@ -215,7 +217,7 @@ func (d *Device) serveIngress() {
 
 func (d *Device) serveEgress() {
 	writer := io.Writer(d.vif)
-	for p := range d.channels.trafficChannels.Egress {
+	for p := range d.channels.egress {
 		_, err := writer.Write(p.GetRawPayload())
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
@@ -234,7 +236,7 @@ func (d *Device) packetize() {
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
 			verbolog(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
-			d.channels.trafficChannels.Ingress <- model.NewPacket(d, iPHeader, rawData)
+			d.channels.ingress <- model.NewPacket(d, iPHeader, rawData)
 		}
 	}
 }
@@ -248,6 +250,6 @@ func (d *Device) Key() model.EndpointKey {
 	return model.EndpointKey(d.Id.Key())
 }
 
-func (d *Device) TrafficChannels() model.TrafficChannels {
-	return d.channels.trafficChannels
+func (d *Device) TrafficChannels() model.PacketChannels {
+	return model.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
 }

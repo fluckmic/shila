@@ -26,7 +26,10 @@ type Server struct{
 
 func newServer(listenTo model.NetworkAddress, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
 	return &Server{
-		Base: 			Base{label, model.TrafficChannels{},config},
+		Base: 			Base{
+								label: 	label,
+								config: config,
+						},
 		connections: 	make(map[model.NetworkAddressAndPathKey]  net.Conn),
 		lock: 			sync.Mutex{},
 		listenTo: 		listenTo.(Address),
@@ -56,10 +59,8 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// Create the channels
-	s.trafficChannels.Ingress = make(chan *model.Packet, s.config.SizeIngressBuff)
-	s.trafficChannels.Egress  = make(chan *model.Packet, s.config.SizeEgressBuff)
-	s.trafficChannels.Label   = s.Label()
-	s.trafficChannels.Key	  = s.Key()
+	s.ingress = make(chan *model.Packet, s.config.SizeIngressBuff)
+	s.egress  = make(chan *model.Packet, s.config.SizeEgressBuff)
 
 	// Start listening for incoming connections.
 	go s.serveIncomingConnections(listener)
@@ -76,8 +77,8 @@ func (s *Server) TearDown() error {
 	return nil
 }
 
-func (s *Server) TrafficChannels() model.TrafficChannels {
-	return s.trafficChannels
+func (s *Server) TrafficChannels() model.PacketChannels {
+	return model.PacketChannels{Ingress: s.ingress, Egress: s.egress}
 }
 
 func (s *Server) Label() model.EndpointLabel {
@@ -176,7 +177,7 @@ func (s *Server) serveIngress(connection net.Conn) {
 }
 
 func (s *Server) serveEgress() {
-	for p := range s.trafficChannels.Egress {
+	for p := range s.egress {
 		log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} processes egress packet.")
 		// Retrieve key to get the correct connection
 		key := p.NetworkHeaderDstAndPathKey()
@@ -219,7 +220,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+			s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 		}
 	}
 }
@@ -239,7 +240,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
 				header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
-				s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+				s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 			}
 		}
 	}

@@ -10,7 +10,7 @@ import (
 type Manager struct {
 	config 						config.Config
 	connections 				*connection.Mapping
-	trafficChannelAnnouncements chan model.TrafficChannels
+	trafficChannelAnnouncements chan model.PacketChannelAnnouncement
 }
 
 type Error string
@@ -18,7 +18,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(config config.Config, connections *connection.Mapping, trafficChannelAnnouncements chan model.TrafficChannels) *Manager {
+func New(config config.Config, connections *connection.Mapping, trafficChannelAnnouncements chan model.PacketChannelAnnouncement) *Manager {
 	return &Manager{config, connections, trafficChannelAnnouncements}
 }
 
@@ -33,26 +33,22 @@ func (m *Manager) CleanUp() {
 func (m *Manager) Start() error {
 
 	go func() {
-		for ch := range m.trafficChannelAnnouncements {
-			log.Verbose.Print("Working side received announcement for new traffic channel {", ch.Key," ",ch.Label,"}.")
-			go m.serveChannel(ch.Ingress, ch.Key, ch.Label, "ingress", m.config.WorkingSide.NumberOfWorkerPerChannel)
-			go m.serveChannel(ch.Egress,  ch.Key, ch.Label, "egress",  m.config.WorkingSide.NumberOfWorkerPerChannel)
+		for anc := range m.trafficChannelAnnouncements {
+			log.Verbose.Print("Working side received announcement for new traffic channel {", anc.Announcer.Key()," ",anc.Announcer.Label(),"}.")
+			go m.serveChannel(anc.Channel, m.config.WorkingSide.NumberOfWorkerPerChannel)
 		}
 	}()
 
 	return nil
 }
 
-func (m *Manager) serveChannel(buffer model.PacketChannel, endpointKey model.EndpointKey,
-	endpointLabel model.EndpointLabel, direction string, numberOfWorker int) {
+func (m *Manager) serveChannel(buffer model.PacketChannel, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
-		go m.handleChannel(buffer, endpointKey, endpointLabel, direction, id)
+		go m.handleChannel(buffer)
 	}
 }
 
-func (m *Manager) handleChannel(buffer model.PacketChannel, endpointKey model.EndpointKey,
-	endpointLabel model.EndpointLabel, direction string, handlerId int) {
-	// log.Verbose.Print("Started ", direction, " ", endpointLabel, " packet channel handler #", handlerId, " for ", endpointKey, ".")
+func (m *Manager) handleChannel(buffer model.PacketChannel) {
 	for p := range buffer {
 		m.processChannel(p)
 	}

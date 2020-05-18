@@ -27,7 +27,10 @@ func newClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
 	_ = connectVia
 	return &Client{
 		connectedTo: connectTo.(Address),
-		Base: Base{label, model.TrafficChannels{}, config},
+		Base: Base{
+			label: label,
+			config: config,
+		},
 		ingressRaw: make(chan byte, config.SizeReadBuffer),
 		isValid: true,
 	}
@@ -59,10 +62,8 @@ func (c *Client) SetupAndRun() error {
 	c.connection = connection
 
 	// Create the channels
-	c.trafficChannels.Ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
-	c.trafficChannels.Egress  = make(chan *model.Packet, c.config.SizeEgressBuff)
-	c.trafficChannels.Label   = c.Label()
-	c.trafficChannels.Key	  = c.Key()
+	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
+	c.egress  = make(chan *model.Packet, c.config.SizeEgressBuff)
 
 	go c.packetize()
 	go c.serveIngress()
@@ -88,8 +89,8 @@ func (c *Client) TearDown() error {
 	return err
 }
 
-func (c *Client) TrafficChannels() model.TrafficChannels {
-	return c.trafficChannels
+func (c *Client) TrafficChannels() model.PacketChannels {
+	return model.PacketChannels{Ingress: c.ingress, Egress: c.egress}
 }
 
 func (c *Client) Label() model.EndpointLabel {
@@ -118,7 +119,7 @@ func (c *Client) serveIngress() {
 
 func (c *Client) serveEgress() {
 	writer := io.Writer(c.connection)
-	for p := range c.trafficChannels.Egress {
+	for p := range c.egress {
 		_, err := writer.Write(p.GetRawPayload())
 		if err != nil && !c.IsValid() {
 			// Error doesn't matter, client is no longer valid anyway.
@@ -139,7 +140,7 @@ func (c *Client) packetize() {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of client {", c.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			c.trafficChannels.Ingress <- model.NewPacket(c, iPHeader, rawData)
+			c.ingress <- model.NewPacket(c, iPHeader, rawData)
 		}
 	}
 }

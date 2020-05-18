@@ -2,10 +2,12 @@ package model
 
 type PacketChannel chan *Packet
 
-type TrafficChannels struct {
-	Label   EndpointLabel
-	Key     EndpointKey
+type PacketChannelAnnouncement struct {
+	Announcer Endpoint
+	Channel   PacketChannel
+}
+
+type PacketChannels struct {
 	Ingress PacketChannel
 	Egress  PacketChannel
 }
-

@@ -15,7 +15,7 @@ type Manager struct {
 	endpoints 	EndpointMapping
 	isRunning 	bool
 	isSetup   	bool
-	workingSide chan model.TrafficChannels
+	workingSide chan model.PacketChannelAnnouncement
 }
 
 type EndpointMapping map[model.IPAddressKey] *kernelEndpoint.Device
@@ -26,7 +26,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(config config.Config, workingSide chan model.TrafficChannels) *Manager {
+func New(config config.Config, workingSide chan model.PacketChannelAnnouncement) *Manager {
 	// Setup the mapping holding the kernel endpoints
 	return &Manager{config,make(EndpointMapping), false, false, workingSide}
 }
@@ -129,7 +129,7 @@ func (m *Manager) Start() error {
 
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
-		m.workingSide <- kerep.TrafficChannels()
+		m.workingSide <- model.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
 	}
 
 	m.isRunning = true
@@ -156,9 +156,9 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) GetTrafficChannels(key model.IPAddressKey) (model.TrafficChannels, bool) {
+func (m *Manager) GetTrafficChannels(key model.IPAddressKey) (model.PacketChannels, bool) {
 	if endpoint, ok := m.endpoints[key]; !ok {
-		return model.TrafficChannels{}, false
+		return model.PacketChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
 	}

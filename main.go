@@ -43,7 +43,7 @@ func realMain() int {
 	}
 
 	// Create the channel used to announce new traffic channels
-	trafficChannelAnnouncements := make(chan model.TrafficChannels)
+	trafficChannelAnnouncements := make(chan model.PacketChannelAnnouncement)
 
 	// Create and setup the kernel side
 	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)

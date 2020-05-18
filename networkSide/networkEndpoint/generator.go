@@ -20,7 +20,8 @@ const defaultContactingPort = 9876
 
 type Base struct {
 	label           model.EndpointLabel
-	trafficChannels model.TrafficChannels
+	ingress			model.PacketChannel
+	egress 			model.PacketChannel
 	config 			config.NetworkEndpoint
 }
 type Generator struct{}

@@ -23,5 +23,5 @@ type Endpoint interface {
 	TearDown() error
 	Label() EndpointLabel
 	Key() EndpointKey
-	TrafficChannels() TrafficChannels
+	TrafficChannels() PacketChannels
 }

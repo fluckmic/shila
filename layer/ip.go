@@ -82,7 +82,7 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
 				_, ok := <-ingressRaw; open = open && ok
 			}
 		} else if !open {
-			// Channel was closed in the meantime, return nil.
+			// Ingress was closed in the meantime, return nil.
 			return nil
 		} else {
 			shutdown.Fatal(Error(fmt.Sprint("Error in server traffic packetizer.")))
