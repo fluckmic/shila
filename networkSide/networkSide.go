@@ -161,7 +161,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(addr model.NetworkAddress, p
 		return model.TrafficChannels{}, Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
 	} else {
 		// Otherwise establish a new one
-		newClientTrafficEndpoint := networkEndpoint.Generator{}.NewClient(addr, path, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+		newClientTrafficEndpoint := networkEndpoint.Generator{}.NewClient(addr, path, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
 		// Wait a certain amount of time to give the server endpoint time to establish itself
 		time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
 		if err := newClientTrafficEndpoint.SetupAndRun(); err != nil {
