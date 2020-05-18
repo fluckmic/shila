@@ -67,6 +67,9 @@ func (s *Server) SetupAndRun() error {
 
 	log.Verbose.Print("Server {", s.Label(),"} started to listen for incoming connections on {",s.Key(),"}.")
 
+	// Start to handle incoming packets
+	go s.serveEgress()
+
 	s.isSetup   = true
 	s.isRunning = true
 	return nil
