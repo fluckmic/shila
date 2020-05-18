@@ -139,7 +139,7 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.SetNetworkHeader(c.header)
-							//c.channels.NetworkEndpoint.Egress <- p
+							c.channels.NetworkEndpoint.Egress <- p
 							c.state.Set(ServerReady)
 							return nil
 
@@ -151,7 +151,7 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 
 	case Established:		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
-							//c.channels.NetworkEndpoint.Egress <- p
+							c.channels.NetworkEndpoint.Egress <- p
 							c.state.Set(Established)
 							return nil
 
