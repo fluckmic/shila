@@ -54,30 +54,36 @@ func decodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
 	for {
 		rawData := make([]byte, 0, sizeReadBuffer)
-		b := <-ingressRaw
+		b, open := <-ingressRaw
 		if b >> 4 == 4 {
 			rawData = append(rawData, b)
 			// Read 3 more bytes
 			for cnt := 0; cnt < 3; cnt++ {
-				rawData = append(rawData, <-ingressRaw)
+				b, ok := <-ingressRaw; open = open && ok
+				rawData = append(rawData, b)
 			}
 			length := binary.ByteOrder(hostByteOrder).Uint16(rawData[2:4])
 			// Load the remaining bytes of the package
 			for cnt := 0; cnt < int(length-4); cnt++ {
-				rawData = append(rawData, <-ingressRaw)
+				b, ok := <-ingressRaw; open = open && ok
+				rawData = append(rawData, b)
 			}
 			return rawData
 		} else if b >> 4 == 6 {
 			rawData = append(rawData, b)
 			// Read 7 more bytes
 			for cnt := 0; cnt < 7; cnt++ {
-				rawData = append(rawData, <-ingressRaw)
+				b, ok := <-ingressRaw; open = open && ok
+				rawData = append(rawData, b)
 			}
 			length := binary.ByteOrder(hostByteOrder).Uint16(rawData[4:6])
 			// Discard the remaining 32 byte of the header and the payload
 			for cnt := 0; cnt < int(32+length); cnt++ {
-				<-ingressRaw
+				_, ok := <-ingressRaw; open = open && ok
 			}
+		} else if !open {
+			// Channel was closed in the meantime, return nil.
+			return nil
 		} else {
 			shutdown.Fatal(Error(fmt.Sprint("Error in server traffic packetizer.")))
 		}

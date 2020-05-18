@@ -231,14 +231,15 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
-		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
-		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
-				"}. - ", err.Error())) // TODO: Handle panic!
-		} else {
-			dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-			header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
-			s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+				panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
+					"}. - ", err.Error())) // TODO: Handle panic!
+			} else {
+				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
+				header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
+				s.trafficChannels.Ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+			}
 		}
 	}
 
