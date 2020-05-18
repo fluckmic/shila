@@ -207,7 +207,7 @@ func (s *Server) serveEgress() {
 				panic(fmt.Sprint("Unable to send data for packet {", p.IPHeaderKey(), "} in the " +
 					"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				log.Verbose.Print("Server {", s.Key(), "} wrote {",nBytesWritten,"}.")
+				log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} wrote {",nBytesWritten,"}.")
 			}
 		} else {
 		// Currently there is no connection available to send the packet, the packet has therefore to wait
