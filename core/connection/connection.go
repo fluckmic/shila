@@ -91,7 +91,7 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
 
-	log.Verbose.Print("Process packet {", p.GetIPHeader(), "} in connection {", c.ID(), c.state, "}.")
+	log.Verbose.Print("Process packet {", p.GetIPHeader(), "} in connection {", c.ID(), " ", c.state, "}.")
 
 	// From where was the packet received?
 	switch p.GetEntryPoint().Label() {

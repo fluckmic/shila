@@ -177,6 +177,7 @@ func (s *Server) serveIngress(connection net.Conn) {
 
 func (s *Server) serveEgress() {
 	for p := range s.trafficChannels.Egress {
+		log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} processes egress packet.")
 		// Retrieve key to get the correct connection
 		key := p.NetworkHeaderDstAndPathKey()
 		if con, ok := s.connections[key]; ok {
