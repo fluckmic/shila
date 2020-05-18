@@ -59,8 +59,6 @@ func (m *Manager) handleChannel(buffer model.PacketChannel, endpointKey model.En
 
 func (m *Manager) processChannel(p *model.Packet) {
 
-	p.PrintAllInfo()
-
 	// Get the connection and process the packet
 	con := m.connections.Retrieve(p.IPHeaderKey())
 	if err := con.ProcessPacket(p); err != nil {
