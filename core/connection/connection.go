@@ -279,12 +279,14 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 		panic(fmt.Sprint("No valid option to create network header for packet {", p.GetIPHeader(), "}.")) // TODO: Handle panic!
 	}
 
-	// Create the contacting connection
-	if channels, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
+	// Create the contacting connection; srcAddr is the address source address of the contacting backbone connection
+	var srcAddrContacting model.NetworkAddress
+	if channels, srcAddr, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
 		c.state.Set(Closed)
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
 		c.channels.Contacting = channels
+		srcAddrContacting = srcAddr
 	}
 
 	// Send the packet via the contacting channel
@@ -293,7 +295,9 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Initiate try connect to address via path
 	go func() {
-		if channels, err := c.networkSide.EstablishNewTrafficClientEndpoint(c.header.Dst, c.header.Path); err != nil {
+		// TODO: Upon the connection, the traffic client endpoint informs the traffic server on behalf of whom it initiated the connection.
+		networkHeaderTraffic := model.NetworkHeader{Src: srcAddrContacting, Path: c.header.Path, Dst: c.header.Dst}
+		if channels, err := c.networkSide.EstablishNewTrafficClientEndpoint(networkHeaderTraffic); err != nil {
 			c.Close()
 			log.Info.Print("Unable to establish traffic connection. - ", err.Error())
 		} else {
@@ -330,16 +334,11 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 
 	// If the packet is received through the contacting endpoint (server), then it's network header
 	// is already set. This is the responsibility of the corresponding network server implementation.
-	// Changed by intention!
-	c.header = model.NetworkHeader{
-		Src:  p.GetNetworkHeader().Dst,
-		Path: p.GetNetworkHeader().Path,
-		Dst:  p.GetNetworkHeader().Src,
-	}
+	c.header = p.GetNetworkHeader()
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header.Src); err != nil {
+	if channels, err := c.networkSide.EstablishNewServerEndpoint(c.header); err != nil {
 		c.state.Set(Closed)
 		return Error(fmt.Sprint("Cannot process packet - ", err.Error()))
 	} else {

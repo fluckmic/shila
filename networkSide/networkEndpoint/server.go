@@ -18,6 +18,7 @@ type Server struct{
 	Base
 	connections map[model.NetworkAddressAndPathKey]  net.Conn
 	lock        sync.Mutex
+	header 		model.NetworkHeader
 	listenTo 	Address
 	holdingArea []*model.Packet
 	isValid     bool
@@ -169,6 +170,9 @@ func (s *Server) serveIngress(connection net.Conn) {
 		// Server receives normal traffic, the connection over which the
 		// packet was received contains enough information to set
 		// the correct network header.
+
+		// TODO: The corresponding traffic client informs the traffic server for whom this connection is.
+
 		go s.packetizeTraffic(ingressRaw, connection)
 	} else {
 		panic(fmt.Sprint("Wrong server label {", s.Label(), "} in serving ingress functionality of " +
@@ -230,9 +234,9 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 	// Create the packet network header
 	dstAddr := s.listenTo
-	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
+	srcAddr := Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	path 	:= Generator{}.NewPath("")
-	header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr }
+	header  := model.NetworkHeader{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
@@ -259,7 +263,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  := model.NetworkHeader{Src: srcAddr, Path: path, Dst: dstAddr}
+				header  := model.NetworkHeader{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 			}
 		}

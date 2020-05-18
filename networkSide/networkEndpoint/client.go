@@ -13,13 +13,22 @@ import (
 var _ model.ClientNetworkEndpoint = (*Client)(nil)
 
 type Client struct {
-	connectedTo Address
-	connection  *net.TCPConn
+	connectedFrom 	Address
+	connectedTo 	Address
+	connection  	*net.TCPConn
 	Base
-	ingressRaw chan byte
-	isValid    bool
-	isSetup    bool // TODO: merge to "state" object
-	isRunning  bool
+	ingressRaw 		chan byte
+	isValid    		bool
+	isSetup    		bool // TODO: merge to "state" object
+	isRunning 		bool
+}
+
+func (c *Client) ConnectedTo() model.NetworkAddress {
+	return c.connectedTo
+}
+
+func (c *Client) ConnectedFrom() model.NetworkAddress {
+	return c.connectedFrom
 }
 
 func newClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
@@ -60,6 +69,7 @@ func (c *Client) SetupAndRun() error {
 		return Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - ", err.Error()))
 	}
 	c.connection = connection
+	c.connectedFrom = Address{Addr: *connection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
 	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
@@ -69,10 +79,11 @@ func (c *Client) SetupAndRun() error {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {",c.connectedTo.String(),"}.")
+	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {", c.connectedTo.String(), "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
+
 	return nil
 }
 

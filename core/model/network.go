@@ -37,7 +37,9 @@ type NetworkPathGenerator interface {
 
 type ClientNetworkEndpoint interface {
 	Endpoint
-	SetupAndRun() error
+	SetupAndRun() 	error
+	ConnectedTo() 	NetworkAddress
+	ConnectedFrom() NetworkAddress
 }
 
 type ServerNetworkEndpoint interface {
