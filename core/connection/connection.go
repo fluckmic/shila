@@ -330,7 +330,12 @@ func (c *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet
 
 	// If the packet is received through the contacting endpoint (server), then it's network header
 	// is already set. This is the responsibility of the corresponding network server implementation.
-	c.header = p.GetNetworkHeader()
+	// Changed by intention!
+	c.header = model.NetworkHeader{
+		Src:  p.GetNetworkHeader().Dst,
+		Path: p.GetNetworkHeader().Path,
+		Dst:  p.GetNetworkHeader().Src,
+	}
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
