@@ -149,7 +149,7 @@ func (s *Server) serveIngress(connection net.Conn) {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
 		} else if err != nil {
-			panic(fmt.Sprint("Error in reading data in server {", s.Key(), "}. - ", err.Error())) // TODO: Handle panic!
+			panic(fmt.Sprint("Error in reading data in server {", s.Label()," ", s.Key(), "}. - ", err.Error())) // TODO: Handle panic!
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
