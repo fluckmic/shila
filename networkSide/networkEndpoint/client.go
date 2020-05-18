@@ -102,7 +102,7 @@ func (c *Client) serveIngress() {
 	storage := make([]byte, c.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
-		log.Verbose.Print("Client  {", c.Label()," ", c.Key(), "} read {",nBytesRead,"} bytes from input.")
+		log.Verbose.Print("Client {", c.Label()," ", c.Key(), "} read {",nBytesRead,"} bytes from input.")
 		if err != nil && !c.IsValid() {
 			// Client is no longer valid, there is no need to try to stay alive.
 			return

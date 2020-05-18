@@ -199,13 +199,15 @@ func (s *Server) serveEgress() {
 		key := p.NetworkHeaderDstAndPathKey()
 		if con, ok := s.connections[key]; ok {
 			writer := io.Writer(con)
-			_, err := writer.Write(p.GetRawPayload())
+			nBytesWritten, err := writer.Write(p.GetRawPayload())
 			if err != nil && !s.IsValid() {
 				// Error doesn't matter, kernel endpoint is no longer valid anyway.
 				return
 			} else if err != nil {
 				panic(fmt.Sprint("Unable to send data for packet {", p.IPHeaderKey(), "} in the " +
 					"server {", s.Key(), "} for connection key {", key,"}. - ", err.Error())) // TODO: Handle panic!
+			} else {
+				log.Verbose.Print("Server {", s.Key(), "} wrote {",nBytesWritten,"}.")
 			}
 		} else {
 		// Currently there is no connection available to send the packet, the packet has therefore to wait
