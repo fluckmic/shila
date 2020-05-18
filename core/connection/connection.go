@@ -23,6 +23,18 @@ const (
 	Raw
 )
 
+func(s State) String() string {
+	switch s {
+	case Established: 			return "Established"
+	case ServerReady: 			return "ServerReady"
+	case ClientReady: 			return "ClientReady"
+	case ClientEstablished:		return "ClientEstablished"
+	case Closed:				return "Closed"
+	case Raw:					return "Raw"
+	}
+	return "Unknown"
+}
+
 type Connection struct {
 	id          model.IPHeaderKey
 	header      model.NetworkHeader
@@ -78,6 +90,8 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 	if key != c.id {
 		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
+
+	log.Verbose.Print("Process packet {", p.GetIPHeader(), "} in connection {", c.ID(), c.state, "}.")
 
 	// From where was the packet received?
 	switch p.GetEntryPoint().Label() {
