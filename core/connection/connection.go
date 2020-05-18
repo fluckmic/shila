@@ -40,20 +40,16 @@ func(s StateIdentifier) String() string {
 	return "Unknown"
 }
 
-func NewState() State {
-	return State{Raw,Raw}
-}
-
-func (s State) Set(newState StateIdentifier) {
+func (s *State) Set(newState StateIdentifier) {
 	s.previous = s.current
 	s.current = newState
 }
 
-func (s State) Current() StateIdentifier {
+func (s *State) Current() StateIdentifier {
 	return s.current
 }
 
-func (s State) Previous() StateIdentifier {
+func (s *State) Previous() StateIdentifier {
 	return s.previous
 }
 
@@ -81,7 +77,7 @@ func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routi
 	id model.IPHeaderKey) *Connection {
 	return &Connection{
 		id: 			id,
-		state: 			NewState(),
+		state: 			State{Raw, Raw},
 		lock:			sync.Mutex{},
 		touched: 		time.Now(),
 		kernelSide:	 	kernelSide,
@@ -135,21 +131,30 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 	case ClientReady:		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
 							c.channels.Contacting.Egress <- p
+							c.state.Set(ClientReady)
 							return nil
 
 	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.SetNetworkHeader(c.header)
 							c.channels.NetworkEndpoint.Egress <- p
+							c.state.Set(ServerReady)
 							return nil
 
-	case ClientEstablished, Established:
-					 		p.SetNetworkHeader(c.header)
+	case ClientEstablished:	p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
 							c.channels.NetworkEndpoint.Egress <- p
+							c.state.Set(ClientEstablished)
+							return nil
+
+	case Established:		p.SetNetworkHeader(c.header)
+							c.touched = time.Now()
+							c.channels.NetworkEndpoint.Egress <- p
+							c.state.Set(Established)
 							return nil
 
 	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
+							c.state.Set(Closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Cannot process packet - Unknown connection state."))
@@ -162,17 +167,21 @@ func (c *Connection) processPacketFromContactingEndpoint(p *model.Packet) error 
 	case Raw:				return c.processPacketFromContactingEndpointStateRaw(p)
 
 	case ClientReady:		log.Info.Println("Drop packet - Both endpoints in client state.")
+							c.state.Set(ClientReady)
 							return nil
 
 	case ServerReady:		c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
+							c.state.Set(ServerReady)
 							return nil
 
 	case Established: 		c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
+							c.state.Set(Established)
 							return nil
 
 	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
+							c.state.Set(Closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Cannot process packet - Unknown connection state."))
@@ -182,10 +191,12 @@ func (c *Connection) processPacketFromContactingEndpoint(p *model.Packet) error 
 func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 	switch c.state.Current() {
 
-	case Raw:				return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
+	case Raw:				c.state.Set(Raw)
+							return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
 
 							// A packet from the traffic endpoint is just received if network connection is established
-	case ClientReady:		return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
+	case ClientReady:		c.state.Set(ClientReady)
+							return Error(fmt.Sprint("Cannot process packet - Invalid connection state ", c.state))
 
 	case ServerReady:		c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
@@ -212,9 +223,11 @@ func (c *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
 
 	case Established: 		c.touched = time.Now()
 							c.channels.KernelEndpoint.Egress <- p
+							c.state.Set(Established)
 							return nil
 
 	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
+							c.state.Set(Closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Cannot process packet - Unknown connection state."))
