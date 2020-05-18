@@ -43,6 +43,6 @@ func (g KeyGenerator) NetworkHeaderKey(nh NetworkHeader) NetworkHeaderKey {
 	return NetworkHeaderKey(fmt.Sprint("(", nh.Src.String(), "<>", nh.Path.String(), "<>", nh.Dst.String(), ")"))
 }
 
-func (g KeyGenerator) NetworkAddressAndPathKey(nh NetworkHeader) NetworkAddressAndPathKey {
-	return NetworkAddressAndPathKey(fmt.Sprint("(",nh.Dst.String(),"<>",nh.Path.String(),")"))
+func (g KeyGenerator) NetworkAddressAndPathKey(address NetworkAddress, path NetworkPath) NetworkAddressAndPathKey {
+	return NetworkAddressAndPathKey(fmt.Sprint("(",address.String(),"<>",path.String(),")"))
 }

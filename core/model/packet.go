@@ -57,7 +57,7 @@ func (nh *NetworkHeader) key() NetworkHeaderKey {
 }
 
 func (nh *NetworkHeader) destAndPathKey() NetworkAddressAndPathKey {
-	return KeyGenerator{}.NetworkAddressAndPathKey(*nh)
+	return KeyGenerator{}.NetworkAddressAndPathKey(nh.Dst, nh.Path)
 }
 
 type IPv4TCPPacket struct {

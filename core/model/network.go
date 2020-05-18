@@ -27,7 +27,6 @@ type NetworkAddressGenerator interface {
 
 type NetworkKeyGenerator interface {
 	GetAddressKey(address NetworkAddress) NetworkAddressKey
-	GetAddressPathKey(address NetworkAddress, path NetworkPath) NetworkAddressAndPathKey
 }
 
 // Should be able to create a network path from a string.

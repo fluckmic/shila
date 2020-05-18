@@ -35,11 +35,6 @@ func (g Generator) GetAddressKey(address model.NetworkAddress) model.NetworkAddr
 	return model.NetworkAddressKey(address.String())
 }
 
-func (g Generator) GetAddressPathKey(address model.NetworkAddress, path model.NetworkPath) model.NetworkAddressAndPathKey {
-	_ = path
-	return model.NetworkAddressAndPathKey(address.String())
-}
-
 func (g Generator) NewClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
 	label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
 	return newClient(connectTo, connectVia, label, config)

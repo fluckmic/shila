@@ -37,7 +37,7 @@ func newClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
 }
 
 func (c *Client) Key() model.EndpointKey {
-	return model.EndpointKey(Generator{}.GetAddressPathKey(c.connectedTo, Generator{}.NewPath("")))
+	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connectedTo, Generator{}.NewPath("")))
 }
 
 func (c *Client) SetupAndRun() error {

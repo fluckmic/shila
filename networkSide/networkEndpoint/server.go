@@ -113,10 +113,10 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// Get the address from the client side
 	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
 	// Get the path taken from client to this server
-	path := Generator{}.NewPath("")
+	path 	:= Generator{}.NewPath("")
 
 	// Generate the key
-	key := Generator{}.GetAddressPathKey(srcAddr, path)
+	key := model.KeyGenerator{}.NetworkAddressAndPathKey(srcAddr, path)
 
 	// Add the new connection to the mapping, such that it can be found by the egress handler.
 	s.lock.Lock()

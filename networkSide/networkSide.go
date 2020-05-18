@@ -134,7 +134,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(addr model.NetworkAddress
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
 	contactingPath := networkEndpoint.Generator{}.GetDefaultContactingPath(addr)
-	if _, ok := m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, contactingPath)]; ok {
+	if _, ok := m.clientContactingEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(addr, contactingPath)]; ok {
 		return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - Endpoint already exists."))
 	} else {
 		// Establish a new contacting client endpoint
@@ -144,7 +144,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(addr model.NetworkAddress
 			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - ", err.Error()))
 		}
 		// Add it to the corresponding mapping
-		m.clientContactingEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, contactingPath)] = newClientContactingEndpoint
+		m.clientContactingEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(addr, contactingPath)] = newClientContactingEndpoint
 		// Announce the new traffic channels to the working side
 		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newClientContactingEndpoint, Channel: newClientContactingEndpoint.TrafficChannels().Ingress}
 
@@ -157,7 +157,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(addr model.NetworkAddress, p
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if _, ok := m.clientTrafficEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, path)]; ok {
+	if _, ok := m.clientTrafficEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)]; ok {
 		return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
 	} else {
 		// Otherwise establish a new one
@@ -168,7 +168,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(addr model.NetworkAddress, p
 			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", err.Error()))
 		}
 		// Add it to the corresponding mapping
-		m.clientTrafficEndpoints[networkEndpoint.Generator{}.GetAddressPathKey(addr, path)] = newClientTrafficEndpoint
+		m.clientTrafficEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)] = newClientTrafficEndpoint
 		// Announce the new traffic channels to the working side
 		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newClientTrafficEndpoint, Channel: newClientTrafficEndpoint.TrafficChannels().Ingress}
 
@@ -203,7 +203,7 @@ func (m *Manager) TeardownContactingClientEndpoint(addr model.NetworkAddress) er
 	defer m.lock.Unlock()
 
 	path := networkEndpoint.Generator{}.GetDefaultContactingPath(addr)
-	key  := networkEndpoint.Generator{}.GetAddressPathKey(addr, path)
+	key  := model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)
 	if ep, ok := m.clientContactingEndpoints[key]; ok {
 		err := ep.TearDown()
 		delete(m.clientTrafficEndpoints, key)
@@ -217,7 +217,7 @@ func (m *Manager) TeardownTrafficClientEndpoint(addr model.NetworkAddress, path 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key := networkEndpoint.Generator{}.GetAddressPathKey(addr, path)
+	key := model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)
 	if ep, ok := m.clientTrafficEndpoints[key]; ok {
 		err := ep.TearDown()
 		delete(m.clientTrafficEndpoints, key)
