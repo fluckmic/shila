@@ -34,6 +34,7 @@ func (m *Manager) Start() error {
 
 	go func() {
 		for ch := range m.trafficChannelAnnouncements {
+			log.Verbose.Print("Working side received announcement for new traffic channel {", ch.Key," ",ch.Label,"}.")
 			go m.serveChannel(ch.Ingress, ch.Key, ch.Label, "ingress", m.config.WorkingSide.NumberOfWorkerPerChannel)
 			go m.serveChannel(ch.Egress,  ch.Key, ch.Label, "egress",  m.config.WorkingSide.NumberOfWorkerPerChannel)
 		}
