@@ -9,6 +9,7 @@ import (
 	"shila/layer"
 	"shila/log"
 	"strconv"
+	"sync"
 )
 
 var _ model.ServerNetworkEndpoint = (*Server)(nil)
@@ -16,6 +17,7 @@ var _ model.ServerNetworkEndpoint = (*Server)(nil)
 type Server struct{
 	Base
 	connections map[model.NetworkAddressAndPathKey]  net.Conn
+	lock        sync.Mutex
 	listenTo 	Address
 	isValid     bool
 	isSetup     bool // TODO: merge to "state" object
@@ -24,10 +26,11 @@ type Server struct{
 
 func newServer(listenTo model.NetworkAddress, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
 	return &Server{
-		Base: Base{label, model.TrafficChannels{},config},
-		connections: make(map[model.NetworkAddressAndPathKey]  net.Conn),
-		listenTo: listenTo.(Address),
-		isValid: true,
+		Base: 			Base{label, model.TrafficChannels{},config},
+		connections: 	make(map[model.NetworkAddressAndPathKey]  net.Conn),
+		lock: 			sync.Mutex{},
+		listenTo: 		listenTo.(Address),
+		isValid: 		true,
 	}
 }
 
@@ -110,17 +113,28 @@ func (s *Server) handleConnection(connection net.Conn) {
 	key := Generator{}.GetAddressPathKey(srcAddr, path)
 
 	// Add the new connection to the mapping, such that it can be found by the egress handler.
+	s.lock.Lock()
 	if _, ok := s.connections[key]; ok {
+		s.lock.Unlock()
 		panic(fmt.Sprint("Trying to add connection with key {", key, "} in " +
 			"server {", s.Key(), "}. There already exists a connection with that key.")) // TODO: Handle panic!
 	} else {
 		s.connections[key] = connection
+		s.lock.Unlock()
 	}
 
 	// Start the ingress handler for the connection.
-	go s.serveIngress(connection)
-
 	log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} started handling a new connection {", key ,"}.")
+	s.serveIngress(connection)
+
+	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
+	s.lock.Lock()
+	delete(s.connections, key)
+	s.lock.Unlock()
+
+	log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} removed connection {", key ,"}.")
+
+	return
 }
 
 func (s *Server) serveIngress(connection net.Conn) {
@@ -148,11 +162,12 @@ func (s *Server) serveIngress(connection net.Conn) {
 	storage := make([]byte, s.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, s.config.BatchSizeRead)
-		if err != nil && !s.IsValid() {
-			// Error doesn't matter, kernel endpoint is no longer valid anyway.
+		// If the incoming connection suffers from an error, we close it and return.
+		// The server instance is still able to receive connections as long as it is not
+		// shut down by the manager of the network side.
+		if err != nil {
+			close(ingressRaw) // Stop the packetizing.
 			return
-		} else if err != nil {
-			panic(fmt.Sprint("Error in reading data in server {", s.Label()," ", s.Key(), "}. - ", err.Error())) // TODO: Handle panic!
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b

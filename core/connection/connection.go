@@ -48,6 +48,7 @@ func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routi
 	return &Connection{
 		id: 			id,
 		state: 			Raw,
+		lock:			sync.Mutex{},
 		touched: 		time.Now(),
 		kernelSide:	 	kernelSide,
 		networkSide: 	networkSide,
