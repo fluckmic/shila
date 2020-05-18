@@ -65,5 +65,6 @@ func (m *Manager) processChannel(p *model.Packet) {
 	if err := con.ProcessPacket(p); err != nil {
 		log.Error.Panicln(err.Error())
 	}
+
 }
 

@@ -104,22 +104,24 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
+	log.Verbose.Print("Connection {",c.ID(),"} in state {",c.state.Current(),"} " +
+		"starts processing packet from {",p.GetIPHeader().Src.IP,"} to {",p.GetIPHeader().Dst.IP,"}.")
+
 	key := p.IPHeaderKey()
 	if key != c.id {
 		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
 	}
 
-	if c.state.Previous() != c.state.Current() {
-		log.Verbose.Print("Connection {", c.ID(), "} changed state from {", c.state.Previous(), "} to {", c.state.Current(), "}.")
-	}
-
 	// From where was the packet received?
 	switch p.GetEntryPoint().Label() {
-		case model.KernelEndpoint: 				return c.processPacketFromKerep(p)
-		case model.ContactingNetworkEndpoint: 	return c.processPacketFromContactingEndpoint(p)
-		case model.TrafficNetworkEndpoint:		return c.processPacketFromTrafficEndpoint(p)
+		case model.KernelEndpoint: 				c.processPacketFromKerep(p)
+		case model.ContactingNetworkEndpoint: 	c.processPacketFromContactingEndpoint(p)
+		case model.TrafficNetworkEndpoint:		c.processPacketFromTrafficEndpoint(p)
 		default: 								return Error(fmt.Sprint("Cannot process packet - Unknown entry device."))
 	}
+
+	log.Verbose.Print("Connection {",c.ID(),"} done with processing packet from {",p.GetIPHeader().Src.IP,"} to {",
+		p.GetIPHeader().Dst.IP,"}; ending up in state {",c.state.Current(),"}.")
 
 	return nil
 }
@@ -137,7 +139,7 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.SetNetworkHeader(c.header)
-							c.channels.NetworkEndpoint.Egress <- p
+							//c.channels.NetworkEndpoint.Egress <- p
 							c.state.Set(ServerReady)
 							return nil
 
@@ -149,7 +151,7 @@ func (c *Connection) processPacketFromKerep(p *model.Packet) error {
 
 	case Established:		p.SetNetworkHeader(c.header)
 							c.touched = time.Now()
-							c.channels.NetworkEndpoint.Egress <- p
+							//c.channels.NetworkEndpoint.Egress <- p
 							c.state.Set(Established)
 							return nil
 
