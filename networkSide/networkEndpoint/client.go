@@ -13,40 +13,29 @@ import (
 var _ model.ClientNetworkEndpoint = (*Client)(nil)
 
 type Client struct {
-	connectedFrom 	Address
-	connectedTo 	Address
-	connection  	*net.TCPConn
+	connectionTriple 	*model.NetworkConnectionTriple
+	connection  		*net.TCPConn
 	Base
-	ingressRaw 		chan byte
-	isValid    		bool
-	isSetup    		bool // TODO: merge to "state" object
-	isRunning 		bool
+	ingressRaw 			chan byte
+	isValid    			bool
+	isSetup    			bool // TODO: merge to "state" object
+	isRunning 			bool
 }
 
-func (c *Client) ConnectedTo() model.NetworkAddress {
-	return c.connectedTo
-}
-
-func (c *Client) ConnectedFrom() model.NetworkAddress {
-	return c.connectedFrom
-}
-
-func newClient(connectTo model.NetworkAddress, connectVia model.NetworkPath,
-	label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
-	_ = connectVia
+func newClient(connTr *model.NetworkConnectionTriple, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
 	return &Client{
-		connectedTo: connectTo.(Address),
-		Base: Base{
-			label: label,
-			config: config,
-		},
-		ingressRaw: make(chan byte, config.SizeReadBuffer),
-		isValid: true,
+		Base: 				Base{
+								label: label,
+								config: config,
+							},
+		connectionTriple:	connTr,
+		ingressRaw: 		make(chan byte, config.SizeReadBuffer),
+		isValid: 			true,
 	}
 }
 
 func (c *Client) Key() model.EndpointKey {
-	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connectedTo, Generator{}.NewPath("")))
+	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connectionTriple.Dst, Generator{}.NewPath("")))
 }
 
 func (c *Client) SetupAndRun() error {
@@ -64,12 +53,13 @@ func (c *Client) SetupAndRun() error {
 	}
 
 	// Establish a connection to the server endpoint
-	connection, err := net.DialTCP(c.connectedTo.Addr.Network(), nil, &c.connectedTo.Addr)
+	dst := c.connectionTriple.Dst.(*net.TCPAddr)
+	connection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - ", err.Error()))
 	}
 	c.connection = connection
-	c.connectedFrom = Address{Addr: *connection.LocalAddr().(*net.TCPAddr)}
+	c.connectionTriple.Src = Address{Addr: *connection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
 	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
@@ -79,7 +69,7 @@ func (c *Client) SetupAndRun() error {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {", c.connectedTo.String(), "}.")
+	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {", dst.String(), "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
@@ -89,7 +79,7 @@ func (c *Client) SetupAndRun() error {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {",c.Label(),"} connecting to {",c.connectedTo.String(),"}.")
+	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.connectionTriple.Dst.(*net.TCPAddr).String(), "}.")
 
 	c.isValid = false
 	c.isRunning = false

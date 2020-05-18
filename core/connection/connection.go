@@ -54,8 +54,8 @@ func (s *State) Previous() StateIdentifier {
 }
 
 type Connection struct {
-	id          model.IPHeaderKey
-	header      model.NetworkHeader
+	id          model.IPConnectionTupleKey
+	header      model.NetworkConnectionTriple
 	state       State
 	channels    Channels
 	lock        sync.Mutex
@@ -74,7 +74,7 @@ type Channels struct {
 }
 
 func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
-	id model.IPHeaderKey) *Connection {
+	id model.IPConnectionTupleKey) *Connection {
 	return &Connection{
 		id: 			id,
 		state: 			State{Raw, Raw},
@@ -109,7 +109,7 @@ func (c *Connection) ProcessPacket(p *model.Packet) error {
 
 	key := p.IPHeaderKey()
 	if key != c.id {
-		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPHeaderKey(key), " ", c.id, "."))
+		return Error(fmt.Sprint("Cannot process packet - getIPHeader mismatch: ", model.IPConnectionTupleKey(key), " ", c.id, "."))
 	}
 
 	// From where was the packet received?
@@ -279,14 +279,15 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 		panic(fmt.Sprint("No valid option to create network header for packet {", p.GetIPHeader(), "}.")) // TODO: Handle panic!
 	}
 
-	// Create the contacting connection; srcAddr is the address source address of the contacting backbone connection
-	var srcAddrContacting model.NetworkAddress
-	if channels, srcAddr, err := c.networkSide.EstablishNewContactingClientEndpoint(c.header.Dst); err != nil {
+	// Create the contacting connection
+	// The path is set direct by the manager of the network side; and the src address is set
+	// by the client itself. Through the pointer value it is reflected back into the connection.
+	contactingConnection := model.NetworkConnectionTriple{Dst: c.header.Dst}
+	if channels, err := c.networkSide.EstablishNewContactingClientEndpoint(&contactingConnection); err != nil {
 		c.state.Set(Closed)
 		return Error(fmt.Sprint("Error in packet processing. - ", err.Error()))
 	} else {
 		c.channels.Contacting = channels
-		srcAddrContacting = srcAddr
 	}
 
 	// Send the packet via the contacting channel
@@ -295,9 +296,8 @@ func (c *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Initiate try connect to address via path
 	go func() {
-		// TODO: Upon the connection, the traffic client endpoint informs the traffic server on behalf of whom it initiated the connection.
-		networkHeaderTraffic := model.NetworkHeader{Src: srcAddrContacting, Path: c.header.Path, Dst: c.header.Dst}
-		if channels, err := c.networkSide.EstablishNewTrafficClientEndpoint(networkHeaderTraffic); err != nil {
+		trafficConnection := model.NetworkConnectionTriple{Src: contactingConnection.Src, Path: c.header.Path, Dst: c.header.Dst}
+		if channels, err := c.networkSide.EstablishNewTrafficClientEndpoint(&trafficConnection); err != nil {
 			c.Close()
 			log.Info.Print("Unable to establish traffic connection. - ", err.Error())
 		} else {

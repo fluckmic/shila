@@ -18,7 +18,7 @@ type Server struct{
 	Base
 	connections map[model.NetworkAddressAndPathKey]  net.Conn
 	lock        sync.Mutex
-	header 		model.NetworkHeader
+	header 		model.NetworkConnectionTriple
 	listenTo 	Address
 	holdingArea []*model.Packet
 	isValid     bool
@@ -236,7 +236,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	dstAddr := s.listenTo
 	srcAddr := Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	path 	:= Generator{}.NewPath("")
-	header  := model.NetworkHeader{Src: dstAddr, Path: path, Dst: srcAddr }
+	header  := model.NetworkConnectionTriple{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
@@ -263,7 +263,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  := model.NetworkHeader{Src: dstAddr, Path: path, Dst: srcAddr}
+				header  := model.NetworkConnectionTriple{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
 			}
 		}

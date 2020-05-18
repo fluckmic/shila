@@ -14,7 +14,7 @@ type ServerEndpointMapping map[NetworkAddressKey] ServerNetworkEndpointAndConnec
 type ClientEndpointMapping map[NetworkAddressAndPathKey]	ClientNetworkEndpoint
 
 type NetworkEndpointGenerator interface {
-	NewClient(connectTo NetworkAddress, connectVia NetworkPath, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
+	NewClient(conn *NetworkConnectionTriple, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
 	NewServer(listenTo NetworkAddress, l EndpointLabel, c config.NetworkEndpoint) ServerNetworkEndpoint
 }
 
@@ -38,8 +38,6 @@ type NetworkPathGenerator interface {
 type ClientNetworkEndpoint interface {
 	Endpoint
 	SetupAndRun() 	error
-	ConnectedTo() 	NetworkAddress
-	ConnectedFrom() NetworkAddress
 }
 
 type ServerNetworkEndpoint interface {
