@@ -1,7 +1,6 @@
 package networkEndpoint
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -71,10 +70,9 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-		writer := bufio.NewWriter(c.connection.Backbone)
-		msg := fmt.Sprint(c.connection.Identifier.Src.String(),'\n')
-		msg = "Hallo\n"
-		if _, err := writer.WriteString(msg); err != nil {
+
+		//msg := fmt.Sprint(c.connection.Identifier.Src.String(),'\n')
+		if _, err := c.connection.Backbone.Write([]byte("Hello\n")); err != nil {
 			return model.NetworkConnectionIdentifier{},
 				Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
 					"}. - Unable to send source address. - ", err.Error()))

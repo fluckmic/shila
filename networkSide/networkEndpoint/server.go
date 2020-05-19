@@ -123,8 +123,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// The client traffic endpoint sends as a very first message
 	// the src address of its corresponding contacting endpoint.
 	if s.Label() == model.TrafficNetworkEndpoint {
-		reader := bufio.NewReader(connection)
-		if srcAddrReceived, err := reader.ReadString('\n'); err != nil {
+		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
 			contactSrcAddr := Generator{}.NewAddress(srcAddrReceived)
