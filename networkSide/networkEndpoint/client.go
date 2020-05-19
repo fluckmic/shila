@@ -13,53 +13,56 @@ import (
 var _ model.ClientNetworkEndpoint = (*Client)(nil)
 
 type Client struct {
-	connectionTriple 	*model.NetworkConnectionTriple
-	connection  		*net.TCPConn
 	Base
+	connection			networkConnection
 	ingressRaw 			chan byte
 	isValid    			bool
 	isSetup    			bool // TODO: merge to "state" object
 	isRunning 			bool
 }
 
-func newClient(connTr *model.NetworkConnectionTriple, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
+type networkConnection struct {
+	Identifier model.NetworkConnectionIdentifier
+	Backbone   *net.TCPConn
+}
+
+func newClient(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
 	return &Client{
 		Base: 				Base{
 								label: label,
 								config: config,
 							},
-		connectionTriple:	connTr,
+		connection:		    networkConnection{Identifier: netConnId},
 		ingressRaw: 		make(chan byte, config.SizeReadBuffer),
 		isValid: 			true,
 	}
 }
 
 func (c *Client) Key() model.EndpointKey {
-	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connectionTriple.Dst, Generator{}.NewPath("")))
+	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connection.Identifier.Dst, Generator{}.NewPath("")))
 }
 
-func (c *Client) SetupAndRun() error {
+func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 
 	if !c.IsValid() {
-		return Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client no longer valid."))
+		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client no longer valid."))
 	}
 
 	if c.IsRunning() {
-		return Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client is already running."))
+		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client is already running."))
 	}
 
 	if c.IsSetup() {
-		return nil
+		return model.NetworkConnectionIdentifier{}, nil
 	}
 
 	// Establish a connection to the server endpoint
-	dst := c.connectionTriple.Dst.(*net.TCPAddr)
-	connection, err := net.DialTCP(dst.Network(), nil, dst)
+	backboneConnection, err := net.DialTCP(c.connection.Identifier.Dst.(*net.TCPAddr).Network(), nil, c.connection.Identifier.Dst.(*net.TCPAddr))
 	if err != nil {
-		return Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - ", err.Error()))
+		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - ", err.Error()))
 	}
-	c.connection = connection
-	c.connectionTriple.Src = Address{Addr: *connection.LocalAddr().(*net.TCPAddr)}
+	c.connection.Backbone = backboneConnection
+	c.connection.Identifier.Src = Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
 	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
@@ -69,23 +72,23 @@ func (c *Client) SetupAndRun() error {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {",c.Label(),"} successfully established connection to {", dst.String(), "}.")
+	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.connection.Identifier.Dst, "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
 
-	return nil
+	return c.connection.Identifier, nil
 }
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.connectionTriple.Dst.(*net.TCPAddr).String(), "}.")
+	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.connection.Identifier.Dst, "}.")
 
 	c.isValid = false
 	c.isRunning = false
 	c.isSetup = false
 
-	err := c.connection.Close()
+	err := c.connection.Backbone.Close()
 
 	return err
 }
@@ -99,7 +102,7 @@ func (c *Client) Label() model.EndpointLabel {
 }
 
 func (c *Client) serveIngress() {
-	reader := io.Reader(c.connection)
+	reader := io.Reader(c.connection.Backbone)
 	storage := make([]byte, c.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
@@ -120,7 +123,7 @@ func (c *Client) serveIngress() {
 }
 
 func (c *Client) serveEgress() {
-	writer := io.Writer(c.connection)
+	writer := io.Writer(c.connection.Backbone)
 	for p := range c.egress {
 		_, err := writer.Write(p.GetRawPayload())
 		if err != nil && !c.IsValid() {

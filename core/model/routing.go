@@ -11,16 +11,16 @@ type MPTCPEndpointToken uint32
 type MPTCPEndpointKey   uint64
 
 type Mapping struct {
-	addressesFromToken 	 map[MPTCPEndpointToken]NetworkConnectionTriple
-	addressesFromDstIPv4 map[IPAddressPortKey]NetworkConnectionTriple
+	addressesFromToken 	 map[MPTCPEndpointToken]NetworkConnectionIdentifier
+	addressesFromDstIPv4 map[IPAddressPortKey]NetworkConnectionIdentifier
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[MPTCPEndpointToken]NetworkConnectionTriple),
-				   make(map[IPAddressPortKey]NetworkConnectionTriple)}
+	return &Mapping{make(map[MPTCPEndpointToken]NetworkConnectionIdentifier),
+				   make(map[IPAddressPortKey]NetworkConnectionIdentifier)}
 }
 
-func (m Mapping) RetrieveFromMPTCPEndpointToken(token MPTCPEndpointToken) (NetworkConnectionTriple, bool) {
+func (m Mapping) RetrieveFromMPTCPEndpointToken(token MPTCPEndpointToken) (NetworkConnectionIdentifier, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
 	return packetHeader, ok
 }
@@ -33,13 +33,13 @@ func (m Mapping) InsertFromMPTCPEndpointKey(key MPTCPEndpointKey, srcAddr Networ
 		if _, ok := m.addressesFromToken[token]; ok {
 			return Error(fmt.Sprint("Unable to insert routing entry for key {", key ,"}. - Entry already exists."))
 		} else {
-			m.addressesFromToken[token] = NetworkConnectionTriple{srcAddr, path, dstAddr}
+			m.addressesFromToken[token] = NetworkConnectionIdentifier{srcAddr, path, dstAddr}
 		}
 	}
 	return nil
 }
 
-func (m Mapping) RetrieveFromIPAddressPortKey(key IPAddressPortKey) (NetworkConnectionTriple, bool) {
+func (m Mapping) RetrieveFromIPAddressPortKey(key IPAddressPortKey) (NetworkConnectionIdentifier, bool) {
 	packetHeader, ok := m.addressesFromDstIPv4[key]
 	return packetHeader, ok
 }
@@ -49,7 +49,7 @@ func (m Mapping) InsertFromIPAddressPortKey(key IPAddressPortKey, srcAddr Networ
 	if _, ok := m.addressesFromDstIPv4[key]; ok {
 		return Error(fmt.Sprint("Unable to insert routing entry for destination IPv4 {", key ,"}. - Entry already exists."))
 	} else {
-		m.addressesFromDstIPv4[key] = NetworkConnectionTriple{srcAddr, path, dstAddr}
+		m.addressesFromDstIPv4[key] = NetworkConnectionIdentifier{srcAddr, path, dstAddr}
 	}
 	return nil
 }

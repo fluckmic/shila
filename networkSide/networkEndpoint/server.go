@@ -18,7 +18,7 @@ type Server struct{
 	Base
 	connections map[model.NetworkAddressAndPathKey]  net.Conn
 	lock        sync.Mutex
-	header 		model.NetworkConnectionTriple
+	header 		model.NetworkConnectionIdentifier
 	listenTo 	Address
 	holdingArea []*model.Packet
 	isValid     bool
@@ -26,7 +26,7 @@ type Server struct{
 	isRunning   bool
 }
 
-func newServer(listenTo model.NetworkAddress, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
+func newServer(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
 	return &Server{
 		Base: 			Base{
 								label: 	label,
@@ -34,7 +34,6 @@ func newServer(listenTo model.NetworkAddress, label model.EndpointLabel, config 
 						},
 		connections: 	make(map[model.NetworkAddressAndPathKey]  net.Conn),
 		lock: 			sync.Mutex{},
-		listenTo: 		listenTo.(Address),
 		holdingArea:    make([]*model.Packet, 0, config.SizeHoldingArea),
 		isValid: 		true,
 	}
@@ -92,7 +91,7 @@ func (s *Server) Label() model.EndpointLabel {
 }
 
 func (s *Server) Key() model.EndpointKey {
-	return model.EndpointKey(Generator{}.GetAddressKey(s.listenTo))
+	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressKey(s.listenTo))
 }
 
 func (s *Server) IsRunning() bool {
@@ -199,7 +198,7 @@ func (s *Server) serveIngress(connection net.Conn) {
 func (s *Server) serveEgress() {
 	for p := range s.egress {
 		// Retrieve key to get the correct connection
-		key := p.NetworkHeaderDstAndPathKey()
+		key := p.NetworkConnIdDstAndPathKey()
 		if con, ok := s.connections[key]; ok {
 			writer := io.Writer(con)
 			nBytesWritten, err := writer.Write(p.GetRawPayload())
@@ -207,7 +206,7 @@ func (s *Server) serveEgress() {
 				// Error doesn't matter, kernel endpoint is no longer valid anyway.
 				return
 			} else if err != nil {
-				panic(fmt.Sprint("Unable to send data for packet {", p.IPHeaderKey(), "} in the " +
+				panic(fmt.Sprint("Unable to send data for packet {", p.IPConnIdKey(), "} in the " +
 					"server {", s.Label(), " ", s.Key(), "} for backbone connection key {", key ,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} wrote {", nBytesWritten, "}.")
@@ -236,7 +235,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	dstAddr := s.listenTo
 	srcAddr := Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	path 	:= Generator{}.NewPath("")
-	header  := model.NetworkConnectionTriple{Src: dstAddr, Path: path, Dst: srcAddr }
+	header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
@@ -244,7 +243,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+			s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
 		}
 	}
 }
@@ -263,8 +262,8 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  := model.NetworkConnectionTriple{Src: dstAddr, Path: path, Dst: srcAddr}
-				s.ingress <- model.NewPacketInclNetworkHeader(s, iPHeader, header, rawData)
+				header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr}
+				s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
 			}
 		}
 	}

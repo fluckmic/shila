@@ -39,8 +39,8 @@ func (m *Manager) Setup() error {
 	}
 
 	// Create the contacting server
-	src := networkEndpoint.Generator{}.NewLocalAddress(m.config.NetworkSide.ContactingServerPort)
-	m.contactingServer = networkEndpoint.Generator{}.NewServer(src, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+	netConnId := model.NetworkConnectionIdentifier{Src: networkEndpoint.Generator{}.NewLocalAddress(m.config.NetworkSide.ContactingServerPort)}
+	m.contactingServer = networkEndpoint.Generator{}.NewServer(netConnId, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
 
 	// Create the mappings
 	m.serverTrafficEndpoints 		= make(model.ServerEndpointMapping)
@@ -100,23 +100,24 @@ func (m *Manager) CleanUp() error {
 	return err
 }
 
-func (m *Manager) EstablishNewServerEndpoint(connection *model.NetworkConnectionTriple) (model.PacketChannels, error) {
+func (m *Manager) EstablishNewServerEndpoint(netConnId model.NetworkConnectionIdentifier) (model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	// If there already exists a server endpoint listening for addr, return its channels
-	if epc, ok := m.serverTrafficEndpoints[model.KeyGenerator{}.NetworkAddressKey(connection.Src)]; ok {
+	key := model.KeyGenerator{}.NetworkAddressKey(netConnId.Src)
+	if epc, ok := m.serverTrafficEndpoints[key]; ok {
 		epc.ConnectionCount++
 		return epc.Endpoint.TrafficChannels(), nil
 	} else {
 		// Otherwise establish a new one
-		newServerEndpoint := networkEndpoint.Generator{}.NewServer(connection.Src, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newServerEndpoint := networkEndpoint.Generator{}.NewServer(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
 		if err := newServerEndpoint.SetupAndRun(); err != nil {
 			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new server endpoint. - ", err.Error()))
 		}
 		// Add the server endpoint to the corresponding mapping
-		m.serverTrafficEndpoints[model.KeyGenerator{}.NetworkAddressKey(connection.Src)] =
+		m.serverTrafficEndpoints[key] =
 			model.ServerNetworkEndpointAndConnectionCount{Endpoint: newServerEndpoint, ConnectionCount: 1}
 
 		// Announce the new traffic channels to the working side
@@ -126,59 +127,66 @@ func (m *Manager) EstablishNewServerEndpoint(connection *model.NetworkConnection
 	}
 }
 
-func (m *Manager) EstablishNewContactingClientEndpoint(connTr *model.NetworkConnectionTriple) (model.PacketChannels, error) {
+func (m *Manager) EstablishNewContactingClientEndpoint(netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	path := networkEndpoint.Generator{}.GetDefaultContactingPath(netConnId.Dst)
+	key  := model.KeyGenerator{}.NetworkAddressAndPathKey(netConnId.Dst, path)
+
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
-	connTr.Path  = networkEndpoint.Generator{}.GetDefaultContactingPath(connTr.Dst)
-	key 		:= model.KeyGenerator{}.NetworkAddressAndPathKey(connTr.Dst, connTr.Path)
 	if _, ok := m.clientContactingEndpoints[key]; ok {
-		return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - Endpoint already exists."))
+		return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new client {",
+			model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - Endpoint already exists."))
 	} else {
 		// Establish a new contacting client endpoint
-		newClientContactingEndpoint := networkEndpoint.Generator{}.NewClient(connTr, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
-		if err := newClientContactingEndpoint.SetupAndRun(); err != nil {
-			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new contacting client endpoint. - ", err.Error()))
+		newContactingClientEndpoint := networkEndpoint.Generator{}.NewClient(netConnId, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+		if contactingNetConnId, err := newContactingClientEndpoint.SetupAndRun(); err != nil {
+			return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new client {",
+				model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - ", err.Error()))
 		} else {
 			// Add it to the corresponding mapping
-			m.clientContactingEndpoints[key] = newClientContactingEndpoint
+			m.clientContactingEndpoints[key] = newContactingClientEndpoint
 			// Announce the new traffic channels to the working side
-			m.workingSide <- model.PacketChannelAnnouncement{Announcer: newClientContactingEndpoint, Channel: newClientContactingEndpoint.TrafficChannels().Ingress}
+			m.workingSide <- model.PacketChannelAnnouncement{Announcer: newContactingClientEndpoint, Channel: newContactingClientEndpoint.TrafficChannels().Ingress}
 
-			return newClientContactingEndpoint.TrafficChannels(), nil
+			return contactingNetConnId, newContactingClientEndpoint.TrafficChannels(), nil
 		}
 	}
 }
 
-func (m *Manager) EstablishNewTrafficClientEndpoint(connTr *model.NetworkConnectionTriple) (model.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficClientEndpoint(netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	if _, ok := m.clientTrafficEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(connTr.Dst, connTr.Path)]; ok {
-		return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
+	key := model.KeyGenerator{}.NetworkAddressAndPathKey(netConnId.Dst, netConnId.Path)
+	if _, ok := m.clientTrafficEndpoints[key]; ok {
+		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
+		Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
 	} else {
 		// Otherwise establish a new one
-		newClientTrafficEndpoint := networkEndpoint.Generator{}.NewClient(connTr, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newTrafficClientEndpoint := networkEndpoint.Generator{}.NewClient(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
 		// Wait a certain amount of time to give the server endpoint time to establish itself
 		time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
-		if err := newClientTrafficEndpoint.SetupAndRun(); err != nil {
-			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", err.Error()))
+		if trafficNetConnId, err := newTrafficClientEndpoint.SetupAndRun(); err != nil {
+			return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
+			Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", err.Error()))
+		} else {
+			// Add it to the corresponding mapping
+			m.clientTrafficEndpoints[key] = newTrafficClientEndpoint
+			// Announce the new traffic channels to the working side
+			m.workingSide <- model.PacketChannelAnnouncement{Announcer: newTrafficClientEndpoint, Channel: newTrafficClientEndpoint.TrafficChannels().Ingress}
+
+			// The removal of the corresponding client contacting endpoint is triggered by the connTr
+			// itself after obtaining the lock to change its state to established. Otherwise we are in danger
+			// that we close the endpoint to early.
+
+			return trafficNetConnId, newTrafficClientEndpoint.TrafficChannels(), nil
+			}
 		}
-		// Add it to the corresponding mapping
-		m.clientTrafficEndpoints[model.KeyGenerator{}.NetworkAddressAndPathKey(connTr.Dst, connTr.Path)] = newClientTrafficEndpoint
-		// Announce the new traffic channels to the working side
-		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newClientTrafficEndpoint, Channel: newClientTrafficEndpoint.TrafficChannels().Ingress}
-
-		// The removal of the corresponding client contacting endpoint is triggered by the connTr
-		// itself after obtaining the lock to change its state to established. Otherwise we are in danger
-		// that we close the endpoint to early.
-
-		return newClientTrafficEndpoint.TrafficChannels(), nil
-	}
 }
 
 func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error {
@@ -186,7 +194,7 @@ func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key := networkEndpoint.Generator{}.GetAddressKey(addr)
+	key :=  model.KeyGenerator{}.NetworkAddressKey(addr)
 	if epc, ok := m.serverTrafficEndpoints[key]; ok {
 		epc.ConnectionCount--
 		if epc.ConnectionCount == 0 {

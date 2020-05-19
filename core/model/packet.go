@@ -14,49 +14,49 @@ func (e Error) Error() string {
 type PacketPayload IPv4TCPPacket
 
 type Packet struct {
-	entryPoint        Endpoint
-	ipConnection      IPConnectionTuple
-	networkConnection NetworkConnectionTriple
-	payload           PacketPayload
+	entryPoint Endpoint
+	ipConnId   IPConnectionIdentifier
+	netConnId  NetworkConnectionIdentifier
+	payload    PacketPayload
 }
 
 // Has to be parsed for every packet
-type IPConnectionTuple struct {
+type IPConnectionIdentifier struct {
 	Src net.TCPAddr
 	Dst net.TCPAddr
 }
 
-func (iph *IPConnectionTuple) key() IPConnectionTupleKey {
-	return KeyGenerator{}.IPConnectionTupleKey(*iph)
+func (iph *IPConnectionIdentifier) key() IPConnectionIdentifierKey {
+	return KeyGenerator{}.IPConnectionIdentifierKey(*iph)
 }
 
-func (iph *IPConnectionTuple) srcKey() IPAddressPortKey {
+func (iph *IPConnectionIdentifier) srcKey() IPAddressPortKey {
 	return KeyGenerator{}.IPAddressPortKey(iph.Src)
 }
 
-func (iph *IPConnectionTuple) srcIPKey() IPAddressKey {
+func (iph *IPConnectionIdentifier) srcIPKey() IPAddressKey {
 	return KeyGenerator{}.IPAddressKey(iph.Src.IP)
 }
 
-func (iph *IPConnectionTuple) dstKey() IPAddressPortKey {
+func (iph *IPConnectionIdentifier) dstKey() IPAddressPortKey {
 	return KeyGenerator{}.IPAddressPortKey(iph.Dst)
 }
 
-func (iph *IPConnectionTuple) dstIPKey() IPAddressKey {
+func (iph *IPConnectionIdentifier) dstIPKey() IPAddressKey {
 	return KeyGenerator{}.IPAddressKey(iph.Dst.IP)
 }
 
-type NetworkConnectionTriple struct {
+type NetworkConnectionIdentifier struct {
 	Src  NetworkAddress
 	Path NetworkPath
 	Dst  NetworkAddress
 }
 
-func (nh *NetworkConnectionTriple) key() NetworkConnectionTripleKey {
-	return KeyGenerator{}.NetworkConnectionTripleKey(*nh)
+func (nh *NetworkConnectionIdentifier) key() NetworkConnectionIdentifierKey {
+	return KeyGenerator{}.NetworkConnectionIdentifierKey(*nh)
 }
 
-func (nh *NetworkConnectionTriple) destAndPathKey() NetworkAddressAndPathKey {
+func (nh *NetworkConnectionIdentifier) destAndPathKey() NetworkAddressAndPathKey {
 	return KeyGenerator{}.NetworkAddressAndPathKey(nh.Dst, nh.Path)
 }
 
@@ -64,48 +64,48 @@ type IPv4TCPPacket struct {
 	Raw      []byte
 }
 
-func NewPacket(ep Endpoint, iph IPConnectionTuple, raw []byte) *Packet {
-	return &Packet{entryPoint: ep, ipConnection: iph, payload: PacketPayload{raw}}
+func NewPacket(ep Endpoint, iph IPConnectionIdentifier, raw []byte) *Packet {
+	return &Packet{entryPoint: ep, ipConnId: iph, payload: PacketPayload{raw}}
 }
 
-func NewPacketInclNetworkHeader(ep Endpoint, iph IPConnectionTuple, nh NetworkConnectionTriple, raw []byte) *Packet {
-	return &Packet{entryPoint: ep, ipConnection: iph, networkConnection: nh, payload: PacketPayload{raw}}
+func NewPacketInclNetConnId(ep Endpoint, iph IPConnectionIdentifier, nh NetworkConnectionIdentifier, raw []byte) *Packet {
+	return &Packet{entryPoint: ep, ipConnId: iph, netConnId: nh, payload: PacketPayload{raw}}
 }
 
-func (p *Packet) GetIPHeader() IPConnectionTuple {
-	return p.ipConnection
+func (p *Packet) GetIPConnId() IPConnectionIdentifier {
+	return p.ipConnId
 }
 
-func (p *Packet) IPHeaderKey() IPConnectionTupleKey {
-	return p.ipConnection.key()
+func (p *Packet) IPConnIdKey() IPConnectionIdentifierKey {
+	return p.ipConnId.key()
 }
 
-func (p *Packet) IPHeaderDstKey() IPAddressPortKey {
-	return p.ipConnection.dstKey()
+func (p *Packet) IPConnIdDstKey() IPAddressPortKey {
+	return p.ipConnId.dstKey()
 }
 
-func (p *Packet) IPHeaderSrcKey() IPAddressPortKey {
-	return p.ipConnection.srcKey()
+func (p *Packet) IPConnIdSrcKey() IPAddressPortKey {
+	return p.ipConnId.srcKey()
 }
 
-func (p *Packet) IPHeaderDstIPKey() IPAddressKey {
-	return p.ipConnection.dstIPKey()
+func (p *Packet) IPConnIdDstIPKey() IPAddressKey {
+	return p.ipConnId.dstIPKey()
 }
 
-func (p *Packet) IPHeaderSrcIPKey() IPAddressKey {
-	return p.ipConnection.srcIPKey()
+func (p *Packet) IPConnIdSrcIPKey() IPAddressKey {
+	return p.ipConnId.srcIPKey()
 }
 
-func (p *Packet) GetNetworkHeader() NetworkConnectionTriple {
-	return p.networkConnection
+func (p *Packet) GetNetworkConnId() NetworkConnectionIdentifier {
+	return p.netConnId
 }
 
-func (p *Packet) SetNetworkHeader(header NetworkConnectionTriple) {
-	p.networkConnection = header
+func (p *Packet) SetNetworkConnId(netConnId NetworkConnectionIdentifier) {
+	p.netConnId = netConnId
 }
 
-func (p *Packet) NetworkHeaderDstAndPathKey() NetworkAddressAndPathKey {
-	 return p.networkConnection.destAndPathKey()
+func (p *Packet) NetworkConnIdDstAndPathKey() NetworkAddressAndPathKey {
+	 return p.netConnId.destAndPathKey()
 }
 
 func (p *Packet) GetRawPayload() []byte {
@@ -118,7 +118,7 @@ func (p *Packet) GetEntryPoint() Endpoint {
 
 func (p *Packet) PrintAllInfo() {
 	log.Verbose.Print("########################################################")
-	log.Verbose.Print("IP Header: ", KeyGenerator{}.IPConnectionTupleKey(p.ipConnection))
+	log.Verbose.Print("IP Header: ", KeyGenerator{}.IPConnectionIdentifierKey(p.ipConnId))
 	// TODO: Network header --> nil
 	log.Verbose.Print("Entry point: ", p.GetEntryPoint().Label())
 	log.Verbose.Print("########################################################")

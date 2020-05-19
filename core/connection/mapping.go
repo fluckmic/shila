@@ -18,13 +18,13 @@ type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
 	routing 	*model.Mapping
-	connections map[model.IPConnectionTupleKey] *Connection
+	connections map[model.IPConnectionIdentifierKey] *Connection
 	lock		sync.Mutex
 }
 
 func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping) *Mapping {
 	m := &Mapping{kernelSide, networkSide, routing,
-		make(map[model.IPConnectionTupleKey] *Connection), sync.Mutex{}}
+		make(map[model.IPConnectionIdentifierKey] *Connection), sync.Mutex{}}
 	go m.vacuum()
 	return m
 }
@@ -49,7 +49,7 @@ func (m *Mapping) vacuum() {
 	}
 }
 
-func (m *Mapping) Retrieve(id model.IPConnectionTupleKey) *Connection {
+func (m *Mapping) Retrieve(id model.IPConnectionIdentifierKey) *Connection {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if con, ok := m.connections[id]; ok {

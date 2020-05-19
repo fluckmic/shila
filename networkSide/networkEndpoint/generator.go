@@ -8,7 +8,6 @@ import (
 var _ model.NetworkEndpointGenerator 	= (*Generator)(nil)
 var _ model.NetworkAddressGenerator 	= (*Generator)(nil)
 var _ model.NetworkPathGenerator 		= (*Generator)(nil)
-var _ model.NetworkKeyGenerator			= (*Generator)(nil)
 
 type Error string
 func (e Error) Error() string {
@@ -31,17 +30,13 @@ func (g Generator) GetDefaultContactingPath(address model.NetworkAddress) model.
 	return g.NewPath("")
 }
 
-func (g Generator) GetAddressKey(address model.NetworkAddress) model.NetworkAddressKey {
-	return model.NetworkAddressKey(address.String())
+func (g Generator) NewClient(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
+	return newClient(netConnId, label, config)
 }
 
-func (g Generator) NewClient(connTr *model.NetworkConnectionTriple, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
-	return newClient(connTr, label, config)
-}
-
-func (g Generator) NewServer(listenTo model.NetworkAddress, label model.EndpointLabel,
+func (g Generator) NewServer(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel,
 	config config.NetworkEndpoint) model.ServerNetworkEndpoint {
-	return newServer(listenTo, label, config)
+	return newServer(netConnId, label, config)
 }
 
 func (g Generator) NewAddress(address string) model.NetworkAddress {

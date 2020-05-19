@@ -20,19 +20,19 @@ func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
 	return
 }
 
-func GetIPHeader(raw []byte) (model.IPConnectionTuple, error) {
+func GetIPHeader(raw []byte) (model.IPConnectionIdentifier, error) {
 	if ip4v, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
-		return model.IPConnectionTuple{}, err
+		return model.IPConnectionIdentifier{}, err
 	} else {
-		return model.IPConnectionTuple{
+		return model.IPConnectionIdentifier{
 			Src: net.TCPAddr{IP: ip4v.SrcIP, Port: int(tcp.SrcPort)},
 			Dst: net.TCPAddr{IP: ip4v.DstIP, Port: int(tcp.DstPort)},
 		}, nil
 	}
 }
 
-func GetNetworkHeaderFromIPOptions(raw []byte) (model.NetworkConnectionTriple, bool, error) {
-	return model.NetworkConnectionTriple{}, false, nil
+func GetNetworkHeaderFromIPOptions(raw []byte) (model.NetworkConnectionIdentifier, bool, error) {
+	return model.NetworkConnectionIdentifier{}, false, nil
 }
 
 // Start slow but correct..
