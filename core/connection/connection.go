@@ -63,8 +63,8 @@ func (conn *Connection) ProcessPacket(p *model.Packet) error {
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
-	log.Verbose.Print("Connection {", conn.ipConnIdKey, "} in state {", conn.state.Current(), "} " +
-		"starts processing packet from {", p.GetIPConnId().Src.IP, "} to {", p.GetIPConnId().Dst.IP, "}.")
+	// log.Verbose.Print("Connection {", conn.ipConnIdKey, "} in state {", conn.state.Current(), "} " +
+	//	"starts processing packet from {", p.GetIPConnId().Src.IP, "} to {", p.GetIPConnId().Dst.IP, "}.")
 
 	if p.IPConnIdKey() != conn.ipConnIdKey {
 		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
@@ -84,8 +84,8 @@ func (conn *Connection) ProcessPacket(p *model.Packet) error {
 			return nil
 	}
 
-	log.Verbose.Print("Connection {", conn.ipConnIdKey, "} done with processing packet from {", p.GetIPConnId().Src.IP, "} to {",
-		p.GetIPConnId().Dst.IP,"}; ending up in state {", conn.state.Current(),"}.")
+	// log.Verbose.Print("Connection {", conn.ipConnIdKey, "} done with processing packet from {", p.GetIPConnId().Src.IP, "} to {",
+	//	p.GetIPConnId().Dst.IP,"}; ending up in state {", conn.state.Current(),"}.")
 
 	return err
 }
@@ -301,7 +301,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.netConnId.Dst)
 			log.Info.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
-			"backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
+			" backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
 		}
 	}()
 
