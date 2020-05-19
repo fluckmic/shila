@@ -40,3 +40,20 @@ func (s *state) Current() stateIdentifier {
 func (s *state) Previous() stateIdentifier {
 	return s.previous
 }
+
+type kind uint8
+const (
+	_             = iota
+	MainFlow kind = iota
+	SubFlow
+	Unknown
+)
+
+func(c kind) String() string {
+	switch c {
+	case MainFlow: return "MainFlow"
+	case SubFlow:  return "SubFlow"
+	case Unknown:  return "Unknown"
+	}
+	return "Unknown"
+}

@@ -16,11 +16,10 @@ type Connection struct {
 	ipConnIdKey model.IPConnectionIdentifierKey
 	netConnId   model.NetworkConnectionIdentifier
 	state       state
+	kind 		kind
 	channels    channels
 	lock        sync.Mutex
 	touched     time.Time
-	sent        bool
-	received    bool
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
 	routing     *model.Mapping
@@ -37,6 +36,7 @@ func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routi
 	return &Connection{
 		ipConnIdKey: ipId,
 		state:       state{Raw, Raw},
+		kind:		 Unknown,
 		lock:        sync.Mutex{},
 		touched:     time.Now(),
 		kernelSide:  kernelSide,
@@ -175,6 +175,10 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error 
 	case ServerReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.state.Set(Established)
+
+							log.Info.Print("Established new connection {", conn.ipConnIdKey, ",",
+								model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
+
 							return nil
 
 	case ClientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
@@ -197,6 +201,10 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.state.Set(Established)
+
+							log.Info.Print("Established new connection {", conn.ipConnIdKey, ",",
+							model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
+
 							return nil
 
 	case Established: 		conn.touched = time.Now()
@@ -234,6 +242,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 		if err == nil {
 			if netConnId, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
 				conn.netConnId = netConnId
+				conn.kind 	   = SubFlow
 				p.SetNetworkConnId(netConnId)
 			} else {
 				panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
@@ -250,6 +259,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	} else if netConnId, ok, err := layer.GetNetworkHeaderFromIPOptions(p.GetRawPayload()); ok {
 		if err == nil {
 			conn.netConnId = netConnId
+			conn.kind      = MainFlow
 			p.SetNetworkConnId(netConnId)
 		} else {
 			panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
@@ -259,6 +269,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	// For a MPTCP main flow the network header is probably available in the routing table
 	} else if netConnId, ok := conn.routing.RetrieveFromIPAddressPortKey(p.IPConnIdDstKey()); ok {
 		conn.netConnId = netConnId
+		conn.kind      = MainFlow
 		p.SetNetworkConnId(netConnId)
 	// No valid option to get network header :(
 	} else {
