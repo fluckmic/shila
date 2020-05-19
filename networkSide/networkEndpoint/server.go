@@ -3,7 +3,6 @@ package networkEndpoint
 import (
 	"bufio"
 	"fmt"
-	"github.com/scionproto/scion/bazel-scion/external/go_sdk/src/strings"
 	"io"
 	"net"
 	"shila/config"
@@ -11,6 +10,7 @@ import (
 	"shila/layer"
 	"shila/log"
 	"strconv"
+	"strings"
 	"sync"
 )
 
