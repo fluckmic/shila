@@ -141,9 +141,9 @@ func (s *Server) handleConnection(connection net.Conn) {
 			",", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
 		} else {
 			s.backboneConnections[key] = connection
-			s.lock.Unlock()
 		}
 	}
+	s.lock.Unlock()
 
 	// A new connection was established. This is good news for
 	// all packets waiting in the holding area.
