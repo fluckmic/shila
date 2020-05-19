@@ -3,6 +3,7 @@ package networkEndpoint
 import (
 	"bufio"
 	"fmt"
+	"github.com/scionproto/scion/bazel-scion/external/go_sdk/src/strings"
 	"io"
 	"net"
 	"shila/config"
@@ -126,7 +127,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
-			contactSrcAddr := Generator{}.NewAddress(srcAddrReceived)
+			contactSrcAddr := Generator{}.NewAddress(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, model.KeyGenerator{}.NetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
