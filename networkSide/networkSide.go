@@ -140,6 +140,9 @@ func (m *Manager) EstablishNewContactingClientEndpoint(netConnId model.NetworkCo
 	path := networkEndpoint.Generator{}.GetDefaultContactingPath(netConnId.Dst)
 	key  := model.KeyGenerator{}.NetworkAddressAndPathKey(netConnId.Dst, path)
 
+	netConnId.Path = path
+	netConnId.Dst  = networkEndpoint.Generator{}.GenerateContactingAddress(netConnId.Dst)
+
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
 	if _, ok := m.clientContactingEndpoints[key]; ok {
