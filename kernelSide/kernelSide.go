@@ -120,7 +120,7 @@ func (m *Manager) Start() error {
 			" - ", "Kernel side already running."))
 	}
 
-	log.Verbose.Println("Starting kernel side...")
+	// log.Verbose.Println("Starting kernel side...")
 
 	if err := m.startKernelEndpoints(); err != nil {
 		return Error(fmt.Sprint("Cannot start kernel side",
@@ -134,7 +134,7 @@ func (m *Manager) Start() error {
 
 	m.isRunning = true
 
-	log.Verbose.Println("Kernel side started.")
+	// log.Verbose.Println("Kernel side started.")
 
 	return nil
 }
@@ -248,7 +248,7 @@ func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) er
 			newKerepKey := newKerepId.Key()
 			if _, ok := m.endpoints[newKerepKey]; !ok {
 				m.endpoints[newKerepId.Key()] = newKerep
-				log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
+				// log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.
 				return Error(fmt.Sprint("Kernel endpoint already exists: ", newKerepKey))
