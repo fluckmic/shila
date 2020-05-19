@@ -1,6 +1,7 @@
 package networkEndpoint
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -16,14 +17,13 @@ var _ model.ServerNetworkEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	connections map[model.NetworkAddressAndPathKey]  net.Conn
-	lock        sync.Mutex
-	header 		model.NetworkConnectionIdentifier
-	listenTo 	Address
-	holdingArea []*model.Packet
-	isValid     bool
-	isSetup     bool // TODO: merge to "state" object
-	isRunning   bool
+	backboneConnections map[model.NetworkAddressAndPathKey]  net.Conn
+	networkConnectionId model.NetworkConnectionIdentifier
+	lock                sync.Mutex
+	holdingArea         []*model.Packet
+	isValid             bool
+	isSetup             bool // TODO: merge to "state" object
+	isRunning           bool
 }
 
 func newServer(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
@@ -32,42 +32,43 @@ func newServer(netConnId model.NetworkConnectionIdentifier, label model.Endpoint
 								label: 	label,
 								config: config,
 						},
-		connections: 	make(map[model.NetworkAddressAndPathKey]  net.Conn),
-		lock: 			sync.Mutex{},
-		holdingArea:    make([]*model.Packet, 0, config.SizeHoldingArea),
-		isValid: 		true,
+		backboneConnections: make(map[model.NetworkAddressAndPathKey]  net.Conn),
+		networkConnectionId: netConnId,
+		lock:                sync.Mutex{},
+		holdingArea:         make([]*model.Packet, 0, config.SizeHoldingArea),
+		isValid:             true,
 	}
 }
 
 func (s *Server) SetupAndRun() error {
 
 	if s.IsRunning() {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), " ", s.Key(), "}. - Server is already running."))
+		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server is already running."))
 	}
 
 	if !s.IsValid() {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), " ", s.Key(), "}. - Server no longer valid."))
+		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server no longer valid."))
 	}
 
 	if s.IsSetup() {
 		return nil
 	}
 
-
 	// Set up the listener
-	listener, err := net.ListenTCP(s.listenTo.Addr.Network(), &s.listenTo.Addr)
+	src := s.networkConnectionId.Src.(Address)
+	listener, err := net.ListenTCP(src.Addr.Network(), &src.Addr)
 	if err != nil {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), " ", s.Key(), "}. - ", err.Error()))
+		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - ", err.Error()))
 	}
 
 	// Create the channels
 	s.ingress = make(chan *model.Packet, s.config.SizeIngressBuff)
 	s.egress  = make(chan *model.Packet, s.config.SizeEgressBuff)
 
-	// Start listening for incoming connections.
+	// Start listening for incoming backboneConnections.
 	go s.serveIncomingConnections(listener)
 
-	log.Verbose.Print("Server {",s.Label()," ",s.Key(),"} started to listen for incoming backbone connections on {", s.Key(), "}.")
+	log.Verbose.Print("Server {", s.Label(), "," , s.Key(), "} started to listen for incoming backbone backboneConnections on {", s.Key(), "}.")
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -91,7 +92,7 @@ func (s *Server) Label() model.EndpointLabel {
 }
 
 func (s *Server) Key() model.EndpointKey {
-	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressKey(s.listenTo))
+	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressKey(s.networkConnectionId.Src))
 }
 
 func (s *Server) IsRunning() bool {
@@ -115,18 +116,33 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// Get the path taken from client to this server
 	path 	:= Generator{}.NewPath("")
 
-	// Generate the key
-	key := model.KeyGenerator{}.NetworkAddressAndPathKey(srcAddr, path)
+	// Generate the keys
+	var keys []model.NetworkAddressAndPathKey
+	keys = append(keys, model.KeyGenerator{}.NetworkAddressAndPathKey(srcAddr, path))
+
+	// The client traffic endpoint sends as a very first message
+	// the src address of its corresponding contacting endpoint.
+	if s.Label() == model.TrafficNetworkEndpoint {
+		reader := bufio.NewReader(connection)
+		if srcAddrReceived, err := reader.ReadString('\n'); err != nil {
+
+		} else {
+			contactSrcAddr := Generator{}.NewAddress(srcAddrReceived)
+			keys = append(keys, model.KeyGenerator{}.NetworkAddressAndPathKey(contactSrcAddr, path))
+		}
+	}
 
 	// Add the new connection to the mapping, such that it can be found by the egress handler.
 	s.lock.Lock()
-	if _, ok := s.connections[key]; ok {
-		s.lock.Unlock()
-		panic(fmt.Sprint("Trying to add backbone connection with key {", key, "} in " +
-			"server {", s.Label(), " ", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
-	} else {
-		s.connections[key] = connection
-		s.lock.Unlock()
+	for _, key := range keys {
+		if _, ok := s.backboneConnections[key]; ok {
+			s.lock.Unlock()
+			panic(fmt.Sprint("Trying to add backbone connection with key {", key, "} in " + "server {", s.Label(),
+			",", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
+		} else {
+			s.backboneConnections[key] = connection
+			s.lock.Unlock()
+		}
 	}
 
 	// A new connection was established. This is good news for
@@ -134,15 +150,28 @@ func (s *Server) handleConnection(connection net.Conn) {
 	go s.flushHoldingArea()
 
 	// Start the ingress handler for the connection.
-	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} started handling a new backbone connection {", key, "}.")
+	if len(keys) == 1 {
+		log.Verbose.Print("Server {", s.Label(), ",", s.Key(),
+		"} started handling a new backbone connection {", keys[0], "}.")
+	} else if len(keys) == 2 {
+		log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} started handling a new backbone connection {",
+		keys[0], "} and is also serving contacting connection {", keys[1], "}.")
+	}
 	s.serveIngress(connection)
 
 	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
 	s.lock.Lock()
-	delete(s.connections, key)
+	for _, key := range keys {
+		delete(s.backboneConnections, key)
+	}
 	s.lock.Unlock()
 
-	log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} removed backbone connection {", key, "}.")
+	if len(keys) == 1 {
+		log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} removed backbone connection {", keys[0], "}.")
+	} else if len(keys) == 2 {
+		log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} removed backbone connection {", keys[0], "}." +
+			"and contacting connection {", keys[1], "}.")
+	}
 
 	return
 }
@@ -162,13 +191,13 @@ func (s *Server) serveIngress(connection net.Conn) {
 	if s.Label() == model.ContactingNetworkEndpoint {
 		// Server is the contacting server, it is his responsibility
 		// to extract the necessary data from the ip packet to be able
-		// to set the correct network header.
+		// to set the correct network networkConnectionId.
 		go s.packetizeContacting(ingressRaw, connection)
 
 	} else if s.Label() == model.TrafficNetworkEndpoint {
 		// Server receives normal traffic, the connection over which the
 		// packet was received contains enough information to set
-		// the correct network header.
+		// the correct network networkConnectionId.
 
 		// TODO: The corresponding traffic client informs the traffic server for whom this connection is.
 
@@ -183,7 +212,7 @@ func (s *Server) serveIngress(connection net.Conn) {
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, s.config.BatchSizeRead)
 		// If the incoming connection suffers from an error, we close it and return.
-		// The server instance is still able to receive connections as long as it is not
+		// The server instance is still able to receive backboneConnections as long as it is not
 		// shut down by the manager of the network side.
 		if err != nil {
 			close(ingressRaw) // Stop the packetizing.
@@ -199,7 +228,7 @@ func (s *Server) serveEgress() {
 	for p := range s.egress {
 		// Retrieve key to get the correct connection
 		key := p.NetworkConnIdDstAndPathKey()
-		if con, ok := s.connections[key]; ok {
+		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con)
 			nBytesWritten, err := writer.Write(p.GetRawPayload())
 			if err != nil && !s.IsValid() {
@@ -231,8 +260,8 @@ func (s *Server) IsValid() bool {
 
 func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
-	// Create the packet network header
-	dstAddr := s.listenTo
+	// Create the packet network networkConnectionId
+	dstAddr := s.networkConnectionId.Src
 	srcAddr := Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	path 	:= Generator{}.NewPath("")
 	header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr }
@@ -240,7 +269,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	for {
 		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
 		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
+			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
 			s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
@@ -250,7 +279,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
 
-	// Fetch the parts for the packet network header which are fixed.
+	// Fetch the parts for the packet network networkConnectionId which are fixed.
 	path 		:= Generator{}.NewPath("")
 	srcAddr 	:= Generator{}.NewAddress(connection.RemoteAddr().String())
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
@@ -258,7 +287,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	for {
 		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
 			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-				panic(fmt.Sprint("Unable to get IP header in packetizer of server {", s.Key(),
+				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
@@ -268,4 +297,10 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 		}
 	}
 
+}
+
+func (s *Server) RegisterConnection(netConnId model.NetworkConnectionIdentifier) error {
+
+	// TODO!
+	return nil
 }

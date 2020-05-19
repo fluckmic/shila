@@ -1,6 +1,7 @@
 package networkEndpoint
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net"
@@ -45,11 +46,11 @@ func (c *Client) Key() model.EndpointKey {
 func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 
 	if !c.IsValid() {
-		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client no longer valid."))
+		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
 	}
 
 	if c.IsRunning() {
-		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - Client is already running."))
+		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
 	}
 
 	if c.IsSetup() {
@@ -57,11 +58,27 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 	}
 
 	// Establish a connection to the server endpoint
-	backboneConnection, err := net.DialTCP(c.connection.Identifier.Dst.(*net.TCPAddr).Network(), nil, c.connection.Identifier.Dst.(*net.TCPAddr))
+	dst := c.connection.Identifier.Dst.(Address)
+	backboneConnection, err := net.DialTCP(dst.Addr.Network(), nil, &dst.Addr)
 	if err != nil {
-		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ",c.Key(), "}. - ", err.Error()))
+		return model.NetworkConnectionIdentifier{},
+		Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
+		"}. - Unable to setup the backbone connection. - ", err.Error()))
 	}
 	c.connection.Backbone = backboneConnection
+
+	if c.Label() == model.TrafficNetworkEndpoint {
+		// Before setting the own src address, a traffic client sends the currently set src address to the server;
+		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
+		// is required to be able to do the mapping on the server side.
+		writer := bufio.NewWriter(c.connection.Backbone)
+		if _, err := writer.WriteString(fmt.Sprint(c.connection.Identifier.Src.String(),'\n')); err != nil {
+			return model.NetworkConnectionIdentifier{},
+				Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
+					"}. - Unable to send source address. - ", err.Error()))
+		}
+	}
+
 	c.connection.Identifier.Src = Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
@@ -72,7 +89,8 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.connection.Identifier.Dst, "}.")
+	log.Verbose.Print("Client {", c.Label()," ", c.Key(),
+	"} successfully established connection to {", c.connection.Identifier.Dst, "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
@@ -82,7 +100,8 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.connection.Identifier.Dst, "}.")
+	log.Verbose.Print("Tear down client {", c.Label()," ", c.Key(),
+	"}} connecting to {", c.connection.Identifier.Dst, "}.")
 
 	c.isValid = false
 	c.isRunning = false
@@ -142,7 +161,7 @@ func (c *Client) packetize() {
 	for {
 		rawData  := layer.PacketizeRawData(c.ingressRaw, c.config.SizeReadBuffer)
 		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP header in packetizer of client {", c.Key(),
+			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
 			c.ingress <- model.NewPacket(c, iPHeader, rawData)

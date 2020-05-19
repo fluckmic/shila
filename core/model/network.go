@@ -4,13 +4,8 @@ import (
 	"shila/config"
 )
 
-type ServerNetworkEndpointAndConnectionCount struct {
-	Endpoint ServerNetworkEndpoint
-	ConnectionCount int
-}
-
 // Mappings
-type ServerEndpointMapping map[NetworkAddressKey] ServerNetworkEndpointAndConnectionCount
+type ServerEndpointMapping map[NetworkAddressKey] 			ServerNetworkEndpoint
 type ClientEndpointMapping map[NetworkAddressAndPathKey]	ClientNetworkEndpoint
 
 type NetworkEndpointGenerator interface {
@@ -39,6 +34,7 @@ type ClientNetworkEndpoint interface {
 type ServerNetworkEndpoint interface {
 	Endpoint
 	SetupAndRun() error
+	RegisterConnection(NetworkConnectionIdentifier) error
 }
 
 type NetworkAddress interface {

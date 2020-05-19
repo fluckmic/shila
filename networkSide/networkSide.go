@@ -100,30 +100,35 @@ func (m *Manager) CleanUp() error {
 	return err
 }
 
-func (m *Manager) EstablishNewServerEndpoint(netConnId model.NetworkConnectionIdentifier) (model.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficServerEndpoint(netConnId model.NetworkConnectionIdentifier) (model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	// If there already exists a server endpoint listening for addr, return its channels
-	key := model.KeyGenerator{}.NetworkAddressKey(netConnId.Src)
-	if epc, ok := m.serverTrafficEndpoints[key]; ok {
-		epc.ConnectionCount++
-		return epc.Endpoint.TrafficChannels(), nil
-	} else {
-		// Otherwise establish a new one
-		newServerEndpoint := networkEndpoint.Generator{}.NewServer(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
-		if err := newServerEndpoint.SetupAndRun(); err != nil {
-			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new server endpoint. - ", err.Error()))
+	key     := model.KeyGenerator{}.NetworkAddressKey(netConnId.Src)
+	sep, ok := m.serverTrafficEndpoints[key]
+
+	// If there is no server endpoint listening, we first have to set one up.
+	if !ok {
+		newSep := networkEndpoint.Generator{}.NewServer(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		if err := newSep.SetupAndRun(); err != nil {
+			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new server {",
+			model.ContactingNetworkEndpoint, "} listening to {", netConnId.Src, "}. - ", err.Error()))
 		}
-		// Add the server endpoint to the corresponding mapping
-		m.serverTrafficEndpoints[key] =
-			model.ServerNetworkEndpointAndConnectionCount{Endpoint: newServerEndpoint, ConnectionCount: 1}
-
+		// Add the endpoint to the mapping
+		m.serverTrafficEndpoints[key] = newSep
 		// Announce the new traffic channels to the working side
-		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newServerEndpoint, Channel: newServerEndpoint.TrafficChannels().Ingress}
+		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newSep, Channel: newSep.TrafficChannels().Ingress}
+		sep = newSep
+	}
 
-		return newServerEndpoint.TrafficChannels(), nil
+	// Register the new connection
+	if err := sep.RegisterConnection(netConnId); err != nil {
+		return model.PacketChannels{},	Error(fmt.Sprint("Unable to register new connection {",
+		model.KeyGenerator{}.NetworkConnectionIdentifierKey(netConnId),
+		"} for server {", model.ContactingNetworkEndpoint, "} listening to {", netConnId.Src, "}. - ", err.Error()))
+	} else {
+		return sep.TrafficChannels(), nil
 	}
 }
 
@@ -194,6 +199,7 @@ func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
+	/* // TODO! Is it really necessary to tear it down?
 	key :=  model.KeyGenerator{}.NetworkAddressKey(addr)
 	if epc, ok := m.serverTrafficEndpoints[key]; ok {
 		epc.ConnectionCount--
@@ -203,6 +209,7 @@ func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error 
 			return err
 		}
 	}
+	*/
 	return nil
 }
 
@@ -263,8 +270,8 @@ func (m *Manager) clearClientTrafficEndpoints() {
 
 func (m *Manager) tearDownServerTrafficEndpoints() error {
 	var err error = nil
-	for _, epc := range m.serverTrafficEndpoints {
-		err = epc.Endpoint.TearDown()
+	for _, ep := range m.serverTrafficEndpoints {
+		err = ep.TearDown()
 	}
 	return err
 }
