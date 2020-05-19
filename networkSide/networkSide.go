@@ -61,7 +61,7 @@ func (m *Manager) Start() error {
 		return Error(fmt.Sprint("Cannot start network side - Network side already running."))
 	}
 
-	log.Verbose.Println("Starting network side...")
+	//log.Verbose.Println("Starting network side...")
 
 	if err := m.contactingServer.SetupAndRun(); err != nil {
 		return Error(fmt.Sprint("Cannot start network side - ", err.Error()))
@@ -72,7 +72,7 @@ func (m *Manager) Start() error {
 
 	m.isRunning = true
 
-	log.Verbose.Println("Network side started.")
+	//log.Verbose.Println("Network side started.")
 
 	return nil
 }
