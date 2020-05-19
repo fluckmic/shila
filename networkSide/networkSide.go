@@ -132,20 +132,17 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(netConnId model.NetworkConne
 	}
 }
 
-func (m *Manager) EstablishNewContactingClientEndpoint(netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
+func (m *Manager) EstablishNewContactingClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	path := networkEndpoint.Generator{}.GetDefaultContactingPath(netConnId.Dst)
-	key  := model.KeyGenerator{}.NetworkAddressAndPathKey(netConnId.Dst, path)
-
-	netConnId.Path = path
+	netConnId.Path = networkEndpoint.Generator{}.GetDefaultContactingPath(netConnId.Dst)
 	netConnId.Dst  = networkEndpoint.Generator{}.GenerateContactingAddress(netConnId.Dst)
 
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
-	if _, ok := m.clientContactingEndpoints[key]; ok {
+	if _, ok := m.clientContactingEndpoints[IPConnIdKey]; ok {
 		return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new client {",
 			model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - Endpoint already exists."))
 	} else {
@@ -156,7 +153,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(netConnId model.NetworkCo
 				model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - ", err.Error()))
 		} else {
 			// Add it to the corresponding mapping
-			m.clientContactingEndpoints[key] = newContactingClientEndpoint
+			m.clientContactingEndpoints[IPConnIdKey] = newContactingClientEndpoint
 			// Announce the new traffic channels to the working side
 			m.workingSide <- model.PacketChannelAnnouncement{Announcer: newContactingClientEndpoint, Channel: newContactingClientEndpoint.TrafficChannels().Ingress}
 
@@ -165,13 +162,12 @@ func (m *Manager) EstablishNewContactingClientEndpoint(netConnId model.NetworkCo
 	}
 }
 
-func (m *Manager) EstablishNewTrafficClientEndpoint(netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key := model.KeyGenerator{}.NetworkAddressAndPathKey(netConnId.Dst, netConnId.Path)
-	if _, ok := m.clientTrafficEndpoints[key]; ok {
+	if _, ok := m.clientTrafficEndpoints[IPConnIdKey]; ok {
 		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
 		Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
 	} else {
@@ -184,7 +180,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(netConnId model.NetworkConne
 			Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", err.Error()))
 		} else {
 			// Add it to the corresponding mapping
-			m.clientTrafficEndpoints[key] = newTrafficClientEndpoint
+			m.clientTrafficEndpoints[IPConnIdKey] = newTrafficClientEndpoint
 			// Announce the new traffic channels to the working side
 			m.workingSide <- model.PacketChannelAnnouncement{Announcer: newTrafficClientEndpoint, Channel: newTrafficClientEndpoint.TrafficChannels().Ingress}
 
@@ -216,30 +212,27 @@ func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error 
 	return nil
 }
 
-func (m *Manager) TeardownContactingClientEndpoint(addr model.NetworkAddress) error {
+func (m *Manager) TeardownContactingClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey) error {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	path := networkEndpoint.Generator{}.GetDefaultContactingPath(addr)
-	key  := model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)
-	if ep, ok := m.clientContactingEndpoints[key]; ok {
+	if ep, ok := m.clientContactingEndpoints[IPConnIdKey]; ok {
 		err := ep.TearDown()
-		delete(m.clientTrafficEndpoints, key)
+		delete(m.clientTrafficEndpoints, IPConnIdKey)
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) TeardownTrafficClientEndpoint(addr model.NetworkAddress, path model.NetworkPath) error {
+func (m *Manager) TeardownTrafficClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey) error {
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key := model.KeyGenerator{}.NetworkAddressAndPathKey(addr, path)
-	if ep, ok := m.clientTrafficEndpoints[key]; ok {
+	if ep, ok := m.clientTrafficEndpoints[IPConnIdKey]; ok {
 		err := ep.TearDown()
-		delete(m.clientTrafficEndpoints, key)
+		delete(m.clientTrafficEndpoints, IPConnIdKey)
 		return err
 	}
 	return nil

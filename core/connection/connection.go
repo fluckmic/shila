@@ -51,9 +51,9 @@ func (conn *Connection) Close() {
 
 	// Tear down all endpoints possibly associated with this connection
 	// TODO: Rethink
-	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.netConnId.Dst)
+	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.netConnId.Src)
-	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.netConnId.Dst, conn.netConnId.Path)
+	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.ipConnIdKey)
 
 	conn.state.Set(Closed)
 }
@@ -268,7 +268,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	}
 
 	// Create the contacting connection
-	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.netConnId)
+	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.ipConnIdKey, conn.netConnId)
 	if err != nil {
 		conn.state.Set(Closed)
 		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
@@ -288,7 +288,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Try to connect to the address via path, a corresponding server should be there listening
 	go func() {
-		if trafficNetConnId, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.netConnId); err != nil {
+		if trafficNetConnId, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.ipConnIdKey, conn.netConnId); err != nil {
 			conn.Close()
 			log.Info.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was not able to establish a traffic" +
 			"backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}. - ", err.Error()))
@@ -299,7 +299,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			defer conn.lock.Unlock()
 			conn.state.Set(ClientEstablished)
 			// The contacting client endpoint is no longer needed.
-			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.netConnId.Dst)
+			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
 			log.Info.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
 			" backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
 		}

@@ -6,7 +6,7 @@ import (
 
 // Mappings
 type ServerEndpointMapping map[NetworkAddressKey] 			ServerNetworkEndpoint
-type ClientEndpointMapping map[NetworkAddressAndPathKey]	ClientNetworkEndpoint
+type ClientEndpointMapping map[IPConnectionIdentifierKey]	ClientNetworkEndpoint
 
 type NetworkEndpointGenerator interface {
 	NewClient(netConnId NetworkConnectionIdentifier, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
