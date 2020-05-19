@@ -186,9 +186,6 @@ func (s *Server) serveIngress(connection net.Conn) {
 		// Server receives normal traffic, the connection over which the
 		// packet was received contains enough information to set
 		// the correct network networkConnectionId.
-
-		// TODO: The corresponding traffic client informs the traffic server for whom this connection is.
-
 		go s.packetizeTraffic(ingressRaw, connection)
 	} else {
 		panic(fmt.Sprint("Wrong server label {", s.Label(), "} in serving ingress functionality of " +
@@ -256,12 +253,15 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
-		rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer)
-		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
-				"}. - ", err.Error())) // TODO: Handle panic!
+		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
+					"}. - ", err.Error())) // TODO: Handle panic!
+			} else {
+				s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
+			}
 		} else {
-			s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
+			return // Raw ingress channel closed.
 		}
 	}
 }
@@ -283,9 +283,10 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 				header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
 			}
+		} else {
+			return // Raw ingress channel closed.
 		}
 	}
-
 }
 
 func (s *Server) RegisterConnection(netConnId model.NetworkConnectionIdentifier) error {

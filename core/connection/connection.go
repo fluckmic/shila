@@ -310,8 +310,8 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			conn.state.Set(ClientEstablished)
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
-			log.Info.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
-			" backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
+			//log.Verbose.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
+			//" backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
 		}
 	}()
 

@@ -7,6 +7,7 @@ import (
 	"shila/config"
 	"shila/core/model"
 	"shila/layer"
+	"shila/log"
 )
 
 var _ model.ClientNetworkEndpoint = (*Client)(nil)
@@ -98,8 +99,7 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 
 func (c *Client) TearDown() error {
 
-	//log.Verbose.Print("Tear down client {", c.Label()," ", c.Key(),
-	//"}} connecting to {", c.connection.Identifier.Dst, "}.")
+	log.Verbose.Print("Tear down client {", c.Label(), ",", c.Key(), "}.")
 
 	c.isValid = false
 	c.isRunning = false
