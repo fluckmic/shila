@@ -185,10 +185,9 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error 
 							// which we need later to be able to get the network destination address for the sub flows.
 							if key, ok, err := layer.GetMPTCPSenderKey(p.GetRawPayload()); ok {
 								if err == nil {
-									if err := conn.routing.InsertFromMPTCPEndpointKey(key,
-										conn.netConnId.Src, conn.netConnId.Dst, conn.netConnId.Path); err != nil {
+									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.netConnId.Src, conn.netConnId.Dst, conn.netConnId.Path); err != nil {
 										panic(fmt.Sprint("Error in fetching receiver key in connection {",
-										conn.ipConnIdKey, "}. - ", err.Error())) // TODO: Handle panic!
+											conn.ipConnIdKey, "}. - ", err.Error())) // TODO: Handle panic!
 										return nil
 									}
 								} else {

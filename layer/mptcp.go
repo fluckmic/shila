@@ -100,7 +100,13 @@ func GetMPTCPSenderKey(raw []byte) (model.MPTCPEndpointKey, bool, error) {
 	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
 	// only once at the setup of a new sub flow. It should be fine to do this twice.
 	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
+		// Error in decoding the ipv4/tcp options
+		return model.MPTCPEndpointKey(0), false, err
+	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
+			// Error in decoding the mptcp options
+			return model.MPTCPEndpointKey(0), false, err
+		} else {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpCapableOptionSender, ok := mptcpOption.(MPTCPCapableOptionSender); ok {
 					return model.MPTCPEndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
@@ -108,13 +114,7 @@ func GetMPTCPSenderKey(raw []byte) (model.MPTCPEndpointKey, bool, error) {
 			}
 			// MPTCP options does not contain the senders key
 			return model.MPTCPEndpointKey(0), false, nil
-		} else {
-			// Error in decoding the mptcp options
-			return model.MPTCPEndpointKey(0), false, err
 		}
-	} else {
-		// Error in decoding the ipv4/tcp options
-		return model.MPTCPEndpointKey(0), false, err
 	}
 }
 
