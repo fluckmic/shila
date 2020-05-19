@@ -46,16 +46,19 @@ func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routi
 }
 
 func (conn *Connection) Close() {
+
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
 	// Tear down all endpoints possibly associated with this connection
-	// TODO: Rethink
+
 	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.netConnId.Src)
 	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.ipConnIdKey)
 
 	conn.state.Set(Closed)
+	
+	log.Verbose.Print("Connection {", conn.ipConnIdKey, "} closed.")
 }
 
 func (conn *Connection) ProcessPacket(p *model.Packet) error {
@@ -202,7 +205,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error 
 							conn.state.Set(Established)
 
 							log.Info.Print("Established new connection {", conn.ipConnIdKey, ",",
-							model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
+								model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
 
 							return nil
 
