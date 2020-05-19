@@ -306,8 +306,8 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 			conn.netConnId 				  = trafficNetConnId
 			conn.channels.NetworkEndpoint = channels
 			conn.lock.Lock()
-			defer conn.lock.Unlock()
 			conn.state.Set(ClientEstablished)
+			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
 			//log.Verbose.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
