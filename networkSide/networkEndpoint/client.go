@@ -7,7 +7,6 @@ import (
 	"shila/config"
 	"shila/core/model"
 	"shila/layer"
-	"shila/log"
 )
 
 var _ model.ClientNetworkEndpoint = (*Client)(nil)
@@ -88,8 +87,8 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	log.Verbose.Print("Client {", c.Label()," ", c.Key(),
-	"} successfully established connection to {", c.connection.Identifier.Dst, "}.")
+	//log.Verbose.Print("Client {", c.Label()," ", c.Key(),
+	//"} successfully established connection to {", c.connection.Identifier.Dst, "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
@@ -99,8 +98,8 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {", c.Label()," ", c.Key(),
-	"}} connecting to {", c.connection.Identifier.Dst, "}.")
+	//log.Verbose.Print("Tear down client {", c.Label()," ", c.Key(),
+	//"}} connecting to {", c.connection.Identifier.Dst, "}.")
 
 	c.isValid = false
 	c.isRunning = false
@@ -124,7 +123,6 @@ func (c *Client) serveIngress() {
 	storage := make([]byte, c.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
-		log.Verbose.Print("Client {", c.Label()," ", c.Key(), "} read {",nBytesRead,"} bytes from input.")
 		if err != nil && !c.IsValid() {
 			// Client is no longer valid, there is no need to try to stay alive.
 			return
