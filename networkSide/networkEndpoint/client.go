@@ -72,7 +72,9 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
 		writer := bufio.NewWriter(c.connection.Backbone)
-		if _, err := writer.WriteString(fmt.Sprint(c.connection.Identifier.Src.String(),'\n')); err != nil {
+		msg := fmt.Sprint(c.connection.Identifier.Src.String(),'\n')
+		msg = "Hallo\n"
+		if _, err := writer.WriteString(msg); err != nil {
 			return model.NetworkConnectionIdentifier{},
 				Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
 					"}. - Unable to send source address. - ", err.Error()))
