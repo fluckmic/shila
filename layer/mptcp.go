@@ -78,21 +78,21 @@ func GetMPTCPReceiverToken(raw []byte) (model.MPTCPEndpointToken, bool, error) {
 	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
 	// only once at the setup of a new sub flow. It should be fine to do this twice.
 	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
+		// Error in decoding the ipv4/tcp options
+		return model.MPTCPEndpointToken(0), false, err
+	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
+			// MPTCP options does not contain the receiver token
+			return model.MPTCPEndpointToken(0), false, nil
+		} else {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpJoinOptionSYN, ok := mptcpOption.(MPTCPJoinOptionSYN); ok {
 					return model.MPTCPEndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
 				}
 			}
-			// MPTCP options does not contain the receiver token
-			return model.MPTCPEndpointToken(0), false, nil
-		} else {
 			// Error in decoding the mptcp options
 			return model.MPTCPEndpointToken(0), false, err
 		}
-	} else {
-		// Error in decoding the ipv4/tcp options
-		return model.MPTCPEndpointToken(0), false, err
 	}
 }
 
