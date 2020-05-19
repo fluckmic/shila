@@ -57,7 +57,7 @@ func (conn *Connection) Close() {
 	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.ipConnIdKey)
 
 	conn.state.Set(Closed)
-	
+
 	log.Verbose.Print("Connection {", conn.ipConnIdKey, "} closed.")
 }
 

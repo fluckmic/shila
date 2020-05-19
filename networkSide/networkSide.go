@@ -219,9 +219,10 @@ func (m *Manager) TeardownContactingClientEndpoint(IPConnIdKey model.IPConnectio
 
 	if ep, ok := m.clientContactingEndpoints[IPConnIdKey]; ok {
 		err := ep.TearDown()
-		delete(m.clientTrafficEndpoints, IPConnIdKey)
+		delete(m.clientContactingEndpoints, IPConnIdKey)
 		return err
 	}
+
 	return nil
 }
 
