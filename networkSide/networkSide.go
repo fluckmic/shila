@@ -122,14 +122,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(netConnId model.NetworkConne
 		sep = newSep
 	}
 
-	// Register the new connection
-	if err := sep.RegisterConnection(netConnId); err != nil {
-		return model.PacketChannels{},	Error(fmt.Sprint("Unable to register new connection {",
-		model.KeyGenerator{}.NetworkConnectionIdentifierKey(netConnId),
-		"} for server {", model.ContactingNetworkEndpoint, "} listening to {", netConnId.Src, "}. - ", err.Error()))
-	} else {
-		return sep.TrafficChannels(), nil
-	}
+	return sep.TrafficChannels(), nil
 }
 
 func (m *Manager) EstablishNewContactingClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {

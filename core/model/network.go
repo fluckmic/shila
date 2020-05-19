@@ -4,6 +4,8 @@ import (
 	"shila/config"
 )
 
+// TODO: --> Create storage for IPConnIDKeys associated with a server traffic endpoint.
+
 // Mappings
 type ServerEndpointMapping map[NetworkAddressKey] 			ServerNetworkEndpoint
 type ClientEndpointMapping map[IPConnectionIdentifierKey]	ClientNetworkEndpoint
@@ -34,7 +36,6 @@ type ClientNetworkEndpoint interface {
 type ServerNetworkEndpoint interface {
 	Endpoint
 	SetupAndRun() error
-	RegisterConnection(NetworkConnectionIdentifier) error
 }
 
 type NetworkAddress interface {

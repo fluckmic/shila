@@ -288,9 +288,3 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 		}
 	}
 }
-
-func (s *Server) RegisterConnection(netConnId model.NetworkConnectionIdentifier) error {
-
-	// TODO!
-	return nil
-}
