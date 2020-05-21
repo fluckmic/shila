@@ -8,6 +8,7 @@ import (
 	"shila/core/shila"
 	"shila/layer"
 	"shila/log"
+	"time"
 )
 
 var _ shila.ClientNetworkEndpoint = (*Client)(nil)
@@ -139,10 +140,14 @@ func (c *Client) serveIngress() {
 			close(ingressRaw)
 			return
 		} else if err != nil {
-			// Client is still valid, that is, a connection relies on this client.
-			// Client should try to recover somehow to reestablish a connection.
-			panic(fmt.Sprint("Client {", c.Label()," ", c.Key(), "} unable to read data from underlying connection. - ",
-				err.Error())) // TODO: Handle panic!
+			// Wait some time, then check if client is still valid (server can close connection earlier..)
+			time.Sleep(time.Duration(2 * time.Second)) // TODO for SCION: Add to config
+			if c.IsValid() {
+				panic(fmt.Sprint("Client {", c.Key(), "} unable to read data from backbone connection."))
+				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?
+			}
+			close(ingressRaw)
+			return
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -158,10 +163,12 @@ func (c *Client) serveEgress() {
 			// Error doesn't matter, client is no longer valid anyway.
 			return
 		} else if err != nil {
-			// Client is still valid, that is, a connection relies on this client.
-			// Client should try to recover somehow to reestablish a connection.
-			panic(fmt.Sprint("Client {", c.Label()," ",c.Key(), "} unable to write data to underlying connection. - ",
-				err.Error())) // TODO: Handle panic!
+			// Wait some time, then check if client is still valid (server can close connection earlier..)
+			time.Sleep(time.Duration(2 * time.Second)) // TODO for SCION: Add to config
+			if c.IsValid() {
+				panic(fmt.Sprint("Client {", c.Key(), "} unable to write data to backbone connection."))
+				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?
+			}
 		}
 	}
 }
