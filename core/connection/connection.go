@@ -110,11 +110,9 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 							return nil
 
 	case closed: 			return Error(fmt.Sprint("Connection closed."))
-							// conn.state.Set(closed)
-							// return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
-							// return nil
+
 	}
 }
 
@@ -124,8 +122,6 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 	case raw:				return conn.processPacketFromContactingEndpointStateRaw(p)
 
 	case clientReady:		return Error(fmt.Sprint("Both endpoints in client state."))
-							// conn.state.Set(clientReady)
-							// return nil
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
@@ -138,11 +134,9 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 							return nil
 
 	case closed: 			return Error(fmt.Sprint("Connection closed."))
-							// conn.state.Set(closed)
-							// return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
-							// return nil
+
 	}
 }
 
@@ -150,11 +144,9 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 	switch conn.state.current {
 
 	case raw:				return Error(fmt.Sprint("Invalid connection state."))
-							// return nil
 
 							// A packet from the traffic endpoint is just received if network connection is established
 	case clientReady:		return Error(fmt.Sprint("Invalid connection state."))
-							// return nil
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
@@ -164,15 +156,16 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							return nil
 
-	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
-							// which we need later to be able to get the network destination address for the sub flows.
+	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
+							// of destination (from the connection point of view) which we need later to be able to get
+							// the network destination address for the sub flows.
 							if key, ok, err := layer.GetMPTCPSenderKey(p.Payload); ok {
 								if err == nil {
 									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
-										return Error(fmt.Sprint("Unable to insert MPTCP receiver key. - ", err.Error()))
+										return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
 									}
 								} else {
-									return Error(fmt.Sprint("Error in fetching receiver key. - ", err.Error()))
+									return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
 								}
 							}
 
@@ -180,7 +173,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.state.Set(established)
 
-							log.Info.Print("established new connection {", conn.Key(), "}.")
+							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
 							return nil
 
@@ -189,13 +182,9 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.state.Set(established)
 							return nil
 
-	case closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
-							conn.state.Set(closed)
-							return nil
+	case closed: 			return Error(fmt.Sprint("Connection closed."))
 
-	default: 				panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
-							"{", p.Flow.IPFlow.Key(), "}. - unknown connection state.")) // TODO: Handle panic!
-							return nil
+	default: 				return Error(fmt.Sprint("Unknown connection state."))
 	}
 }
 
@@ -208,9 +197,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		conn.channels.KernelEndpoint.Egress  = entryPoint.TrafficChannels().Egress  // egress towards kernel end point
 	} else {
 		conn.state.Set(closed)
-		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
-		"{", p.Flow.IPFlow.Key(), "}. - Invalid entry point.")) // TODO: Handle panic!
-		return nil
+		return Error(fmt.Sprint("Invalid entry point."))
 	}
 
 	// Create the packet network flow which is associated with the connection
@@ -222,14 +209,11 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 				conn.kind = 		sub
 				p.Flow.NetFlow 	  = netFlow
 			} else {
-				panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
-				"{", p.Flow.IPFlow.Key(), "}. - No network connection id available in routing for receiver token {", token,
-				"} beside having packet {", p.Flow.IPFlow.Key(), "} containing it.")) // TODO: Handle panic!
-				return nil
+				return Error(fmt.Sprint("No network flow for MPTCP receiver token {", token, "} beside having " +
+					"the packet containing it."))
 			}
 		} else {
-			panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
-			"{", p.Flow.IPFlow.Key(), "}. - Error while fetching receiver token. - ", err.Error())) // TODO: Handle panic!
+			panic(fmt.Sprint("Errorfetching receiver token. - ", err.Error())) // TODO: Handle panic!
 			return nil
 		}
 	// For a MPTCP main flow the network flow can probably be extracted from the IP options
