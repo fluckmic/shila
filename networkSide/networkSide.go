@@ -212,14 +212,12 @@ func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 
 	key     := shila.GetNetworkAddressKey(flow.NetFlow.Src)
 	if ep, ok := m.serverTrafficEndpoints[key]; ok {
-
 		ep.RemoveIPFlowKey(flow.IPFlow.Key())
 		if ep.Empty() {
 			err := ep.TearDown()
-			delete(m.clientContactingEndpoints, flow.IPFlow.Key())
+			delete(m.serverTrafficEndpoints, flow.IPFlow.Key())
 			return err
 		}
-
 	}
 
 	return nil
