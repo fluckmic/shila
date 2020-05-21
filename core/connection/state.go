@@ -3,24 +3,24 @@ package connection
 type stateIdentifier uint8
 const (
 	_                           = iota
-	Established stateIdentifier = iota
-	ServerReady
-	ClientReady
-	ClientEstablished
-	Closed
-	Raw
+	established stateIdentifier = iota
+	serverReady
+	clientReady
+	clientEstablished
+	closed
+	raw
 )
 
 func(s stateIdentifier) String() string {
 	switch s {
-	case Established: 			return "Established"
-	case ServerReady: 			return "ServerReady"
-	case ClientReady: 			return "ClientReady"
-	case ClientEstablished:		return "ClientEstablished"
-	case Closed:				return "Closed"
-	case Raw:					return "Raw"
+	case established: 			return "established"
+	case serverReady: 			return "serverReady"
+	case clientReady: 			return "clientReady"
+	case clientEstablished:		return "clientEstablished"
+	case closed:				return "closed"
+	case raw:					return "raw"
 	}
-	return "Unknown"
+	return "unknown"
 }
 
 type state struct {
@@ -31,29 +31,4 @@ type state struct {
 func (s *state) Set(newState stateIdentifier) {
 	s.previous = s.current
 	s.current = newState
-}
-
-func (s *state) Current() stateIdentifier {
-	return s.current
-}
-
-func (s *state) Previous() stateIdentifier {
-	return s.previous
-}
-
-type kind uint8
-const (
-	_             = iota
-	MainFlow kind = iota
-	SubFlow
-	Unknown
-)
-
-func(c kind) String() string {
-	switch c {
-	case MainFlow: return "MainFlow"
-	case SubFlow:  return "SubFlow"
-	case Unknown:  return "Unknown"
-	}
-	return "Unknown"
 }

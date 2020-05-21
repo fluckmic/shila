@@ -3,19 +3,19 @@ package networkEndpoint
 import (
 	"fmt"
 	"net"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/log"
 	"strconv"
 )
 
-var _ model.NetworkAddress = (*Address)(nil)
+var _ shila.NetworkAddress = (*Address)(nil)
 
 type Address struct {
 	Addr net.TCPAddr
 }
 
 // <ip>:<port>
-func newAddress(address string) model.NetworkAddress {
+func newAddress(address string) shila.NetworkAddress {
 
 	if host, port, err := net.SplitHostPort(address); err != nil {
 		log.Error.Panic(fmt.Sprint("Unable to create new network address from {", address, "}."))
@@ -34,7 +34,7 @@ func newAddress(address string) model.NetworkAddress {
 }
 
 // <port>
-func newLocalNetworkAddress(port string) model.NetworkAddress {
+func newLocalNetworkAddress(port string) shila.NetworkAddress {
 	if Port, err := strconv.Atoi(port); err != nil {
 		log.Error.Panic(fmt.Sprint("Unable to create new local address from ", port, "."))
 		return nil
@@ -44,7 +44,7 @@ func newLocalNetworkAddress(port string) model.NetworkAddress {
 	return nil
 }
 
-func generateContactingAddress(address model.NetworkAddress, port int) model.NetworkAddress {
+func generateContactingAddress(address shila.NetworkAddress, port int) shila.NetworkAddress {
 	if host, _, err := net.SplitHostPort(address.String()); err != nil {
 		log.Error.Panic(fmt.Sprint("Unable to generate contacting address from {", address, "}."))
 		return nil
@@ -58,7 +58,7 @@ func generateContactingAddress(address model.NetworkAddress, port int) model.Net
 	}
 }
 
-func newEmptyNetworkAddress() model.NetworkAddress {
+func newEmptyNetworkAddress() shila.NetworkAddress {
 	return Address{Addr: net.TCPAddr{}}
 }
 

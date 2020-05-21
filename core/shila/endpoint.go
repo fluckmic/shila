@@ -1,7 +1,6 @@
-package model
+package shila
 
 type EndpointLabel uint8
-type EndpointKey   string
 
 const (
 	_                            = iota

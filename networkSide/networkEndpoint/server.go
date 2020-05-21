@@ -6,7 +6,7 @@ import (
 	"io"
 	"net"
 	"shila/config"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/layer"
 	"shila/log"
 	"strconv"
@@ -14,30 +14,30 @@ import (
 	"sync"
 )
 
-var _ model.ServerNetworkEndpoint = (*Server)(nil)
+var _ shila.ServerNetworkEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	backboneConnections map[model.NetworkAddressAndPathKey]  net.Conn
-	networkConnectionId model.NetworkConnectionIdentifier
-	listener 			net.Listener
+	backboneConnections map[shila.NetworkAddressAndPathKey]  net.Conn
+	networkConnectionId shila.NetFlow
+	listener            net.Listener
 	lock                sync.Mutex
-	holdingArea         []*model.Packet
+	holdingArea         []*shila.Packet
 	isValid             bool
 	isSetup             bool // TODO: merge to "state" object
 	isRunning           bool
 }
 
-func newServer(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ServerNetworkEndpoint {
+func newServer(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
 	return &Server{
 		Base: 			Base{
 								label: 	label,
 								config: config,
 						},
-		backboneConnections: make(map[model.NetworkAddressAndPathKey]  net.Conn),
+		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  net.Conn),
 		networkConnectionId: netConnId,
 		lock:                sync.Mutex{},
-		holdingArea:         make([]*model.Packet, 0, config.SizeHoldingArea),
+		holdingArea:         make([]*shila.Packet, 0, config.SizeHoldingArea),
 		isValid:             true,
 	}
 }
@@ -64,8 +64,8 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// Create the channels
-	s.ingress = make(chan *model.Packet, s.config.SizeIngressBuff)
-	s.egress  = make(chan *model.Packet, s.config.SizeEgressBuff)
+	s.ingress = make(chan *shila.Packet, s.config.SizeIngressBuff)
+	s.egress  = make(chan *shila.Packet, s.config.SizeEgressBuff)
 
 	// Start listening for incoming backboneConnections.
 	s.listener = listener
@@ -111,16 +111,16 @@ func (s *Server) TearDown() error {
 	return err
 }
 
-func (s *Server) TrafficChannels() model.PacketChannels {
-	return model.PacketChannels{Ingress: s.ingress, Egress: s.egress}
+func (s *Server) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: s.ingress, Egress: s.egress}
 }
 
-func (s *Server) Label() model.EndpointLabel {
+func (s *Server) Label() shila.EndpointLabel {
 	return s.label
 }
 
-func (s *Server) Key() model.EndpointKey {
-	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressKey(s.networkConnectionId.Src))
+func (s *Server) Key() shila.EndpointKey {
+	return shila.EndpointKey(shila.GetNetworkAddressKey(s.networkConnectionId.Src))
 }
 
 func (s *Server) IsRunning() bool {
@@ -146,17 +146,17 @@ func (s *Server) handleConnection(connection net.Conn) {
 	path 	:= Generator{}.NewPath("")
 
 	// Generate the keys
-	var keys []model.NetworkAddressAndPathKey
-	keys = append(keys, model.KeyGenerator{}.NetworkAddressAndPathKey(srcAddr, path))
+	var keys []shila.NetworkAddressAndPathKey
+	keys = append(keys, shila.GetNetworkAddressAndPathKey(srcAddr, path))
 
 	// The client traffic endpoint sends as a very first message
 	// the src address of its corresponding contacting endpoint.
-	if s.Label() == model.TrafficNetworkEndpoint {
+	if s.Label() == shila.TrafficNetworkEndpoint {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
 			contactSrcAddr := Generator{}.NewAddress(strings.TrimSuffix(srcAddrReceived,"\n"))
-			keys = append(keys, model.KeyGenerator{}.NetworkAddressAndPathKey(contactSrcAddr, path))
+			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
 
@@ -204,13 +204,13 @@ func (s *Server) serveIngress(connection net.Conn) {
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, s.config.SizeReadBuffer)
 
-	if s.Label() == model.ContactingNetworkEndpoint {
+	if s.Label() == shila.ContactingNetworkEndpoint {
 		// Server is the contacting server, it is his responsibility
 		// to extract the necessary data from the ip packet to be able
 		// to set the correct network networkConnectionId.
 		go s.packetizeContacting(ingressRaw, connection)
 
-	} else if s.Label() == model.TrafficNetworkEndpoint {
+	} else if s.Label() == shila.TrafficNetworkEndpoint {
 		// Server receives normal traffic, the connection over which the
 		// packet was received contains enough information to set
 		// the correct network networkConnectionId.
@@ -240,15 +240,15 @@ func (s *Server) serveIngress(connection net.Conn) {
 func (s *Server) serveEgress() {
 	for p := range s.egress {
 		// Retrieve key to get the correct connection
-		key := p.NetworkConnIdDstAndPathKey()
+		key := p.Flow.NetFlow.DstAndPathKey()
 		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con)
-			nBytesWritten, err := writer.Write(p.GetRawPayload())
+			nBytesWritten, err := writer.Write(p.Payload)
 			if err != nil && !s.IsValid() {
 				// Error doesn't matter, kernel endpoint is no longer valid anyway.
 				return
 			} else if err != nil {
-				panic(fmt.Sprint("Unable to send data for packet {", p.IPConnIdKey(), "} in the " +
+				panic(fmt.Sprint("Unable to send data for packet {", p.Flow.IPFlow.Key(), "} in the " +
 					"server {", s.Label(), ",", s.Key(), "} for backbone connection key {", key ,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				_ = nBytesWritten
@@ -278,7 +278,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	dstAddr := s.networkConnectionId.Src
 	srcAddr := Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	path 	:= Generator{}.NewPath("")
-	header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr }
+	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
@@ -286,7 +286,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
+				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
 			}
 		} else {
 			return // Raw ingress channel closed.
@@ -308,8 +308,8 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				dstAddr := Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  := model.NetworkConnectionIdentifier{Src: dstAddr, Path: path, Dst: srcAddr}
-				s.ingress <- model.NewPacketInclNetConnId(s, iPHeader, header, rawData)
+				header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
+				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
 			}
 		} else {
 			return // Raw ingress channel closed.

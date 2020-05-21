@@ -1,4 +1,4 @@
-package model
+package shila
 
 type PacketChannel chan *Packet
 

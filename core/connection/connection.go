@@ -2,7 +2,7 @@ package connection
 
 import (
 	"fmt"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/layer"
@@ -13,30 +13,28 @@ import (
 )
 
 type Connection struct {
-	ipConnIdKey model.IPConnectionIdentifierKey
-	netConnId   model.NetworkConnectionIdentifier
+	flow        shila.Flow
 	state       state
-	kind 		kind
+	kind        kind
 	channels    channels
 	lock        sync.Mutex
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing     *model.Mapping
+	routing     *shila.Mapping
 }
 
 type channels struct {
-	KernelEndpoint  model.PacketChannels // Kernel end point
-	NetworkEndpoint model.PacketChannels // Network end point
-	Contacting      model.PacketChannels // End point for connection establishment
+	KernelEndpoint  shila.PacketChannels // Kernel end point
+	NetworkEndpoint shila.PacketChannels // Network end point
+	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping,
-	ipId model.IPConnectionIdentifierKey) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *shila.Mapping) *Connection {
 	return &Connection{
-		ipConnIdKey: ipId,
-		state:       state{Raw, Raw},
-		kind:		 Unknown,
+		flow:        flow,
+		state:       state{raw, raw},
+		kind:        unknown,
 		lock:        sync.Mutex{},
 		touched:     time.Now(),
 		kernelSide:  kernelSide,
@@ -51,239 +49,217 @@ func (conn *Connection) Close() {
 	defer conn.lock.Unlock()
 
 	// Tear down all endpoints possibly associated with this connection
-	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
-	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.ipConnIdKey, conn.netConnId)
-	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.ipConnIdKey)
+	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.flow)
+	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.flow.IPFlow)
 
-	conn.state.Set(Closed)
+	conn.state.Set(closed)
 
-	log.Verbose.Print("Connection {", conn.ipConnIdKey, "} closed.")
+	log.Verbose.Print("Connection {", conn.flow.IPFlow.Key(), "} closed.")
 }
 
-func (conn *Connection) ProcessPacket(p *model.Packet) error {
+func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
-	// log.Verbose.Print("Connection {", conn.ipConnIdKey, "} in state {", conn.state.Current(), "} " +
-	//	"starts processing packet from {", p.GetIPConnId().Src.IP, "} to {", p.GetIPConnId().Dst.IP, "}.")
-
-	if p.IPConnIdKey() != conn.ipConnIdKey {
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-			"{", p.IPConnIdKey(), "}. - Id mismatch.")) // TODO: Handle panic!
-		return nil
+	if p.Flow.IPFlow.Key() != conn.flow.IPFlow.Key() {
+		return Error(fmt.Sprint("IP flow mismatch."))
 	}
 
 	// From where was the packet received?
 	var err error
-	switch p.GetEntryPoint().Label() {
-		case model.KernelEndpoint: 				err = conn.processPacketFromKerep(p)
-		case model.ContactingNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
-		case model.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
+	switch p.Entrypoint.Label() {
+		case shila.KernelEndpoint: 				err = conn.processPacketFromKerep(p)
+		case shila.ContactingNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
+		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
-			panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +  // TODO: Handle panic!
-			"{", p.IPConnIdKey(), "}. - Unknown entry point label {", p.GetEntryPoint().Label(), "}."))
-			return nil
+			return Error(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Label(), "}."))
 	}
-
-	// log.Verbose.Print("Connection {", conn.ipConnIdKey, "} done with processing packet from {", p.GetIPConnId().Src.IP, "} to {",
-	//	p.GetIPConnId().Dst.IP,"}; ending up in state {", conn.state.Current(),"}.")
 
 	return err
 }
 
-func (conn *Connection) processPacketFromKerep(p *model.Packet) error {
-	switch conn.state.Current() {
-	case Raw:				return conn.processPacketFromKerepStateRaw(p)
+func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
+	switch conn.state.current {
+	case raw:				return conn.processPacketFromKerepStateRaw(p)
 
-	case ClientReady:		p.SetNetworkConnId(conn.netConnId)
+	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.Contacting.Egress <- p
-							conn.state.Set(ClientReady)
+							conn.state.Set(clientReady)
 							return nil
 
-	case ServerReady:		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
+	case serverReady: 		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
-							p.SetNetworkConnId(conn.netConnId)
+							p.Flow.NetFlow = conn.flow.NetFlow
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(ServerReady)
+							conn.state.Set(serverReady)
 							return nil
 
-	case ClientEstablished:	p.SetNetworkConnId(conn.netConnId)
+	case clientEstablished:	p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(ClientEstablished)
+							conn.state.Set(clientEstablished)
 							return nil
 
-	case Established:		p.SetNetworkConnId(conn.netConnId)
+	case established:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(Established)
+							conn.state.Set(established)
 							return nil
 
-	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
-							conn.state.Set(Closed)
-							return nil
+	case closed: 			return Error(fmt.Sprint("Connection closed."))
+							// conn.state.Set(closed)
+							// return nil
 
-	default: 				panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-							"{", p.IPConnIdKey(), "}. - Unknown connection state.")) // TODO: Handle panic!
-							return nil
+	default: 				return Error(fmt.Sprint("Unknown connection state."))
+							// return nil
 	}
 }
 
-func (conn *Connection) processPacketFromContactingEndpoint(p *model.Packet) error {
-	switch conn.state.Current() {
+func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) error {
+	switch conn.state.current {
 
-	case Raw:				return conn.processPacketFromContactingEndpointStateRaw(p)
+	case raw:				return conn.processPacketFromContactingEndpointStateRaw(p)
 
-	case ClientReady:		log.Info.Println("Drop packet - Both endpoints in client state.")
-							conn.state.Set(ClientReady)
-							return nil
+	case clientReady:		return Error(fmt.Sprint("Both endpoints in client state."))
+							// conn.state.Set(clientReady)
+							// return nil
 
-	case ServerReady:		conn.touched = time.Now()
+	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(ServerReady)
+							conn.state.Set(serverReady)
 							return nil
 
-	case Established: 		conn.touched = time.Now()
+	case established: 		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(Established)
+							conn.state.Set(established)
 							return nil
 
-	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
-							conn.state.Set(Closed)
-							return nil
+	case closed: 			return Error(fmt.Sprint("Connection closed."))
+							// conn.state.Set(closed)
+							// return nil
 
-	default: 				panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-							"{", p.IPConnIdKey(), "}. - Unknown connection state.")) // TODO: Handle panic!
-							return nil
+	default: 				return Error(fmt.Sprint("Unknown connection state."))
+							// return nil
 	}
 }
 
-func (conn *Connection) processPacketFromTrafficEndpoint(p *model.Packet) error {
-	switch conn.state.Current() {
+func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error {
+	switch conn.state.current {
 
-	case Raw:				conn.state.Set(Raw)
-							panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " + // TODO: Handle panic!
-							"{", p.IPConnIdKey(), "}. - Invalid connection state {", conn.state.Current(), "}."))
-							return nil
+	case raw:				return Error(fmt.Sprint("Invalid connection state."))
+							// return nil
 
 							// A packet from the traffic endpoint is just received if network connection is established
-	case ClientReady:		conn.state.Set(ClientReady)
-							panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " + // TODO: Handle panic!
-								"{", p.IPConnIdKey(), "}. - Invalid connection state {", conn.state.Current(), "}."))
-							return nil
+	case clientReady:		return Error(fmt.Sprint("Invalid connection state."))
+							// return nil
 
-	case ServerReady:		conn.touched = time.Now()
+	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(Established)
+							conn.state.Set(established)
 
-							log.Info.Print("Established new connection {", conn.ipConnIdKey, ",",
-								model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
+							log.Info.Print("established new connection {", conn.Key(), "}.")
 
 							return nil
 
-	case ClientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
+	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP receiver key
 							// which we need later to be able to get the network destination address for the sub flows.
-							if key, ok, err := layer.GetMPTCPSenderKey(p.GetRawPayload()); ok {
+							if key, ok, err := layer.GetMPTCPSenderKey(p.Payload); ok {
 								if err == nil {
-									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.netConnId.Src, conn.netConnId.Dst, conn.netConnId.Path); err != nil {
-										panic(fmt.Sprint("Error in fetching receiver key in connection {",
-											conn.ipConnIdKey, "}. - ", err.Error())) // TODO: Handle panic!
-										return nil
+									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
+										return Error(fmt.Sprint("Unable to insert MPTCP receiver key. - ", err.Error()))
 									}
 								} else {
-									panic(fmt.Sprint("Error in fetching receiver key in connection {", conn.ipConnIdKey,
-									"} beside having packet {", p.GetIPConnId(), "} containing it. - ", err.Error())) // TODO: Handle panic!
-									return nil
+									return Error(fmt.Sprint("Error in fetching receiver key. - ", err.Error()))
 								}
 							}
 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(Established)
+							conn.state.Set(established)
 
-							log.Info.Print("Established new connection {", conn.ipConnIdKey, ",",
-								model.KeyGenerator{}.NetworkConnectionIdentifierKey(conn.netConnId), ",", conn.kind, "}.")
+							log.Info.Print("established new connection {", conn.Key(), "}.")
 
 							return nil
 
-	case Established: 		conn.touched = time.Now()
+	case established: 		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(Established)
+							conn.state.Set(established)
 							return nil
 
-	case Closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
-							conn.state.Set(Closed)
+	case closed: 			log.Info.Println("Drop packet - Sent through closed connection.")
+							conn.state.Set(closed)
 							return nil
 
-	default: 				panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-							"{", p.IPConnIdKey(), "}. - Unknown connection state.")) // TODO: Handle panic!
+	default: 				panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
+							"{", p.Flow.IPFlow.Key(), "}. - unknown connection state.")) // TODO: Handle panic!
 							return nil
 	}
 }
 
-func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
+func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// Assign the channels from the device through which the packet was received.
-	var ep interface{} = p.GetEntryPoint()
+	var ep interface{} = p.Entrypoint
 	if entryPoint, ok := ep.(*kernelEndpoint.Device); ok {
 		conn.channels.KernelEndpoint.Ingress = entryPoint.TrafficChannels().Ingress // ingress from kernel end point
 		conn.channels.KernelEndpoint.Egress  = entryPoint.TrafficChannels().Egress  // egress towards kernel end point
 	} else {
-		conn.state.Set(Closed)
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-		"{", p.IPConnIdKey(), "}. - Invalid entry point.")) // TODO: Handle panic!
+		conn.state.Set(closed)
+		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
+		"{", p.Flow.IPFlow.Key(), "}. - Invalid entry point.")) // TODO: Handle panic!
 		return nil
 	}
 
-	// Create the packet header which is associated with the connection
+	// Create the packet network flow which is associated with the connection
 	// If the packet contains a receiver token, then the new connection is a MPTCP sub flow.
-	if token, ok, err := layer.GetMPTCPReceiverToken(p.GetRawPayload()); ok {
+	if token, ok, err := layer.GetMPTCPReceiverToken(p.Payload); ok {
 		if err == nil {
-			if netConnId, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
-				conn.netConnId = netConnId
-				conn.kind 	   = SubFlow
-				p.SetNetworkConnId(netConnId)
+			if netFlow, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
+				conn.flow.NetFlow = netFlow
+				conn.kind = 		sub
+				p.Flow.NetFlow 	  = netFlow
 			} else {
-				panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-				"{", p.IPConnIdKey(), "}. - No network connection id available in routing for receiver token {", token,
-				"} beside having packet {", p.GetIPConnId(), "} containing it.")) // TODO: Handle panic!
+				panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
+				"{", p.Flow.IPFlow.Key(), "}. - No network connection id available in routing for receiver token {", token,
+				"} beside having packet {", p.Flow.IPFlow.Key(), "} containing it.")) // TODO: Handle panic!
 				return nil
 			}
 		} else {
-			panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet " +
-			"{", p.IPConnIdKey(), "}. - Error while fetching receiver token. - ", err.Error())) // TODO: Handle panic!
+			panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet " +
+			"{", p.Flow.IPFlow.Key(), "}. - Error while fetching receiver token. - ", err.Error())) // TODO: Handle panic!
 			return nil
 		}
-	// For a MPTCP main flow the network header can probably be extracted from the IP options
-	} else if netConnId, ok, err := layer.GetNetworkHeaderFromIPOptions(p.GetRawPayload()); ok {
+	// For a MPTCP main flow the network flow can probably be extracted from the IP options
+	} else if netFlow, ok, err := layer.GetNetFlowFromIPOptions(p.Payload); ok {
 		if err == nil {
-			conn.netConnId = netConnId
-			conn.kind      = MainFlow
-			p.SetNetworkConnId(netConnId)
+			conn.flow.NetFlow = netFlow
+			conn.kind = main
+			p.Flow.NetFlow 	  = netFlow
 		} else {
-			panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
+			panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
 			"}. - Unable to get IP options. - ", err.Error())) // TODO: Handle panic!
 			return nil
 		}
-	// For a MPTCP main flow the network header is probably available in the routing table
-	} else if netConnId, ok := conn.routing.RetrieveFromIPAddressPortKey(p.IPConnIdDstKey()); ok {
-		conn.netConnId = netConnId
-		conn.kind      = MainFlow
-		p.SetNetworkConnId(netConnId)
-	// No valid option to get network header :(
+	// For a MPTCP main flow the network flow is probably available in the routing table
+	} else if netFlow, ok := conn.routing.RetrieveFromIPAddressPortKey(p.Flow.IPFlow.DstKey()); ok {
+		conn.flow.NetFlow = netFlow
+		conn.kind = main
+		p.Flow.NetFlow 	  = netFlow
+	// No valid option to get network flow :(
 	} else {
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
+		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
 		"}. - No valid option to create network connection identifier.")) // TODO: Handle panic!
 		return nil
 	}
 
 	// Create the contacting connection
-	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.ipConnIdKey, conn.netConnId)
+	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
 	if err != nil {
-		conn.state.Set(Closed)
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
+		conn.state.Set(closed)
+		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
 		"}. - Unable to establish contacting client endpoint. - ", err.Error())) // TODO: Handle panic!
 		return nil
 	}
@@ -292,7 +268,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 	// The contacting network connection id contains as src the local network endpoint which
 	// was used by the network to established the contacting connection. Once a traffic connection
 	// is established, we send this information to the corresponding server side.
-	conn.netConnId.Src = contactingNetConnId.Src
+	conn.flow.NetFlow.Src = contactingNetConnId.Src
 
 	// Send the packet via the contacting channel
 	conn.touched = time.Now()
@@ -300,38 +276,39 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *model.Packet) error {
 
 	// Try to connect to the address via path, a corresponding server should be there listening
 	go func() {
-		if trafficNetConnId, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.ipConnIdKey, conn.netConnId); err != nil {
+		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
 			conn.Close()
-			log.Info.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was not able to establish a traffic" +
-			"backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}. - ", err.Error()))
+			log.Info.Print(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} was not able to establish a traffic" +
+			"backbone connection to {", conn.flow.NetFlow.Dst, " via ", conn.flow.NetFlow.Path, "}. - ", err.Error()))
 		} else {
-			conn.netConnId 				  = trafficNetConnId
+			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.lock.Lock()
-			conn.state.Set(ClientEstablished)
+			conn.state.Set(clientEstablished)
 			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
-			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
-			//log.Verbose.Print(fmt.Sprint("Connection {", conn.ipConnIdKey, "} was able to establish a traffic" +
-			//" backbone connection to {", conn.netConnId.Dst, " via ", conn.netConnId.Path, "}."))
+			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+			//log.Verbose.Print(fmt.Sprint("Connection {", conn.flow.IPFlow.Key()
+			//, "} was able to establish a traffic" +
+			//" backbone connection to {", conn.flow.NetFlow.Dst, " via ", conn.flow.NetFlow.Path, "}."))
 		}
 	}()
 
 	// Set new state
-	conn.state.Set(ClientReady)
+	conn.state.Set(clientReady)
 
 	return nil
 }
 
-func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *model.Packet) error {
+func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet) error {
 
 	// Get the kernel endpoint from the kernel side manager
-	dstKey := p.IPConnIdDstIPKey()
+	dstKey := p.Flow.IPFlow.DstIPKey()
 	if channels, ok := conn.kernelSide.GetTrafficChannels(dstKey); ok {
 		conn.channels.KernelEndpoint = channels
 	} else {
-		conn.state.Set(Closed)
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
+		conn.state.Set(closed)
+		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
 		"}. - No kernel endpoint {", dstKey, "}.")) // TODO: Handle panic!
 		return nil
 	}
@@ -342,13 +319,13 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *model.Pac
 
 	// If the packet is received through the contacting endpoint (server), then it's network connection id
 	// is already set. This is the responsibility of the corresponding network server implementation.
-	conn.netConnId = p.GetNetworkConnId()
+	conn.flow.NetFlow = p.Flow.NetFlow
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.ipConnIdKey, conn.netConnId); err != nil {
-		conn.state.Set(Closed)
-		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
+	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow); err != nil {
+		conn.state.Set(closed)
+		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
 		"}. - Unable to establish server endpoint. -", err.Error())) // TODO: Handle panic!
 		return nil
 	} else {
@@ -356,7 +333,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *model.Pac
 	}
 
 	// Set new state
-	conn.state.Set(ServerReady)
+	conn.state.Set(serverReady)
 
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"shila/config"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/layer"
@@ -33,9 +33,9 @@ type Device struct {
 }
 
 type Channels struct {
-	ingressRaw      chan byte
-	ingress 		model.PacketChannel
-	egress 			model.PacketChannel
+	ingressRaw chan byte
+	ingress    shila.PacketChannel
+	egress     shila.PacketChannel
 }
 
 type Error string
@@ -97,8 +97,8 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 	d.channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.channels.ingress    = make(chan *model.Packet, d.config.SizeIngressBuff)
-	d.channels.egress  	  = make(chan *model.Packet, d.config.SizeEgressBuff)
+	d.channels.ingress    = make(chan *shila.Packet, d.config.SizeIngressBuff)
+	d.channels.egress  	  = make(chan *shila.Packet, d.config.SizeEgressBuff)
 
 	d.isSetup = true
 	return nil
@@ -218,7 +218,7 @@ func (d *Device) serveIngress() {
 func (d *Device) serveEgress() {
 	writer := io.Writer(d.vif)
 	for p := range d.channels.egress {
-		_, err := writer.Write(p.GetRawPayload())
+		_, err := writer.Write(p.Payload)
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
@@ -236,20 +236,20 @@ func (d *Device) packetize() {
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
 			verbolog(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
-			d.channels.ingress <- model.NewPacket(d, iPHeader, rawData)
+			d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 		}
 	}
 }
 
-func (d *Device) Label() model.EndpointLabel {
-	return model.KernelEndpoint
+func (d *Device) Label() shila.EndpointLabel {
+	return shila.KernelEndpoint
 }
 
 // TODO:
-func (d *Device) Key() model.EndpointKey {
-	return model.EndpointKey(d.Id.Key())
+func (d *Device) Key() shila.EndpointKey {
+	return shila.EndpointKey(d.Id.Key())
 }
 
-func (d *Device) TrafficChannels() model.PacketChannels {
-	return model.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
+func (d *Device) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
 }

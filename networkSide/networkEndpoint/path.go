@@ -1,12 +1,12 @@
 package networkEndpoint
 
-import "shila/core/model"
+import "shila/core/shila"
 
-var _ model.NetworkPath = (*Path)(nil)
+var _ shila.NetworkPath = (*Path)(nil)
 
 type Path struct{}
 
-func newPath(path string) model.NetworkPath {
+func newPath(path string) shila.NetworkPath {
 	// No path functionality w/ plain TCP.
 	_ = path; return Path{}
 }

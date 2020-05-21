@@ -6,7 +6,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"net"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/shutdown"
 )
 
@@ -20,19 +20,19 @@ func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
 	return
 }
 
-func GetIPHeader(raw []byte) (model.IPConnectionIdentifier, error) {
+func GetIPHeader(raw []byte) (shila.IPFlow, error) {
 	if ip4v, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
-		return model.IPConnectionIdentifier{}, err
+		return shila.IPFlow{}, err
 	} else {
-		return model.IPConnectionIdentifier{
+		return shila.IPFlow{
 			Src: net.TCPAddr{IP: ip4v.SrcIP, Port: int(tcp.SrcPort)},
 			Dst: net.TCPAddr{IP: ip4v.DstIP, Port: int(tcp.DstPort)},
 		}, nil
 	}
 }
 
-func GetNetworkHeaderFromIPOptions(raw []byte) (model.NetworkConnectionIdentifier, bool, error) {
-	return model.NetworkConnectionIdentifier{}, false, nil
+func GetNetFlowFromIPOptions(raw []byte) (shila.NetFlow, bool, error) {
+	return shila.NetFlow{}, false, nil
 }
 
 // Start slow but correct..

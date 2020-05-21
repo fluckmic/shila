@@ -1,4 +1,4 @@
-package model
+package shila
 
 import (
 	"shila/config"
@@ -10,15 +10,15 @@ type ServerNetworkEndpointMapping struct {
 	IPConnectionMapping
 }
 
-type IPConnectionMapping 		map[IPConnectionIdentifierKey]	bool
+type IPConnectionMapping 		map[IPFlowKey]	bool
 type ServerEndpointMapping		map[NetworkAddressKey]			ServerNetworkEndpointMapping
-type ClientEndpointMapping 		map[IPConnectionIdentifierKey]	ClientNetworkEndpoint
+type ClientEndpointMapping 		map[IPFlowKey]					ClientNetworkEndpoint
 
-func (sb *ServerNetworkEndpointMapping) AddIPConnectionIdentifierKey(key IPConnectionIdentifierKey) {
+func (sb *ServerNetworkEndpointMapping) AddIPFlowKey(key IPFlowKey) {
 	sb.IPConnectionMapping[key] = true
 }
 
-func (sb *ServerNetworkEndpointMapping) RemoveIPConnectionIdentifierKey(key IPConnectionIdentifierKey) {
+func (sb *ServerNetworkEndpointMapping) RemoveIPFlowKey(key IPFlowKey) {
 	delete(sb.IPConnectionMapping, key)
 }
 
@@ -27,8 +27,8 @@ func (sb *ServerNetworkEndpointMapping) Empty() bool {
 }
 
 type NetworkEndpointGenerator interface {
-	NewClient(netConnId NetworkConnectionIdentifier, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
-	NewServer(netConnId NetworkConnectionIdentifier, l EndpointLabel, c config.NetworkEndpoint) ServerNetworkEndpoint
+	NewClient(netConnId NetFlow, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
+	NewServer(netConnId NetFlow, l EndpointLabel, c config.NetworkEndpoint) ServerNetworkEndpoint
 }
 
 // Should be able to create a network address from a string.
@@ -46,7 +46,7 @@ type NetworkPathGenerator interface {
 
 type ClientNetworkEndpoint interface {
 	Endpoint
-	SetupAndRun() 	(NetworkConnectionIdentifier, error)
+	SetupAndRun() 	(NetFlow, error)
 }
 
 type ServerNetworkEndpoint interface {

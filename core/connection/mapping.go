@@ -1,7 +1,7 @@
 package connection
 
 import (
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/networkSide"
 	"sync"
@@ -17,14 +17,14 @@ func (e Error) Error() string {
 type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing 	*model.Mapping
-	connections map[model.IPConnectionIdentifierKey] *Connection
+	routing 	*shila.Mapping
+	connections map[shila.IPFlowKey] *Connection
 	lock		sync.Mutex
 }
 
-func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *model.Mapping) *Mapping {
+func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *shila.Mapping) *Mapping {
 	m := &Mapping{kernelSide, networkSide, routing,
-		make(map[model.IPConnectionIdentifierKey] *Connection), sync.Mutex{}}
+		make(map[shila.IPFlowKey] *Connection), sync.Mutex{}}
 	go m.vacuum()
 	return m
 }
@@ -49,14 +49,15 @@ func (m *Mapping) vacuum() {
 	}
 }
 
-func (m *Mapping) Retrieve(id model.IPConnectionIdentifierKey) *Connection {
+func (m *Mapping) Retrieve(flow shila.Flow) *Connection {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if con, ok := m.connections[id]; ok {
+	key := flow.IPFlow.Key()
+	if con, ok := m.connections[key]; ok {
 		return con
 	} else {
-		newCon := New(m.kernelSide, m.networkSide, m.routing, id)
-		m.connections[id] = newCon
+		newCon := New(flow, m.kernelSide, m.networkSide, m.routing)
+		m.connections[key] = newCon
 		return newCon
 	}
 }

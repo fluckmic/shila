@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 	"shila/config"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/log"
@@ -15,10 +15,10 @@ type Manager struct {
 	endpoints 	EndpointMapping
 	isRunning 	bool
 	isSetup   	bool
-	workingSide chan model.PacketChannelAnnouncement
+	workingSide chan shila.PacketChannelAnnouncement
 }
 
-type EndpointMapping map[model.IPAddressKey] *kernelEndpoint.Device
+type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
 
 type Error string
 
@@ -26,7 +26,7 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func New(config config.Config, workingSide chan model.PacketChannelAnnouncement) *Manager {
+func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
 	// Setup the mapping holding the kernel endpoints
 	return &Manager{config,make(EndpointMapping), false, false, workingSide}
 }
@@ -129,7 +129,7 @@ func (m *Manager) Start() error {
 
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
-		m.workingSide <- model.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
+		m.workingSide <- shila.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
 	}
 
 	m.isRunning = true
@@ -156,9 +156,9 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) GetTrafficChannels(key model.IPAddressKey) (model.PacketChannels, bool) {
+func (m *Manager) GetTrafficChannels(key shila.IPAddressKey) (shila.PacketChannels, bool) {
 	if endpoint, ok := m.endpoints[key]; !ok {
-		return model.PacketChannels{}, false
+		return shila.PacketChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
 	}

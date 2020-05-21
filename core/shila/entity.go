@@ -1,4 +1,4 @@
-package model
+package shila
 
 type EntityStateIdentifier uint8
 

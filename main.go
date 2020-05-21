@@ -4,7 +4,7 @@ import (
 	"os"
 	"shila/config"
 	"shila/core/connection"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
@@ -43,7 +43,7 @@ func realMain() int {
 	}
 
 	// Create the channel used to announce new traffic channels
-	trafficChannelAnnouncements := make(chan model.PacketChannelAnnouncement)
+	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
 
 	// Create and setup the kernel side
 	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)
@@ -62,7 +62,7 @@ func realMain() int {
 	defer networkSide.CleanUp()
 
 	// Create the mapping holding the network addresses
-	routing := model.NewMapping()
+	routing := shila.NewMapping()
 
 	// TODO. ############## Testing ##############
 	key := "(10.7.0.9:2727)"
@@ -71,7 +71,7 @@ func realMain() int {
 	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
 	// TODO. ############## Testing ##############
 
-	routing.InsertFromIPAddressPortKey(model.IPAddressPortKey(key), srcAddr, dstAddr, path)
+	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), srcAddr, dstAddr, path)
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)

@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/google/gopacket/layers"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/log"
 )
 
@@ -74,46 +74,46 @@ const (
 	MPTCPOptionSubtypeFastClose             = 7
 )
 
-func GetMPTCPReceiverToken(raw []byte) (model.MPTCPEndpointToken, bool, error) {
+func GetMPTCPReceiverToken(raw []byte) (shila.MPTCPEndpointToken, bool, error) {
 	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
 	// only once at the setup of a new sub flow. It should be fine to do this twice.
 	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
 		// Error in decoding the ipv4/tcp options
-		return model.MPTCPEndpointToken(0), false, err
+		return shila.MPTCPEndpointToken(0), false, err
 	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			// MPTCP options does not contain the receiver token
-			return model.MPTCPEndpointToken(0), false, nil
+			return shila.MPTCPEndpointToken(0), false, nil
 		} else {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpJoinOptionSYN, ok := mptcpOption.(MPTCPJoinOptionSYN); ok {
-					return model.MPTCPEndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
+					return shila.MPTCPEndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
 				}
 			}
 			// Error in decoding the mptcp options
-			return model.MPTCPEndpointToken(0), false, err
+			return shila.MPTCPEndpointToken(0), false, err
 		}
 	}
 }
 
-func GetMPTCPSenderKey(raw []byte) (model.MPTCPEndpointKey, bool, error) {
+func GetMPTCPSenderKey(raw []byte) (shila.MPTCPEndpointKey, bool, error) {
 	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
 	// only once at the setup of a new sub flow. It should be fine to do this twice.
 	if _, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
 		// Error in decoding the ipv4/tcp options
-		return model.MPTCPEndpointKey(0), false, err
+		return shila.MPTCPEndpointKey(0), false, err
 	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			// Error in decoding the mptcp options
-			return model.MPTCPEndpointKey(0), false, err
+			return shila.MPTCPEndpointKey(0), false, err
 		} else {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpCapableOptionSender, ok := mptcpOption.(MPTCPCapableOptionSender); ok {
-					return model.MPTCPEndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
+					return shila.MPTCPEndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
 				}
 			}
 			// MPTCP options does not contain the senders key
-			return model.MPTCPEndpointKey(0), false, nil
+			return shila.MPTCPEndpointKey(0), false, nil
 		}
 	}
 }

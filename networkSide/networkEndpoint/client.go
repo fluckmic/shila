@@ -5,12 +5,12 @@ import (
 	"io"
 	"net"
 	"shila/config"
-	"shila/core/model"
+	"shila/core/shila"
 	"shila/layer"
 	"shila/log"
 )
 
-var _ model.ClientNetworkEndpoint = (*Client)(nil)
+var _ shila.ClientNetworkEndpoint = (*Client)(nil)
 
 type Client struct {
 	Base
@@ -21,11 +21,11 @@ type Client struct {
 }
 
 type networkConnection struct {
-	Identifier model.NetworkConnectionIdentifier
+	Identifier shila.NetFlow
 	Backbone   *net.TCPConn
 }
 
-func newClient(netConnId model.NetworkConnectionIdentifier, label model.EndpointLabel, config config.NetworkEndpoint) model.ClientNetworkEndpoint {
+func newClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ClientNetworkEndpoint {
 	return &Client{
 		Base: 				Base{
 								label: label,
@@ -36,41 +36,41 @@ func newClient(netConnId model.NetworkConnectionIdentifier, label model.Endpoint
 	}
 }
 
-func (c *Client) Key() model.EndpointKey {
-	return model.EndpointKey(model.KeyGenerator{}.NetworkAddressAndPathKey(c.connection.Identifier.Dst, Generator{}.NewPath("")))
+func (c *Client) Key() shila.EndpointKey {
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, Generator{}.NewPath("")))
 }
 
-func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
+func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	if !c.IsValid() {
-		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
+		return shila.NetFlow{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
 	}
 
 	if c.IsRunning() {
-		return model.NetworkConnectionIdentifier{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
+		return shila.NetFlow{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
 	}
 
 	if c.IsSetup() {
-		return model.NetworkConnectionIdentifier{}, nil
+		return shila.NetFlow{}, nil
 	}
 
 	// Establish a connection to the server endpoint
 	dst := c.connection.Identifier.Dst.(Address)
 	backboneConnection, err := net.DialTCP(dst.Addr.Network(), nil, &dst.Addr)
 	if err != nil {
-		return model.NetworkConnectionIdentifier{},
+		return shila.NetFlow{},
 		Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
 		"}. - Unable to setup the backbone connection. - ", err.Error()))
 	}
 	c.connection.Backbone = backboneConnection
 
-	if c.Label() == model.TrafficNetworkEndpoint {
+	if c.Label() == shila.TrafficNetworkEndpoint {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
 
 		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.Src.String()))); err != nil {
-			return model.NetworkConnectionIdentifier{},
+			return shila.NetFlow{},
 				Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
 					"}. - Unable to send source address. - ", err.Error()))
 		}
@@ -79,8 +79,8 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 	c.connection.Identifier.Src = Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
-	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
-	c.egress  = make(chan *model.Packet, c.config.SizeEgressBuff)
+	c.ingress = make(chan *shila.Packet, c.config.SizeIngressBuff)
+	c.egress  = make(chan *shila.Packet, c.config.SizeEgressBuff)
 
 	go c.serveIngress()
 	go c.serveEgress()
@@ -117,11 +117,11 @@ func (c *Client) TearDown() error {
 	return err
 }
 
-func (c *Client) TrafficChannels() model.PacketChannels {
-	return model.PacketChannels{Ingress: c.ingress, Egress: c.egress}
+func (c *Client) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: c.ingress, Egress: c.egress}
 }
 
-func (c *Client) Label() model.EndpointLabel {
+func (c *Client) Label() shila.EndpointLabel {
 	return c.label
 }
 
@@ -153,7 +153,7 @@ func (c *Client) serveIngress() {
 func (c *Client) serveEgress() {
 	writer := io.Writer(c.connection.Backbone)
 	for p := range c.egress {
-		_, err := writer.Write(p.GetRawPayload())
+		_, err := writer.Write(p.Payload)
 		if err != nil && !c.IsValid() {
 			// Error doesn't matter, client is no longer valid anyway.
 			return
@@ -173,7 +173,7 @@ func (c *Client) packetize(ingressRaw chan byte) {
 			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			c.ingress <- model.NewPacket(c, iPHeader, rawData)
+			c.ingress <- shila.NewPacket(c, iPHeader, rawData)
 		}
 	}
 }
