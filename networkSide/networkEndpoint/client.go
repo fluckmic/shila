@@ -15,7 +15,6 @@ var _ model.ClientNetworkEndpoint = (*Client)(nil)
 type Client struct {
 	Base
 	connection			networkConnection
-	ingressRaw 			chan byte
 	isValid    			bool
 	isSetup    			bool // TODO: merge to "state" object
 	isRunning 			bool
@@ -33,7 +32,6 @@ func newClient(netConnId model.NetworkConnectionIdentifier, label model.Endpoint
 								config: config,
 							},
 		connection:		    networkConnection{Identifier: netConnId},
-		ingressRaw: 		make(chan byte, config.SizeReadBuffer),
 		isValid: 			true,
 	}
 }
@@ -84,7 +82,6 @@ func (c *Client) SetupAndRun() (model.NetworkConnectionIdentifier, error) {
 	c.ingress = make(chan *model.Packet, c.config.SizeIngressBuff)
 	c.egress  = make(chan *model.Packet, c.config.SizeEgressBuff)
 
-	go c.packetize()
 	go c.serveIngress()
 	go c.serveEgress()
 
@@ -105,7 +102,17 @@ func (c *Client) TearDown() error {
 	c.isRunning = false
 	c.isSetup = false
 
+	// Close the egress channel
+	// Client stops sending out packets
+	close(c.egress)
+
+	// Close the connection
+	// Stops the ingress processing
 	err := c.connection.Backbone.Close()
+
+	// Close the ingress channel
+	// Working side no longer processes this endpoint
+	close(c.ingress)
 
 	return err
 }
@@ -119,12 +126,17 @@ func (c *Client) Label() model.EndpointLabel {
 }
 
 func (c *Client) serveIngress() {
+
+	ingressRaw := make(chan byte, c.config.SizeReadBuffer)
+	go c.packetize(ingressRaw)
+
 	reader := io.Reader(c.connection.Backbone)
 	storage := make([]byte, c.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
 		if err != nil && !c.IsValid() {
 			// Client is no longer valid, there is no need to try to stay alive.
+			close(ingressRaw)
 			return
 		} else if err != nil {
 			// Client is still valid, that is, a connection relies on this client.
@@ -133,7 +145,7 @@ func (c *Client) serveIngress() {
 				err.Error())) // TODO: Handle panic!
 		}
 		for _, b := range storage[:nBytesRead] {
-			c.ingressRaw <- b
+			ingressRaw <- b
 		}
 	}
 }
@@ -154,9 +166,9 @@ func (c *Client) serveEgress() {
 	}
 }
 
-func (c *Client) packetize() {
+func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		rawData  := layer.PacketizeRawData(c.ingressRaw, c.config.SizeReadBuffer)
+		rawData  := layer.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer)
 		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
 			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!

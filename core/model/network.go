@@ -4,11 +4,27 @@ import (
 	"shila/config"
 )
 
-// TODO: --> Create storage for IPConnIDKeys associated with a server traffic endpoint.
-
 // Mappings
-type ServerEndpointMapping map[NetworkAddressKey] 			ServerNetworkEndpoint
-type ClientEndpointMapping map[IPConnectionIdentifierKey]	ClientNetworkEndpoint
+type ServerNetworkEndpointMapping struct {
+	ServerNetworkEndpoint
+	IPConnectionMapping
+}
+
+type IPConnectionMapping 		map[IPConnectionIdentifierKey]	bool
+type ServerEndpointMapping		map[NetworkAddressKey]			ServerNetworkEndpointMapping
+type ClientEndpointMapping 		map[IPConnectionIdentifierKey]	ClientNetworkEndpoint
+
+func (sb *ServerNetworkEndpointMapping) AddIPConnectionIdentifierKey(key IPConnectionIdentifierKey) {
+	sb.IPConnectionMapping[key] = true
+}
+
+func (sb *ServerNetworkEndpointMapping) RemoveIPConnectionIdentifierKey(key IPConnectionIdentifierKey) {
+	delete(sb.IPConnectionMapping, key)
+}
+
+func (sb *ServerNetworkEndpointMapping) Empty() bool {
+	return len(sb.IPConnectionMapping) == 0
+}
 
 type NetworkEndpointGenerator interface {
 	NewClient(netConnId NetworkConnectionIdentifier, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint

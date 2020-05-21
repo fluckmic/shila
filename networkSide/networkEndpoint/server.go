@@ -20,6 +20,7 @@ type Server struct{
 	Base
 	backboneConnections map[model.NetworkAddressAndPathKey]  net.Conn
 	networkConnectionId model.NetworkConnectionIdentifier
+	listener 			net.Listener
 	lock                sync.Mutex
 	holdingArea         []*model.Packet
 	isValid             bool
@@ -67,7 +68,8 @@ func (s *Server) SetupAndRun() error {
 	s.egress  = make(chan *model.Packet, s.config.SizeEgressBuff)
 
 	// Start listening for incoming backboneConnections.
-	go s.serveIncomingConnections(listener)
+	s.listener = listener
+	go s.serveIncomingConnections()
 
 	// log.Verbose.Print("Server {", s.Label(), "," , s.Key(), "} started to listen for incoming backbone connections on {", s.Key(), "}.")
 
@@ -76,12 +78,37 @@ func (s *Server) SetupAndRun() error {
 
 	s.isSetup   = true
 	s.isRunning = true
+
 	return nil
 }
 
 func (s *Server) TearDown() error {
-	// TODO!
-	return nil
+
+	log.Verbose.Print("Tear down server {", s.Label(), ",", s.Key(), "}.")
+
+	s.isSetup 	= false
+	s.isValid 	= false
+	s.isRunning = false
+
+	// Close the egress channel
+	// Server stops sending out packets
+	close(s.egress)
+
+	// Close the listener
+	// Server no longer listens for incoming connections
+	err := s.listener.Close()
+
+	// Close all incoming connections
+	// Terminates all workers processing incoming an connection and the corresponding packetizer
+	for _, conn := range s.backboneConnections {
+		err = conn.Close()
+	}
+
+	// Close the ingress channel
+	// Working side no longer processes this endpoint
+	close(s.ingress)
+
+	return err
 }
 
 func (s *Server) TrafficChannels() model.PacketChannels {
@@ -100,10 +127,11 @@ func (s *Server) IsRunning() bool {
 	return s.isRunning
 }
 
-func (s *Server) serveIncomingConnections(listener net.Listener){
+func (s *Server) serveIncomingConnections(){
 	for {
-		if connection, err := listener.Accept(); err != nil {
-			log.Info.Print("Error serving incoming backbone connection in server {" ,s.Label(), " ", s.Key(), "}. - ",err.Error())
+		if connection, err := s.listener.Accept(); err != nil {
+			log.Verbose.Print("Server {" ,s.Label(), ",", s.Key(), "} stopped serving incoming connections.")
+			return
 		} else {
 			go s.handleConnection(connection)
 		}

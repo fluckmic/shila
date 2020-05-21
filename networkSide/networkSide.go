@@ -16,9 +16,9 @@ type Manager struct {
 	serverTrafficEndpoints    	 model.ServerEndpointMapping
 	clientContactingEndpoints 	 model.ClientEndpointMapping
 	clientTrafficEndpoints    	 model.ClientEndpointMapping
-	isRunning                 	 bool
 	workingSide               	 chan model.PacketChannelAnnouncement
 	lock					  	 sync.Mutex
+	state						 model.EntityState
 }
 
 type Error string
@@ -27,15 +27,18 @@ func (e Error) Error() string {
 }
 
 func New(config config.Config, workingSide chan model.PacketChannelAnnouncement) *Manager {
-	return &Manager{config,nil,
-		nil, nil, nil,
-		false, workingSide, sync.Mutex{}}
+	return &Manager{
+		config: 	 config,
+		workingSide: workingSide,
+		lock: 		 sync.Mutex{},
+		state: 		 model.EntityState{EntityStateIdentifier: model.Uninitialized},
+	}
 }
 
 func (m *Manager) Setup() error {
 
-	if m.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup kernel side - Already setup."))
+	if m.state.Get() != model.Uninitialized {
+		return Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
 	}
 
 	// Create the contacting server
@@ -48,29 +51,27 @@ func (m *Manager) Setup() error {
 	m.clientContactingEndpoints 	= make(model.ClientEndpointMapping)
 	m.clientTrafficEndpoints 		= make(model.ClientEndpointMapping)
 
+	m.state.Set(model.Initialized)
+
 	return nil
 }
 
 func (m *Manager) Start() error {
 
-	if !m.IsSetup() {
-		return Error(fmt.Sprint("Cannot start network side - Network side not yet setup."))
-	}
-
-	if m.IsRunning() {
-		return Error(fmt.Sprint("Cannot start network side - Network side already running."))
+	if m.state.Get() != model.Initialized {
+		return Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
 	}
 
 	//log.Verbose.Println("Starting network side...")
 
 	if err := m.contactingServer.SetupAndRun(); err != nil {
-		return Error(fmt.Sprint("Cannot start network side - ", err.Error()))
+		return Error(fmt.Sprint("Unable to setup and run contacting server. - ", err.Error()))
 	}
 
 	// Announce the traffic channels to the working side
 	m.workingSide <- model.PacketChannelAnnouncement{Announcer: m.contactingServer, Channel: m.contactingServer.TrafficChannels().Ingress}
 
-	m.isRunning = true
+	m.state.Set(model.Running)
 
 	//log.Verbose.Println("Network side started.")
 
@@ -81,26 +82,27 @@ func (m *Manager) CleanUp() error {
 
 	var err error = nil
 
-	if !m.IsSetup() {
-		return err
-	}
+	log.Info.Println("Tear down the network side..")
 
-	log.Info.Println("Mopping up the network side..")
+	err = m.tearDownAndRemoveClientContactingEndpoints()
+	err = m.tearDownAndRemoveClientTrafficEndpoints()
+	err = m.tearDownAndRemoveServerTrafficEndpoints()
 
-	err = m.tearDownClientContactingEndpoints(); m.clearClientContactingEndpoints()
-	err = m.tearDownClientTrafficEndpoints();	 m.clearClientTrafficEndpoints()
-	err = m.tearDownServerTrafficEndpoints();	 m.clearServerTrafficEndpoints()
+	err = m.contactingServer.TearDown()
+	m.contactingServer = nil
 
-	err = m.contactingServer.TearDown(); m.contactingServer = nil
+	m.state.Set(model.TornDown)
 
-	m.isRunning 	   = false
-
-	log.Info.Println("Network side mopped.")
+	log.Info.Println("Network side torn down.")
 
 	return err
 }
 
-func (m *Manager) EstablishNewTrafficServerEndpoint(netConnId model.NetworkConnectionIdentifier) (model.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficServerEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.PacketChannels, error) {
+
+	if m.state.Get() != model.Running {
+		return model.PacketChannels{}, Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -110,22 +112,30 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(netConnId model.NetworkConne
 
 	// If there is no server endpoint listening, we first have to set one up.
 	if !ok {
-		newSep := networkEndpoint.Generator{}.NewServer(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
-		if err := newSep.SetupAndRun(); err != nil {
-			return model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new server {",
-			model.ContactingNetworkEndpoint, "} listening to {", netConnId.Src, "}. - ", err.Error()))
+		newServerEndpoint   := networkEndpoint.Generator{}.NewServer(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		if err := newServerEndpoint.SetupAndRun(); err != nil {
+			return model.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new server {",
+				model.ContactingNetworkEndpoint, "} listening to {", netConnId.Src, "}. - ", err.Error()))
 		}
 		// Add the endpoint to the mapping
-		m.serverTrafficEndpoints[key] = newSep
+		sep := model.ServerNetworkEndpointMapping{ServerNetworkEndpoint: newServerEndpoint}
+		m.serverTrafficEndpoints[key] = sep
+
 		// Announce the new traffic channels to the working side
-		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newSep, Channel: newSep.TrafficChannels().Ingress}
-		sep = newSep
+		m.workingSide <- model.PacketChannelAnnouncement{Announcer: newServerEndpoint, Channel: newServerEndpoint.TrafficChannels().Ingress}
 	}
+
+	sep.AddIPConnectionIdentifierKey(IPConnIdKey)
 
 	return sep.TrafficChannels(), nil
 }
 
 func (m *Manager) EstablishNewContactingClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
+
+	if m.state.Get() != model.Running {
+		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
+			Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -136,13 +146,13 @@ func (m *Manager) EstablishNewContactingClientEndpoint(IPConnIdKey model.IPConne
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
 	if _, ok := m.clientContactingEndpoints[IPConnIdKey]; ok {
-		return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new client {",
-			model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - Endpoint already exists."))
+		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
+		Error(fmt.Sprint("Endpoint {", IPConnIdKey, "} already exists."))
 	} else {
 		// Establish a new contacting client endpoint
 		newContactingClientEndpoint := networkEndpoint.Generator{}.NewClient(netConnId, model.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
 		if contactingNetConnId, err := newContactingClientEndpoint.SetupAndRun(); err != nil {
-			return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to establish new client {",
+			return model.NetworkConnectionIdentifier{}, model.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new client {",
 				model.ContactingNetworkEndpoint, "} connected to {", netConnId.Dst, "}. - ", err.Error()))
 		} else {
 			// Add it to the corresponding mapping
@@ -157,12 +167,17 @@ func (m *Manager) EstablishNewContactingClientEndpoint(IPConnIdKey model.IPConne
 
 func (m *Manager) EstablishNewTrafficClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) (model.NetworkConnectionIdentifier, model.PacketChannels, error) {
 
+	if m.state.Get() != model.Running {
+		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
+			Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if _, ok := m.clientTrafficEndpoints[IPConnIdKey]; ok {
 		return model.NetworkConnectionIdentifier{}, model.PacketChannels{},
-		Error(fmt.Sprint("Unable to establish new traffic client endpoint. - Endpoint already exists."))
+			Error(fmt.Sprint("Endpoint {", IPConnIdKey, "} already exists."))
 	} else {
 		// Otherwise establish a new one
 		newTrafficClientEndpoint := networkEndpoint.Generator{}.NewClient(netConnId, model.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
@@ -186,26 +201,35 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(IPConnIdKey model.IPConnecti
 		}
 }
 
-func (m *Manager) TeardownTrafficSeverEndpoint(addr model.NetworkAddress) error {
+func (m *Manager) TeardownTrafficSeverEndpoint(IPConnIdKey model.IPConnectionIdentifierKey, netConnId model.NetworkConnectionIdentifier) error {
+
+	if m.state.Get() != model.Running {
+		return Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	/* // TODO! Is it really necessary to tear it down?
-	key :=  model.KeyGenerator{}.NetworkAddressKey(addr)
-	if epc, ok := m.serverTrafficEndpoints[key]; ok {
-		epc.ConnectionCount--
-		if epc.ConnectionCount == 0 {
-			err := epc.Endpoint.TearDown()
-			delete(m.serverTrafficEndpoints, key)
+	key     := model.KeyGenerator{}.NetworkAddressKey(netConnId.Src)
+	if ep, ok := m.serverTrafficEndpoints[key]; ok {
+
+		ep.RemoveIPConnectionIdentifierKey(IPConnIdKey)
+		if ep.Empty() {
+			err := ep.TearDown()
+			delete(m.clientContactingEndpoints, IPConnIdKey)
 			return err
 		}
+
 	}
-	*/
+
 	return nil
 }
 
 func (m *Manager) TeardownContactingClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey) error {
+
+	if m.state.Get() != model.Running {
+		return Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -221,6 +245,10 @@ func (m *Manager) TeardownContactingClientEndpoint(IPConnIdKey model.IPConnectio
 
 func (m *Manager) TeardownTrafficClientEndpoint(IPConnIdKey model.IPConnectionIdentifierKey) error {
 
+	if m.state.Get() != model.Running {
+		return Error(fmt.Sprint("Entity in wrong state {", m.state.Get(), "}."))
+	}
+
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
@@ -232,52 +260,29 @@ func (m *Manager) TeardownTrafficClientEndpoint(IPConnIdKey model.IPConnectionId
 	return nil
 }
 
-func (m *Manager) IsSetup() bool {
-	return m.contactingServer != nil
-}
-
-func (m *Manager) IsRunning() bool {
-	return m.isRunning
-}
-
-func (m *Manager) clearServerTrafficEndpoints() {
-	for k := range m.serverTrafficEndpoints {
-		delete(m.serverTrafficEndpoints, k)
-	}
-}
-
-func (m *Manager) clearClientContactingEndpoints() {
-	for k := range m.clientContactingEndpoints {
-		delete(m.clientContactingEndpoints, k)
-	}
-}
-
-func (m *Manager) clearClientTrafficEndpoints() {
-	for k := range m.clientTrafficEndpoints {
-		delete(m.clientTrafficEndpoints, k)
-	}
-}
-
-func (m *Manager) tearDownServerTrafficEndpoints() error {
+func (m *Manager) tearDownAndRemoveServerTrafficEndpoints() error {
 	var err error = nil
-	for _, ep := range m.serverTrafficEndpoints {
+	for key, ep := range m.serverTrafficEndpoints {
 		err = ep.TearDown()
+		delete(m.serverTrafficEndpoints, key)
 	}
 	return err
 }
 
-func (m *Manager) tearDownClientContactingEndpoints() error {
+func (m *Manager) tearDownAndRemoveClientContactingEndpoints() error {
 	var err error = nil
-	for _, ep := range m.clientContactingEndpoints {
+	for key, ep := range m.clientContactingEndpoints {
 		err = ep.TearDown()
+		delete(m.clientContactingEndpoints, key)
 	}
 	return err
 }
 
-func (m *Manager) tearDownClientTrafficEndpoints() error {
+func (m *Manager) tearDownAndRemoveClientTrafficEndpoints() error {
 	var err error = nil
-	for _, ep := range m.clientTrafficEndpoints {
+	for key, ep := range m.clientTrafficEndpoints {
 		err = ep.TearDown()
+		delete(m.clientTrafficEndpoints, key)
 	}
 	return err
 }

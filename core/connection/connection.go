@@ -51,9 +51,8 @@ func (conn *Connection) Close() {
 	defer conn.lock.Unlock()
 
 	// Tear down all endpoints possibly associated with this connection
-
 	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.ipConnIdKey)
-	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.netConnId.Src)
+	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.ipConnIdKey, conn.netConnId)
 	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.ipConnIdKey)
 
 	conn.state.Set(Closed)
@@ -347,7 +346,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *model.Pac
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.netConnId); err != nil {
+	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.ipConnIdKey, conn.netConnId); err != nil {
 		conn.state.Set(Closed)
 		panic(fmt.Sprint("Connection {", conn.ipConnIdKey, "} can not process packet {", p.IPConnIdKey(),
 		"}. - Unable to establish server endpoint. -", err.Error())) // TODO: Handle panic!

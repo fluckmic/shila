@@ -1,7 +1,7 @@
 package model
 
-type EndpointLabel 	uint8
-type EndpointKey	string
+type EndpointLabel uint8
+type EndpointKey   string
 
 const (
 	_                            = iota
@@ -21,7 +21,8 @@ func (el EndpointLabel) String() string {
 
 type Endpoint interface {
 	TearDown() error
-	Label() EndpointLabel
-	Key() EndpointKey
-	TrafficChannels() PacketChannels
+	Label() 			EndpointLabel
+	Key() 				EndpointKey
+	TrafficChannels() 	PacketChannels
 }
+
