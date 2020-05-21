@@ -118,7 +118,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (shila.Pack
 				shila.ContactingNetworkEndpoint, "} listening to {", flow.NetFlow.Src, "}. - ", err.Error()))
 		}
 		// Add the endpoint to the mapping
-		sep := shila.ServerNetworkEndpointMapping{ServerNetworkEndpoint: newServerEndpoint, IPConnectionMapping: make(shila.IPConnectionMapping)}
+		sep = shila.ServerNetworkEndpointMapping{ServerNetworkEndpoint: newServerEndpoint, IPConnectionMapping: make(shila.IPConnectionMapping)}
 		m.serverTrafficEndpoints[key] = sep
 
 		// Announce the new traffic channels to the working side
