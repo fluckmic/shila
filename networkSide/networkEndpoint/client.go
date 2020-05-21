@@ -7,7 +7,6 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer"
-	"shila/log"
 	"time"
 )
 
@@ -97,7 +96,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {", c.Label(), ",", c.Key(), "}.")
+	// log.Verbose.Print("Tear down client {", c.Label(), ",", c.Key(), "}.")
 
 	c.isValid = false
 	c.isRunning = false

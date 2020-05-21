@@ -55,7 +55,7 @@ func (conn *Connection) Close() {
 
 	conn.state.Set(closed)
 
-	log.Verbose.Print("Connection {", conn.flow.IPFlow.Key(), "} closed.")
+	log.Info.Print("Connection {", conn.Key(), "} closed.")
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
