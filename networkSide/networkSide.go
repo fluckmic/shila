@@ -215,7 +215,7 @@ func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 		ep.RemoveIPFlowKey(flow.IPFlow.Key())
 		if ep.Empty() {
 			err := ep.TearDown()
-			delete(m.serverTrafficEndpoints, flow.IPFlow.Key())
+			delete(m.serverTrafficEndpoints, key)
 			return err
 		}
 	}
