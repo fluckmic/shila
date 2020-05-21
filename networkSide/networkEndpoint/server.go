@@ -8,7 +8,6 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer"
-	"shila/log"
 	"strconv"
 	"strings"
 	"sync"
