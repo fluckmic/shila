@@ -168,12 +168,15 @@ func (c *Client) serveEgress() {
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		rawData  := layer.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer)
-		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
-				"}. - ", err.Error())) // TODO: Handle panic!
+		if rawData  := layer.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
+					"}. - ", err.Error())) // TODO: Handle panic!
+			} else {
+				c.ingress <- shila.NewPacket(c, iPHeader, rawData)
+			}
 		} else {
-			c.ingress <- shila.NewPacket(c, iPHeader, rawData)
+			return
 		}
 	}
 }
