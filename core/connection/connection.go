@@ -55,7 +55,7 @@ func (conn *Connection) Close() {
 
 	conn.state.Set(closed)
 
-	log.Info.Print("Connection {", conn.Key(), "} closed.")
+	log.Info.Print("Closed connection {", conn.Key(), "}.")
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
