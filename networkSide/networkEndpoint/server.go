@@ -84,7 +84,7 @@ func (s *Server) SetupAndRun() error {
 
 func (s *Server) TearDown() error {
 
-	log.Verbose.Print("Tear down server {", s.Label(), ",", s.Key(), "}.")
+	// nt("Tear down server {", s.Label(), ",", s.Key(), "}.")
 
 	s.isSetup 	= false
 	s.isValid 	= false
@@ -130,7 +130,6 @@ func (s *Server) IsRunning() bool {
 func (s *Server) serveIncomingConnections(){
 	for {
 		if connection, err := s.listener.Accept(); err != nil {
-			log.Verbose.Print("Server {" ,s.Label(), ",", s.Key(), "} stopped serving incoming connections.")
 			return
 		} else {
 			go s.handleConnection(connection)

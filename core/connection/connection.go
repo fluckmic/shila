@@ -159,7 +159,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.state.Set(established)
 
-							log.Info.Print("established new connection {", conn.Key(), "}.")
+							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
 							return nil
 
