@@ -55,12 +55,10 @@ func (m *Manager) handleChannel(buffer shila.PacketChannel) {
 }
 
 func (m *Manager) processChannel(p *shila.Packet) {
-
 	// Get the connection and process the packet
 	con := m.connections.Retrieve(p.Flow)
 	if err := con.ProcessPacket(p); err != nil {
 		log.Error.Panicln(err.Error())
 	}
-
 }
 
