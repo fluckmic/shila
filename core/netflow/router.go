@@ -61,7 +61,7 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 	if token, ok, err := mptcp.GetReceiverToken(p.Payload); ok {
 		if err == nil {
 			if netFlow, ok := r.getFromMPTCPEndpointToken(token); ok {
-				return netFlow, shila.Mainflow, nil
+				return netFlow, shila.Subflow, nil
 			} else {
 				return shila.NetFlow{}, shila.Unknown,
 				Error(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}" +
@@ -76,7 +76,7 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 	// For a MPTCP Mainflow flow the network flow can probably be extracted from the IP options
 	if netFlow, ok, err := r.getFromIPOptions(p.Payload); ok {
 		if err == nil {
-			return netFlow, shila.Subflow, nil
+			return netFlow, shila.Mainflow, nil
 		} else {
 			return shila.NetFlow{}, shila.Unknown,
 				Error(fmt.Sprint("Unable to get IP options. - ", err.Error()))

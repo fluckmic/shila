@@ -72,7 +72,7 @@ func realMain() int {
 	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
 	// TODO. ############## Testing ##############
 
-	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, path,dstAddr})
+	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, path, dstAddr})
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)
