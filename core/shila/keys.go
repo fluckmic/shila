@@ -14,7 +14,7 @@ type NetworkAddressKey		  	string		// (network-address)
 type NetworkAddressAndPathKey 	string		// (network-address<>path)
 type NetFlowKey 				string		// (network-address<>path<>network-address)
 
-type FlowKey					string		// (ip-flow-key,network-flow-key)
+type FlowKey					string		// (ip-flow-key,network-flow-key,flow-kind)
 
 type EndpointKey   				string		//
 
@@ -56,7 +56,7 @@ func (nf *NetFlow) Key() NetFlowKey {
 }
 
 func (fl *Flow) Key() FlowKey {
-	return FlowKey(fmt.Sprint("(", fl.IPFlow.Key(), ",", fl.NetFlow.Key(), ")"))
+	return FlowKey(fmt.Sprint("(", fl.IPFlow.Key(), ",", fl.NetFlow.Key(), ",", fl.Kind, ")"))
 }
 
 func (ipf *IPFlow) SrcKey() IPAddressPortKey {

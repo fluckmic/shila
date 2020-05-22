@@ -6,7 +6,6 @@ import (
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
-	"shila/layer/mptcp"
 	"shila/log"
 	"shila/networkSide"
 	"sync"
@@ -16,13 +15,12 @@ import (
 type Connection struct {
 	flow        shila.Flow
 	state       state
-	kind        kind
 	channels    channels
 	lock        sync.Mutex
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing     *netflow.Router
+	router      *netflow.Router
 }
 
 type channels struct {
@@ -31,16 +29,15 @@ type channels struct {
 	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *netflow.Router) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router *netflow.Router) *Connection {
 	return &Connection{
 		flow:        flow,
 		state:       newState(),
-		kind:        unknown,
 		lock:        sync.Mutex{},
 		touched:     time.Now(),
 		kernelSide:  kernelSide,
 		networkSide: networkSide,
-		routing:     routing,
+		router:      router,
 	}
 }
 
@@ -167,8 +164,8 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
-							if err := conn.routing.InsertFromSynAckMpCapable(p, conn.flow.NetFlow); err != nil {
-								return Error(fmt.Sprint("Unable to update routing. - ", err.Error()))
+							if err := conn.router.InsertFromSynAckMpCapable(p, conn.flow.NetFlow); err != nil {
+								return Error(fmt.Sprint("Unable to update router. - ", err.Error()))
 							}
 
 							conn.touched = time.Now()
@@ -203,39 +200,13 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		return Error(fmt.Sprint("Invalid entry point."))
 	}
 
-	// Create the packet network flow which is associated with the connection
-	// If the packet contains a receiver token, then the new connection is a MPTCP subflow flow.
-	if token, ok, err := mptcp.GetReceiverToken(p.Payload); ok {
-		if err == nil {
-			if netFlow, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
-				conn.flow.NetFlow = netFlow
-				conn.kind = subflow
-				p.Flow.NetFlow 	  = netFlow
-			} else {
-				return Error(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}" +
-					" beside having the packet containing it."))
-			}
-		} else {
-			return Error(fmt.Sprint("Unable to fetch MPTCP receiver token. - ", err.Error()))
-		}
-	// For a MPTCP Mainflow flow the network flow can probably be extracted from the IP options
-	} else if netFlow, ok, err := shila.GetNetFlowFromIPOptions(p.Payload); ok {
-		if err == nil {
-			conn.flow.NetFlow = netFlow
-			conn.kind = mainflow
-			p.Flow.NetFlow 	  = netFlow
-		} else {
-			return Error(fmt.Sprint("Unable to get IP options. - ", err.Error()))
-		}
-	// For a MPTCP Mainflow flow the network flow is probably available in the routing table
-	} else if netFlow, ok := conn.routing.RetrieveFromIPAddressPortKey(p.Flow.IPFlow.DstKey()); ok {
-		conn.flow.NetFlow = netFlow
-		conn.kind = mainflow
-		p.Flow.NetFlow 	  = netFlow
-	// No valid option to get network flow :(
-	} else {
-		return Error(fmt.Sprint("No valid option to create network connection identifier."))
+	// Get the network flow
+	var err error
+	conn.flow.NetFlow, conn.flow.Kind, err = conn.router.Route(p)
+	if err != nil {
+		return Error(fmt.Sprint("Unable to get network flow."))
 	}
+	p.Flow.NetFlow = conn.flow.NetFlow
 
 	// Create the contacting connection
 	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
