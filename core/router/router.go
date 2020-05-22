@@ -44,12 +44,15 @@ func (m Router) UpdateFromSynAckMpCapable(p *shila.Packet) error {
 		if err == nil {
 			if err := m.insertFromMPTCPEndpointKey(key, p.Flow.NetFlow); err != nil {
 				return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
+			} else {
+				return nil
 			}
 		} else {
 			return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
 		}
+	} else {
+		return Error(fmt.Sprint("Packet does not contain MPTCP endpoint key."))
 	}
-	return Error(fmt.Sprint("Packet does not contain MPTCP endpoint key."))
 }
 
 func (m Router) insertFromMPTCPEndpointKey(key mptcp.EndpointKey, flow shila.NetFlow) error {
