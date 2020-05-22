@@ -40,7 +40,7 @@ func (m Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, srcAddr s
 }
 
 func (m Router) UpdateFromSynAckMpCapable(p *shila.Packet) error {
-	if key, ok, err := mptcp.GetSenderKey(p.Payload); !ok {
+	if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
 		if err == nil {
 			if err := m.insertFromMPTCPEndpointKey(key, p.Flow.NetFlow); err != nil {
 				return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
