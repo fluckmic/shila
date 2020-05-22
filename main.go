@@ -4,6 +4,7 @@ import (
 	"os"
 	"shila/config"
 	"shila/core/connection"
+	"shila/core/router"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/log"
@@ -62,7 +63,7 @@ func realMain() int {
 	defer networkSide.CleanUp()
 
 	// Create the mapping holding the network addresses
-	routing := shila.NewMapping()
+	routing := router.New()
 
 	// TODO. ############## Testing ##############
 	key := "(10.7.0.9:2727)"

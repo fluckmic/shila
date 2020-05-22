@@ -2,6 +2,7 @@ package connection
 
 import (
 	"fmt"
+	"shila/core/router"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
@@ -21,7 +22,7 @@ type Connection struct {
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing     *shila.Mapping
+	routing     *router.Router
 }
 
 type channels struct {
@@ -30,7 +31,7 @@ type channels struct {
 	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *shila.Mapping) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *router.Router) *Connection {
 	return &Connection{
 		flow:        flow,
 		state:       newState(),
@@ -165,16 +166,22 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
-							// the network destination address for the subflow flows.
+							// the network destination address for the subflow.
+							if err := conn.routing.UpdateFromSynAckMpCapable(p); err != nil {
+								return Error(fmt.Sprint("Unable to update routing. - ", err.Error()))
+							}
+
+							/*
 							if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
 								if err == nil {
-									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
+									if err := conn.routing.insertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
 										return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
 									}
 								} else {
 									return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
 								}
 							}
+							 */
 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
