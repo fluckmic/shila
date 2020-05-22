@@ -51,7 +51,7 @@ func (m Router) UpdateFromSynAckMpCapable(p *shila.Packet) error {
 			return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
 		}
 	} else {
-		return Error(fmt.Sprint("Packet does not contain MPTCP endpoint key."))
+		return nil
 	}
 }
 
