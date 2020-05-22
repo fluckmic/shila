@@ -7,7 +7,7 @@ import (
 	"net"
 	"shila/config"
 	"shila/core/shila"
-	"shila/layer"
+	"shila/layer/tcpip"
 	"strconv"
 	"strings"
 	"sync"
@@ -55,7 +55,7 @@ func (s *Server) SetupAndRun() error {
 		return nil
 	}
 
-	// Set up the listener
+	// set up the listener
 	src := s.networkConnectionId.Src.(Address)
 	listener, err := net.ListenTCP(src.Addr.Network(), &src.Addr)
 	if err != nil {
@@ -138,9 +138,9 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleConnection(connection net.Conn) {
 
-	// Get the address from the client side
+	// Not the address from the client side
 	srcAddr := Generator{}.NewAddress(connection.RemoteAddr().String())
-	// Get the path taken from client to this server
+	// Not the path taken from client to this server
 	path 	:= Generator{}.NewPath("")
 
 	// Generate the keys
@@ -279,8 +279,8 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
-		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
-			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+		if rawData  := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
@@ -300,8 +300,8 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
-		if rawData  := layer.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
-			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+		if rawData  := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {

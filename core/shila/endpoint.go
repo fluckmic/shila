@@ -14,10 +14,11 @@ func (el EndpointLabel) String() string {
 		case KernelEndpoint: 			return "KernelEndpoint"
 		case ContactingNetworkEndpoint: return "ContactingNetworkEndpoint"
 		case TrafficNetworkEndpoint:	return "TrafficNetworkEndpoint"
-		default:						return "Unknown"
 	}
+	return "Unknown"
 }
 
+// Interface which each endpoint (kernel and network side) should implement.
 type Endpoint interface {
 	TearDown() error
 	Label() 			EndpointLabel

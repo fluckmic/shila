@@ -16,18 +16,26 @@ func (es EntityStateIdentifier) String() string {
 	case Initialized: 		return "Initialized"
 	case Running:			return "Running"
 	case TornDown:			return "TornDown"
-	default:				return "Unknown"
 	}
+	return "Unknown"
 }
 
 type EntityState struct {
 	EntityStateIdentifier
 }
 
+func NewEntityState() EntityState {
+	return EntityState{EntityStateIdentifier: Uninitialized}
+}
+
 func(es *EntityState) Set(s EntityStateIdentifier) {
 	es.EntityStateIdentifier = s
 }
 
-func (es *EntityState) Get() EntityStateIdentifier {
-	return es.EntityStateIdentifier
+func (es *EntityState) Not(s EntityStateIdentifier) bool {
+	return es.EntityStateIdentifier != s
+}
+
+func (es *EntityState) String() string {
+	return es.EntityStateIdentifier.String()
 }

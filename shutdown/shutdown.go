@@ -11,7 +11,7 @@
 //
 // The main program should call shutdown.Init() when it's starting.
 //
-// Any library producing shutdown errors should call shutdown.Check() when it starts.
+// Any library producing shutdown errors should call shutdown.Not() when it starts.
 package shutdown
 
 import (
@@ -74,7 +74,7 @@ func Init() {
 	initialized = true
 }
 
-// Check checks whether the package was initialized.
+// Not checks whether the package was initialized.
 // MUST be called when a library using the shutdown package,
 // e.g. produces shutdown errors, is initialized.
 func Check() {

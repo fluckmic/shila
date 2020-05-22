@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
 type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
@@ -23,8 +17,11 @@ type Mapping struct {
 }
 
 func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *shila.Mapping) *Mapping {
-	m := &Mapping{kernelSide, networkSide, routing,
-		make(map[shila.IPFlowKey] *Connection), sync.Mutex{}}
+	m := &Mapping{
+		kernelSide: 	kernelSide,
+		networkSide: 	networkSide,
+		routing: 		routing,
+		connections: 	make(map[shila.IPFlowKey] *Connection)}
 	go m.vacuum()
 	return m
 }
@@ -36,11 +33,10 @@ func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager
 // is no more reference pointing to the connection.
 func (m *Mapping) vacuum() {
 	for {
-		// TODO: Make vacuum interval configurable
-		time.Sleep(time.Second)
+		time.Sleep(time.Second)	// TODO: Configuration parameter: Vacuum interval
 		m.lock.Lock()
 		for key, con := range m.connections {
-			if time.Since(con.touched) > (20 * time.Second) {
+			if time.Since(con.touched) > (20 * time.Second) { // TODO: Configuration parameter: Max time untouched
 				con.Close()
 				delete(m.connections, key)
 			}

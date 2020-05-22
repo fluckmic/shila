@@ -6,7 +6,7 @@ import (
 	"net"
 	"shila/config"
 	"shila/core/shila"
-	"shila/layer"
+	"shila/layer/tcpip"
 	"time"
 )
 
@@ -174,8 +174,8 @@ func (c *Client) serveEgress() {
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		if rawData  := layer.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil {
-			if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+		if rawData  := tcpip.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {

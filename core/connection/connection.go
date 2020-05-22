@@ -5,7 +5,7 @@ import (
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
-	"shila/layer"
+	"shila/layer/mptcp"
 	"shila/log"
 	"shila/networkSide"
 	"sync"
@@ -33,7 +33,7 @@ type channels struct {
 func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *shila.Mapping) *Connection {
 	return &Connection{
 		flow:        flow,
-		state:       state{raw, raw},
+		state:       newState(),
 		kind:        unknown,
 		lock:        sync.Mutex{},
 		touched:     time.Now(),
@@ -53,7 +53,7 @@ func (conn *Connection) Close() {
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.flow)
 	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.flow.IPFlow)
 
-	conn.state.Set(closed)
+	conn.state.set(closed)
 
 	log.Info.Print("Closed connection {", conn.Key(), "}.")
 }
@@ -78,7 +78,7 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	}
 
 	if err != nil {
-		conn.state.Set(closed)
+		conn.state.set(closed)
 	}
 
 	return err
@@ -91,29 +91,29 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.Contacting.Egress <- p
-							conn.state.Set(clientReady)
+							conn.state.set(clientReady)
 							return nil
 
 	case serverReady: 		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.Flow.NetFlow = conn.flow.NetFlow
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(serverReady)
+							conn.state.set(serverReady)
 							return nil
 
 	case clientEstablished:	p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(clientEstablished)
+							conn.state.set(clientEstablished)
 							return nil
 
 	case established:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.Set(established)
+							conn.state.set(established)
 							return nil
 
-	case closed: 			conn.state.Set(closed)
+	case closed: 			conn.state.set(closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -130,16 +130,16 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(serverReady)
+							conn.state.set(serverReady)
 							return nil
 
 	case established: 		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(established)
+							conn.state.set(established)
 							return nil
 
 	case closed: 			// Packets sent through a closed connection are dropped.
-							conn.state.Set(closed)
+							conn.state.set(closed)
 						 	return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -157,7 +157,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(established)
+							conn.state.set(established)
 
 							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
@@ -165,8 +165,8 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
-							// the network destination address for the sub flows.
-							if key, ok, err := layer.GetMPTCPSenderKey(p.Payload); ok {
+							// the network destination address for the subflow flows.
+							if key, ok, err := mptcp.GetMPTCPSenderKey(p.Payload); ok {
 								if err == nil {
 									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
 										return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
@@ -178,7 +178,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(established)
+							conn.state.set(established)
 
 							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
@@ -186,11 +186,11 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case established: 		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.Set(established)
+							conn.state.set(established)
 							return nil
 
 	case closed: 			// Packets sent through a closed connection are dropped.
-							conn.state.Set(closed)
+							conn.state.set(closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -209,12 +209,12 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	}
 
 	// Create the packet network flow which is associated with the connection
-	// If the packet contains a receiver token, then the new connection is a MPTCP sub flow.
-	if token, ok, err := layer.GetMPTCPReceiverToken(p.Payload); ok {
+	// If the packet contains a receiver token, then the new connection is a MPTCP subflow flow.
+	if token, ok, err := mptcp.GetMPTCPReceiverToken(p.Payload); ok {
 		if err == nil {
 			if netFlow, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
 				conn.flow.NetFlow = netFlow
-				conn.kind = 		sub
+				conn.kind = subflow
 				p.Flow.NetFlow 	  = netFlow
 			} else {
 				return Error(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}" +
@@ -223,19 +223,19 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		} else {
 			return Error(fmt.Sprint("Unable to fetch MPTCP receiver token. - ", err.Error()))
 		}
-	// For a MPTCP main flow the network flow can probably be extracted from the IP options
-	} else if netFlow, ok, err := layer.GetNetFlowFromIPOptions(p.Payload); ok {
+	// For a MPTCP Mainflow flow the network flow can probably be extracted from the IP options
+	} else if netFlow, ok, err := shila.GetNetFlowFromIPOptions(p.Payload); ok {
 		if err == nil {
 			conn.flow.NetFlow = netFlow
-			conn.kind = main
+			conn.kind = mainflow
 			p.Flow.NetFlow 	  = netFlow
 		} else {
 			return Error(fmt.Sprint("Unable to get IP options. - ", err.Error()))
 		}
-	// For a MPTCP main flow the network flow is probably available in the routing table
+	// For a MPTCP Mainflow flow the network flow is probably available in the routing table
 	} else if netFlow, ok := conn.routing.RetrieveFromIPAddressPortKey(p.Flow.IPFlow.DstKey()); ok {
 		conn.flow.NetFlow = netFlow
-		conn.kind = main
+		conn.kind = mainflow
 		p.Flow.NetFlow 	  = netFlow
 	// No valid option to get network flow :(
 	} else {
@@ -245,8 +245,8 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	// Create the contacting connection
 	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
 	if err != nil {
-		conn.state.Set(closed)
-		panic("Implement custom error type.") // TODO!
+		conn.state.set(closed)
+		panic("Implement custom error type or feedback to user") // TODO!
 		return nil
 	}
 	conn.channels.Contacting = channels
@@ -269,30 +269,28 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.lock.Lock()
-			conn.state.Set(clientEstablished)
+			conn.state.set(clientEstablished)
 			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
 		}
 	}()
 
-	// Set new state
-	conn.state.Set(clientReady)
+	// set new state
+	conn.state.set(clientReady)
 
 	return nil
 }
 
 func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet) error {
 
-	// Get the kernel endpoint from the kernel side manager
+	// Not the kernel endpoint from the kernel side manager
 	dstKey := p.Flow.IPFlow.DstIPKey()
 	if channels, ok := conn.kernelSide.GetTrafficChannels(dstKey); ok {
 		conn.channels.KernelEndpoint = channels
 	} else {
-		conn.state.Set(closed)
-		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
-		"}. - No kernel endpoint {", dstKey, "}.")) // TODO: Handle panic!
-		return nil
+		conn.state.set(closed)
+		return Error(fmt.Sprint("No kernel endpoint {", dstKey, "}."))
 	}
 
 	// Send packet to kernel endpoint
@@ -306,16 +304,14 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
 	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow); err != nil {
-		conn.state.Set(closed)
-		panic(fmt.Sprint("Connection {", conn.flow.IPFlow.Key(), "} can not process packet {", p.Flow.IPFlow.Key(),
-		"}. - Unable to establish server endpoint. -", err.Error())) // TODO: Handle panic!
-		return nil
+		conn.state.set(closed)
+		return Error(fmt.Sprint("Unable to establish server endpoint. - ", err.Error()))
 	} else {
 		conn.channels.NetworkEndpoint = channels
 	}
 
-	// Set new state
-	conn.state.Set(serverReady)
+	// set new state
+	conn.state.set(serverReady)
 
 	return nil
 }

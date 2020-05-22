@@ -2,17 +2,17 @@ package connection
 
 type kind uint8
 const (
-	_         = iota
-	main kind = iota
-	sub
+	_             = iota
+	mainflow kind = iota
+	subflow
 	unknown
 )
 
 func(k kind) String() string {
 	switch k {
-	case main: 		return "main"
-	case sub:  		return "sub"
-	case unknown:   return "unknown"
+	case mainflow: 		return "MainFlow"
+	case subflow:  		return "SubFlow"
+	case unknown:   	return "Unknown"
 	}
-	return "unknown"
+	return "Unknown"
 }

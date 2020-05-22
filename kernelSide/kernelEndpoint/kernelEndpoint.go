@@ -9,7 +9,7 @@ import (
 	"shila/core/shila"
 	"shila/helper"
 	"shila/kernelSide/kernelEndpoint/vif"
-	"shila/layer"
+	"shila/layer/tcpip"
 	"shila/log"
 )
 
@@ -230,8 +230,8 @@ func (d *Device) serveEgress() {
 
 func (d *Device) packetize() {
 	for {
-		rawData  := layer.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)
-		if iPHeader, err := layer.GetIPHeader(rawData); err != nil {
+		rawData  := tcpip.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)
+		if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {

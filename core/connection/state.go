@@ -13,14 +13,14 @@ const (
 
 func(s stateIdentifier) String() string {
 	switch s {
-	case established: 			return "established"
-	case serverReady: 			return "serverReady"
-	case clientReady: 			return "clientReady"
-	case clientEstablished:		return "clientEstablished"
-	case closed:				return "closed"
-	case raw:					return "raw"
+	case established: 			return "Established"
+	case serverReady: 			return "ServerReady"
+	case clientReady: 			return "ClientReady"
+	case clientEstablished:		return "ClientEstablished"
+	case closed:				return "Closed"
+	case raw:					return "Raw"
 	}
-	return "unknown"
+	return "Unknown"
 }
 
 type state struct {
@@ -28,7 +28,11 @@ type state struct {
 	current  stateIdentifier
 }
 
-func (s *state) Set(newState stateIdentifier) {
+func (s *state) set(newState stateIdentifier) {
 	s.previous = s.current
 	s.current = newState
+}
+
+func newState() state {
+	return state{previous: raw, current: raw}
 }

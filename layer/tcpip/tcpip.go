@@ -1,4 +1,4 @@
-package layer
+package tcpip
 
 import (
 	"encoding/binary"
@@ -6,9 +6,14 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"net"
-	"shila/core/shila"
 	"shila/shutdown"
 )
+
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
 
 // TODO: ByteOrder!
 var hostByteOrder = binary.BigEndian
@@ -20,23 +25,18 @@ func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
 	return
 }
 
-func GetIPHeader(raw []byte) (shila.IPFlow, error) {
-	if ip4v, tcp, err := decodeIPv4andTCPLayer(raw); err != nil {
-		return shila.IPFlow{}, err
+func DecodeSrcAndDstTCPAddr(raw []byte) (net.TCPAddr, net.TCPAddr, error) {
+	if ip4v, tcp, err := DecodeIPv4andTCPLayer(raw); err != nil {
+		return net.TCPAddr{}, net.TCPAddr{}, err
 	} else {
-		return shila.IPFlow{
-			Src: net.TCPAddr{IP: ip4v.SrcIP, Port: int(tcp.SrcPort)},
-			Dst: net.TCPAddr{IP: ip4v.DstIP, Port: int(tcp.DstPort)},
-		}, nil
+		return net.TCPAddr{IP: ip4v.SrcIP, Port: int(tcp.SrcPort)},
+		       net.TCPAddr{IP: ip4v.DstIP, Port: int(tcp.DstPort)},
+		       nil
 	}
 }
 
-func GetNetFlowFromIPOptions(raw []byte) (shila.NetFlow, bool, error) {
-	return shila.NetFlow{}, false, nil
-}
-
 // Start slow but correct..
-func decodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
+func DecodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 
 	ipv4 := layers.IPv4{}
 	tcp  := layers.TCP{}

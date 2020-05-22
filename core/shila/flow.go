@@ -2,6 +2,7 @@ package shila
 
 import (
 	"net"
+	"shila/layer/tcpip"
 )
 
 type Flow struct {
@@ -21,4 +22,14 @@ type NetFlow struct {
 	Dst  NetworkAddress
 }
 
+func GetIPFlow(raw []byte) (IPFlow, error) {
+	if src, dst, err := tcpip.DecodeSrcAndDstTCPAddr(raw); err != nil {
+		return IPFlow{}, err
+	} else {
+		return IPFlow{Src: src, Dst: dst}, nil
+	}
+}
 
+func GetNetFlowFromIPOptions(raw []byte) (NetFlow, bool, error) {
+	return NetFlow{}, false, nil
+}
