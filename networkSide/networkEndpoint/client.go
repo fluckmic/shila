@@ -7,7 +7,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
-	"shila/networkSide"
+	"shila/networkSide/network"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config
 }
 
 func (c *Client) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, networkSide.Generator{}.NewPath("")))
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, network.NewPath("")))
 }
 
 func (c *Client) SetupAndRun() (shila.NetFlow, error) {
@@ -56,7 +56,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 
 	// Establish a connection to the server endpoint
-	dst := c.connection.Identifier.Dst.(networkSide.Address)
+	dst := c.connection.Identifier.Dst.(network.Address)
 	backboneConnection, err := net.DialTCP(dst.Addr.Network(), nil, &dst.Addr)
 	if err != nil {
 		return shila.NetFlow{},
@@ -77,7 +77,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		}
 	}
 
-	c.connection.Identifier.Src = networkSide.Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
+	c.connection.Identifier.Src = network.Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
 
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, c.config.SizeIngressBuff)

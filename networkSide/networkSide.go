@@ -129,7 +129,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	flow = Generator{}.GenerateRemoteContactingFlow(flow)
+	flow.NetFlow = Generator{}.GenerateRemoteContactingFlow(flow.NetFlow)
 
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.

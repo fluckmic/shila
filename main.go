@@ -46,20 +46,20 @@ func realMain() int {
 	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
 
 	// Create and setup the kernel side
-	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)
-	if err = kernelSide.Setup(); err != nil {
+	kernel := kernelSide.New(cfg, trafficChannelAnnouncements)
+	if err = kernel.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}
 	log.Info.Println("Kernel side setup successfully.")
-	defer kernelSide.CleanUp()
+	defer kernel.CleanUp()
 
 	// Create and setup the network side
-	networkSide := networkSide.New(cfg, trafficChannelAnnouncements)
-	if err = networkSide.Setup(); err != nil {
+	network := networkSide.New(cfg, trafficChannelAnnouncements)
+	if err = network.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
 	}
 	log.Info.Println("Network side setup successfully.")
-	defer networkSide.CleanUp()
+	defer network.CleanUp()
 
 	// Create the mapping holding the network addresses
 	routing := netflow.NewRouter()
@@ -74,7 +74,7 @@ func realMain() int {
 	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, path, dstAddr})
 
 	// Create the mapping holding the connections
-	connections := connection.NewMapping(kernelSide, networkSide, routing)
+	connections := connection.NewMapping(kernel, network, routing)
 
 	// Create and setup the working side
 	workingSide := workingSide.New(cfg, connections, trafficChannelAnnouncements)
@@ -90,11 +90,11 @@ func realMain() int {
 		log.Error.Fatalln("Unable to start the working side - ", err.Error())
 	}
 
-	if err = networkSide.Start(); err != nil {
+	if err = network.Start(); err != nil {
 		log.Error.Fatalln("Unable to start the network side - ", err.Error())
 	}
 
-	if err = kernelSide.Start(); err != nil {
+	if err = kernel.Start(); err != nil {
 		log.Error.Fatalln("Unable to start the kernel side - ", err.Error())
 	}
 

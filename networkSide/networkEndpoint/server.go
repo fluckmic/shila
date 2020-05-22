@@ -8,7 +8,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
-	"shila/networkSide"
+	"shila/networkSide/network"
 	"strconv"
 	"strings"
 	"sync"
@@ -57,7 +57,7 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// set up the listener
-	src := s.networkConnectionId.Src.(networkSide.Address)
+	src := s.networkConnectionId.Src.(network.Address)
 	listener, err := net.ListenTCP(src.Addr.Network(), &src.Addr)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - ", err.Error()))
@@ -140,9 +140,9 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleConnection(connection net.Conn) {
 
 	// Not the address from the client side
-	srcAddr := networkSide.Generator{}.NewAddress(connection.RemoteAddr().String())
+	srcAddr := network.NewAddress(connection.RemoteAddr().String())
 	// Not the path taken from client to this server
-	path 	:= networkSide.Generator{}.NewPath("")
+	path 	:= network.NewPath("")
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
@@ -154,7 +154,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
-			contactSrcAddr := networkSide.Generator{}.NewAddress(strings.TrimSuffix(srcAddrReceived,"\n"))
+			contactSrcAddr := network.NewAddress(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
@@ -275,8 +275,8 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 	// Create the packet network networkConnectionId
 	dstAddr := s.networkConnectionId.Src
-	srcAddr := networkSide.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
-	path 	:= networkSide.Generator{}.NewPath("")
+	srcAddr := network.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
+	path 	:= network.NewPath("")
 	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
@@ -296,8 +296,8 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
 
 	// Fetch the parts for the packet network networkConnectionId which are fixed.
-	path 		:= networkSide.Generator{}.NewPath("")
-	srcAddr 	:= networkSide.Generator{}.NewAddress(connection.RemoteAddr().String())
+	path 		:= network.NewPath("")
+	srcAddr 	:= network.NewAddress(connection.RemoteAddr().String())
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
@@ -306,7 +306,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				dstAddr := networkSide.Generator{}.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
+				dstAddr := network.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
 				header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
 			}

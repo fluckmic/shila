@@ -3,6 +3,7 @@ package networkSide
 import (
 	"shila/config"
 	"shila/core/shila"
+	"shila/networkSide/network"
 	"shila/networkSide/networkEndpoint"
 )
 
@@ -37,23 +38,23 @@ func (g Generator) NewServer(netConnId shila.NetFlow, label shila.EndpointLabel,
 }
 
 func (g Generator) NewAddress(address string) shila.NetworkAddress {
-	return newAddress(address)
+	return network.NewAddress(address)
 }
 
 func (g Generator) NewLocalAddress(port int) shila.NetworkAddress {
-	return newLocalNetworkAddress(port)
+	return network.NewLocalNetworkAddress(port)
 }
 
 func (g Generator) NewEmptyAddress() shila.NetworkAddress {
-	return newEmptyNetworkAddress()
+	return network.NewEmptyNetworkAddress()
 }
 
 func (g Generator) NewPath(path string) shila.NetworkPath {
-	return newPath(path)
+	return network.NewPath(path)
 }
 
 func (g Generator) GenerateRemoteContactingAddress(address shila.NetworkAddress) shila.NetworkAddress {
-	return generateContactingAddress(address, defaultContactingPort)
+	return network.GenerateContactingAddress(address, defaultContactingPort)
 }
 
 func (g Generator) LocalContactingNetFlow() shila.NetFlow {
