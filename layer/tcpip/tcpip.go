@@ -6,7 +6,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"net"
-	"shila/shutdown"
 )
 
 type Error string
@@ -35,7 +34,6 @@ func DecodeSrcAndDstTCPAddr(raw []byte) (net.TCPAddr, net.TCPAddr, error) {
 	}
 }
 
-// Start slow but correct..
 func DecodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 
 	ipv4 := layers.IPv4{}
@@ -52,8 +50,8 @@ func DecodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 	return ipv4, tcp, nil
 }
 
-// Returns the next IPv4 frame. Or throws an error if there is an issue.
-func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
+// Returns the next IPv4 frame, or an error if unable to parse.
+func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) ([]byte, error) {
 	for {
 		rawData := make([]byte, 0, sizeReadBuffer)
 		b, open := <-ingressRaw
@@ -70,7 +68,7 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
 				b, ok := <-ingressRaw; open = open && ok
 				rawData = append(rawData, b)
 			}
-			return rawData
+			return rawData, nil
 		} else if b >> 4 == 6 {
 			rawData = append(rawData, b)
 			// Read 7 more bytes
@@ -85,9 +83,9 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) []byte {
 			}
 		} else if !open {
 			// Ingress was closed in the meantime, return nil.
-			return nil
+			return nil, nil
 		} else {
-			shutdown.Fatal(Error(fmt.Sprint("Error in server traffic packetizer.")))
+			return nil, Error(fmt.Sprint("Unknown IP version {", b >> 4, "}."))
 		}
 	}
 }

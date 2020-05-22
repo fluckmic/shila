@@ -6,22 +6,22 @@ import (
 )
 
 type Mapping struct {
-	addressesFromToken 	 map[mptcp.MPTCPEndpointToken]	NetFlow
+	addressesFromToken 	 map[mptcp.EndpointToken]	NetFlow
 	addressesFromDstIPv4 map[IPAddressPortKey]		NetFlow
 }
 
 func NewMapping() *Mapping {
-	return &Mapping{make(map[mptcp.MPTCPEndpointToken]NetFlow),
+	return &Mapping{make(map[mptcp.EndpointToken]NetFlow),
 				   make(map[IPAddressPortKey]NetFlow)}
 }
 
-func (m Mapping) RetrieveFromMPTCPEndpointToken(token mptcp.MPTCPEndpointToken) (NetFlow, bool) {
+func (m Mapping) RetrieveFromMPTCPEndpointToken(token mptcp.EndpointToken) (NetFlow, bool) {
 	packetHeader, ok := m.addressesFromToken[token]
 	return packetHeader, ok
 }
 
-func (m Mapping) InsertFromMPTCPEndpointKey(key mptcp.MPTCPEndpointKey, flow NetFlow) error {
-	if token, err := mptcp.MPTCPEndpointKeyToToken(key); err != nil {
+func (m Mapping) InsertFromMPTCPEndpointKey(key mptcp.EndpointKey, flow NetFlow) error {
+	if token, err := mptcp.EndpointKeyToToken(key); err != nil {
 		return Error(fmt.Sprint("Unable to convert from key to token. - ", err.Error()))
 	} else {
 		if _, ok := m.addressesFromToken[token]; ok {

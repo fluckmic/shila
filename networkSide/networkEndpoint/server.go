@@ -279,7 +279,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
-		if rawData  := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
@@ -300,7 +300,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
-		if rawData  := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil {
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/gopacket/layers"
 	"shila/layer/tcpip"
-	"shila/log"
 )
 
 const TCPOptionKindMPTCP = 30
@@ -18,133 +17,156 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-type MPTCPOption interface{}
+type Option interface{}
 
-type MPTCPOptionBase struct {
+type OptionBase struct {
 	OptionLength  uint8
-	OptionSubtype MPTCPOptionSubtype
+	OptionSubtype OptionSubtype
 }
 
-type MPTCPRawOption struct {
-	MPTCPOptionBase
+type RawOption struct {
+	OptionBase
 	OptionData []byte
 }
 
-type MPTCPCapableOptionSender struct {
-	MPTCPOptionBase
+type CapableOptionSender struct {
+	OptionBase
 	Version                uint8
 	A, B, C, D, E, F, G, H bool
 	SenderKey              uint64
 }
 
-type MPTCPCapableOptionSenderReceiver struct {
-	MPTCPCapableOptionSender
+type CapableOptionSenderReceiver struct {
+	CapableOptionSender
 	ReceiverKey uint64
 }
 
-type MPTCPJoinOptionSYN struct {
-	MPTCPOptionBase
+type JoinOptionSYN struct {
+	OptionBase
 	B                  bool
 	AddressID          uint8
 	ReceiverToken      uint32
 	SenderRandomNumber uint32
 }
 
-type MPTCPJoinOptionSYNACK struct {
-	MPTCPOptionBase
+type JoinOptionSYNACK struct {
+	OptionBase
 	B                  bool
 	AddressID          uint8
 	SenderTruncHMAC    uint64
 	SenderRandomNumber uint32
 }
 
-type MPTCPJoinOptionThirdACK struct {
-	MPTCPOptionBase
+type JoinOptionThirdACK struct {
+	OptionBase
 	SenderHMAC []byte
 }
 
-type MPTCPOptionSubtype uint8
+type OptionSubtype uint8
 
-type MPTCPEndpointToken uint32
-type MPTCPEndpointKey   uint64
+type EndpointToken uint32
+type EndpointKey uint64
 
 const (
-	MPTCPOptionSubtypeMultipathCapable      = 0 // len = 12 or 20
-	MPTCPOptionSubtypeJoinConnection        = 1 // len = 12 (SYN) / 16 (SYN/ACK) / 24 (3rd ACK)
-	MPTCPOptionSubtypeDataSequenceSignal    = 2
-	MPTCPOptionSubtypeAddAddress            = 3
-	MPTCPOptionSubtypeRemoveAddress         = 4
-	MPTCPOptionSubtypeChangeSubflowPriority = 5
-	MPTCPOptionSubtypeFallback              = 6 // len = 12
-	MPTCPOptionSubtypeFastClose             = 7
+	MultipathCapable      OptionSubtype = 0 // len = 12 or 20
+	JoinConnection        OptionSubtype = 1 // len = 12 (SYN) / 16 (SYN/ACK) / 24 (3rd ACK)
+	DataSequenceSignal    OptionSubtype = 2
+	AddAddress            OptionSubtype = 3
+	RemoveAddress         OptionSubtype = 4
+	ChangeSubflowPriority OptionSubtype = 5
+	Fallback              OptionSubtype = 6 // len = 12
+	FastClose             OptionSubtype = 7
 )
 
-func GetMPTCPReceiverToken(raw []byte) (MPTCPEndpointToken, bool, error) {
-	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
-	// only once at the setup of a new sub flow. It should be fine to do this twice.
+func (os OptionSubtype) String() string {
+	switch os {
+	case MultipathCapable    	: return "MultipathCapable"
+	case JoinConnection      	: return "JoinConnection"
+	case DataSequenceSignal  	: return "DataSequenceSignal"
+	case AddAddress          	: return "AddAddress"
+	case RemoveAddress       	: return "RemoveAddress"
+	case ChangeSubflowPriority 	: return "ChangeSubflowPriority"
+	case Fallback               : return "Fallback"
+	case FastClose              : return "FastClose"
+	}
+	return "Unknown"
+}
+
+func GetReceiverToken(raw []byte) (EndpointToken, bool, error) {
 	if _, tcp, err := tcpip.DecodeIPv4andTCPLayer(raw); err != nil {
 		// Error in decoding the ipv4/tcp options
-		return MPTCPEndpointToken(0), false, err
+		return EndpointToken(0), false, err
 	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			// MPTCP options does not contain the receiver token
-			return MPTCPEndpointToken(0), false, nil
+			return EndpointToken(0), false, nil
 		} else {
 			for _, mptcpOption := range mptcpOptions {
-				if mptcpJoinOptionSYN, ok := mptcpOption.(MPTCPJoinOptionSYN); ok {
-					return MPTCPEndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
+				if mptcpJoinOptionSYN, ok := mptcpOption.(JoinOptionSYN); ok {
+					return EndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
 				}
 			}
 			// Error in decoding the mptcp options
-			return MPTCPEndpointToken(0), false, err
+			return EndpointToken(0), false, err
 		}
 	}
 }
 
-func GetMPTCPSenderKey(raw []byte) (MPTCPEndpointKey, bool, error) {
-	// We parse the IPv4 and the TCP layer again. Getting the receiver token is done
-	// only once at the setup of a new sub flow. It should be fine to do this twice.
+func GetSenderKey(raw []byte) (EndpointKey, bool, error) {
 	if _, tcp, err := tcpip.DecodeIPv4andTCPLayer(raw); err != nil {
 		// Error in decoding the ipv4/tcp options
-		return MPTCPEndpointKey(0), false, err
+		return EndpointKey(0), false, err
 	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			// Error in decoding the mptcp options
-			return MPTCPEndpointKey(0), false, err
+			return EndpointKey(0), false, err
 		} else {
 			for _, mptcpOption := range mptcpOptions {
-				if mptcpCapableOptionSender, ok := mptcpOption.(MPTCPCapableOptionSender); ok {
-					return MPTCPEndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
+				if mptcpCapableOptionSender, ok := mptcpOption.(CapableOptionSender); ok {
+					return EndpointKey(mptcpCapableOptionSender.SenderKey), true, nil
 				}
 			}
 			// MPTCP options does not contain the senders key
-			return MPTCPEndpointKey(0), false, nil
+			return EndpointKey(0), false, nil
 		}
 	}
 }
 
-func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
+func EndpointKeyToToken(key EndpointKey) (EndpointToken, error) {
+	// The token is used to identify the MPTCP connection and is a cryptographic hash of the receiver's Key, as
+	// exchanged in the initial MP_CAPABLE handshake (Section 3.1).  In this specification, the tokens presented in
+	// this option are generated by the SHA-1 algorithm, truncated to the most significant 32 bits.
+	// https://tools.ietf.org/html/rfc6824#section-3.1
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, key); err != nil {
+		return EndpointToken(0), err
+	}
+	check := sha1.Sum(buf.Bytes())
+	return EndpointToken(binary.BigEndian.Uint32(check[0:5])), nil
+}
 
-	options = []MPTCPOption{}
+func decodeMPTCPOptions(tcp layers.TCP) (options []Option, err error) {
+
+	options = []Option{}
 
 	// Loop over all options, find the MPTCP options and decode them further.
 	for _, option := range tcp.Options {
 		if option.OptionType == layers.TCPOptionKind(TCPOptionKindMPTCP) {
 
-			var opt MPTCPOption
+			var opt Option
 
 			length := option.OptionLength
-			subtype := MPTCPOptionSubtype(option.OptionData[0] >> 4)
+			subtype := OptionSubtype(option.OptionData[0] >> 4)
 
-			optBase := MPTCPOptionBase{length, subtype}
+			optBase := OptionBase{OptionLength: length, OptionSubtype: subtype}
 			data := option.OptionData
 
 			switch subtype {
 
-			case MPTCPOptionSubtypeMultipathCapable:
+			case MultipathCapable:
 
 				if length != 12 && length != 20 {
-					err = Error(fmt.Sprint("Invalid length ", length, " for MPTCPOptionSubtypeMultipathCapable"))
+					err = Error(fmt.Sprint("Invalid length {", length, "} for {", MultipathCapable, "}."))
 					return
 				}
 
@@ -161,15 +183,22 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 
 				senderKey := binary.BigEndian.Uint64(data[2:10])
 
-				opt = MPTCPCapableOptionSender{optBase, version,
-					A, B, C, D, E, F, G, H, senderKey}
-
-				if length == 20 {
-					opt = MPTCPCapableOptionSenderReceiver{opt.(MPTCPCapableOptionSender),
-						binary.BigEndian.Uint64(data[10:17])}
+				opt = CapableOptionSender{
+					OptionBase: optBase,
+					Version: 	version,
+					A: A, B: B, C: C, D: D,
+					E: E, F: F, G: G, H: H,
+					SenderKey: 	senderKey,
 				}
 
-			case MPTCPOptionSubtypeJoinConnection:
+				if length == 20 {
+					opt = CapableOptionSenderReceiver{
+						CapableOptionSender: opt.(CapableOptionSender),
+						ReceiverKey:		 binary.BigEndian.Uint64(data[10:17]),
+					}
+				}
+
+			case JoinConnection:
 
 				switch length {
 
@@ -181,8 +210,13 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 					receiverToken := binary.BigEndian.Uint32(data[2:6])
 					senderRandomNumber := binary.BigEndian.Uint32(data[6:10])
 
-					opt = MPTCPJoinOptionSYN{optBase, B, addressID,
-						receiverToken, senderRandomNumber}
+					opt = JoinOptionSYN{
+						OptionBase: 		optBase,
+						B: 					B,
+						AddressID: 			addressID,
+						ReceiverToken: 		receiverToken,
+						SenderRandomNumber: senderRandomNumber,
+					}
 
 				case 16:
 
@@ -192,24 +226,28 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 					senderTruncHMAC := binary.BigEndian.Uint64(data[2:10])
 					senderRandomNumber := binary.BigEndian.Uint32(data[10:14])
 
-					opt = MPTCPJoinOptionSYNACK{optBase, B, addressID,
-						senderTruncHMAC, senderRandomNumber}
+					opt = JoinOptionSYNACK{
+						OptionBase: 		optBase,
+						B: 					B,
+						AddressID: 			addressID,
+						SenderTruncHMAC: 	senderTruncHMAC,
+						SenderRandomNumber: senderRandomNumber,
+					}
 
 				case 24:
 
-					opt = MPTCPJoinOptionThirdACK{optBase, data[2:22]}
+					opt = JoinOptionThirdACK{OptionBase: optBase, SenderHMAC: data[2:22]}
 
 				default:
-					err = Error(fmt.Sprint("Invalid length ", length, " for  MPTCPOptionSubtypeJoinConnection"))
+					err = Error(fmt.Sprint("Invalid length {", length, "} for {", JoinConnection, "}."))
 					return
 				}
 
-			case MPTCPOptionSubtypeDataSequenceSignal, MPTCPOptionSubtypeAddAddress, MPTCPOptionSubtypeRemoveAddress,
-				MPTCPOptionSubtypeChangeSubflowPriority, MPTCPOptionSubtypeFallback, MPTCPOptionSubtypeFastClose:
-				opt = MPTCPRawOption{optBase, data}
+			case DataSequenceSignal, AddAddress, RemoveAddress,
+				ChangeSubflowPriority, Fallback, FastClose:
+				opt = RawOption{OptionBase: optBase, OptionData: data}
 
 			default:
-				log.Info.Println("Encountered invalid MPTCPOptionSubtype", subtype, "- Continuing anyway.")
 				continue
 			}
 
@@ -218,17 +256,4 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []MPTCPOption, err error) {
 	}
 
 	return
-}
-
-func MPTCPEndpointKeyToToken(key MPTCPEndpointKey) (MPTCPEndpointToken, error) {
-	// The token is used to identify the MPTCP connection and is a cryptographic hash of the receiver's Key, as
-	// exchanged in the initial MP_CAPABLE handshake (Section 3.1).  In this specification, the tokens presented in
-	// this option are generated by the SHA-1 ([4], [15]) algorithm, truncated to the most significant 32 bits.
-	// https://tools.ietf.org/html/rfc6824#section-3.1
-	buf := new(bytes.Buffer)
-	if err := binary.Write(buf, binary.BigEndian, key); err != nil {
-		return MPTCPEndpointToken(0), err
-	}
-	check := sha1.Sum(buf.Bytes())
-	return MPTCPEndpointToken(binary.BigEndian.Uint32(check[0:5])), nil
 }

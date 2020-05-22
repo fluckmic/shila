@@ -166,7 +166,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow flows.
-							if key, ok, err := mptcp.GetMPTCPSenderKey(p.Payload); ok {
+							if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
 								if err == nil {
 									if err := conn.routing.InsertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
 										return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
@@ -210,7 +210,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// Create the packet network flow which is associated with the connection
 	// If the packet contains a receiver token, then the new connection is a MPTCP subflow flow.
-	if token, ok, err := mptcp.GetMPTCPReceiverToken(p.Payload); ok {
+	if token, ok, err := mptcp.GetReceiverToken(p.Payload); ok {
 		if err == nil {
 			if netFlow, ok := conn.routing.RetrieveFromMPTCPEndpointToken(token); ok {
 				conn.flow.NetFlow = netFlow

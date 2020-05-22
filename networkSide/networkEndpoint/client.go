@@ -174,7 +174,7 @@ func (c *Client) serveEgress() {
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		if rawData  := tcpip.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil {
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!

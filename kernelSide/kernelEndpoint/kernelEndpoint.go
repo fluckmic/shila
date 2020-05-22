@@ -230,7 +230,7 @@ func (d *Device) serveEgress() {
 
 func (d *Device) packetize() {
 	for {
-		rawData  := tcpip.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)
+		rawData, _ := tcpip.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)		// TODO: Handle error
 		if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
