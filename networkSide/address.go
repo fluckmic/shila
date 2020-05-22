@@ -1,4 +1,4 @@
-package networkEndpoint
+package networkSide
 
 import (
 	"fmt"
@@ -16,7 +16,6 @@ type Address struct {
 
 // <ip>:<port>
 func newAddress(address string) shila.NetworkAddress {
-
 	if host, port, err := net.SplitHostPort(address); err != nil {
 		log.Error.Panic(fmt.Sprint("Unable to create new network address from {", address, "}."))
 		return nil
@@ -33,15 +32,8 @@ func newAddress(address string) shila.NetworkAddress {
 	return nil
 }
 
-// <port>
-func newLocalNetworkAddress(port string) shila.NetworkAddress {
-	if Port, err := strconv.Atoi(port); err != nil {
-		log.Error.Panic(fmt.Sprint("Unable to create new local address from ", port, "."))
-		return nil
-	} else {
-		return Address{Addr: net.TCPAddr{Port: Port}}
-	}
-	return nil
+func newLocalNetworkAddress(port int) shila.NetworkAddress {
+		return Address{Addr: net.TCPAddr{Port: port}}
 }
 
 func generateContactingAddress(address shila.NetworkAddress, port int) shila.NetworkAddress {
@@ -61,8 +53,6 @@ func generateContactingAddress(address shila.NetworkAddress, port int) shila.Net
 func newEmptyNetworkAddress() shila.NetworkAddress {
 	return Address{Addr: net.TCPAddr{}}
 }
-
-
 
 func (a Address) String() string {
 	return a.Addr.String()

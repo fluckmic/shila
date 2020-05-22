@@ -9,7 +9,6 @@ import (
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
-	"shila/networkSide/networkEndpoint"
 	"shila/shutdown"
 	"shila/workingSide"
 )
@@ -67,9 +66,9 @@ func realMain() int {
 
 	// TODO. ############## Testing ##############
 	key := "(10.7.0.9:2727)"
-	path := networkEndpoint.Generator{}.NewPath("")
-	dstAddr := networkEndpoint.Generator{}.NewAddress("192.168.34.189:2727")
-	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
+	path := networkSide.Generator{}.NewPath("")
+	dstAddr := networkSide.Generator{}.NewAddress("192.168.34.189:2727")
+	srcAddr := networkSide.Generator{}.NewEmptyAddress()
 	// TODO. ############## Testing ##############
 
 	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, path, dstAddr})

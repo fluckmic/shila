@@ -5,7 +5,6 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/log"
-	"shila/networkSide/networkEndpoint"
 	"sync"
 	"time"
 )
@@ -19,11 +18,6 @@ type Manager struct {
 	workingSide               chan shila.PacketChannelAnnouncement
 	lock                      sync.Mutex
 	state                     shila.EntityState
-}
-
-type Error string
-func (e Error) Error() string {
-	return string(e)
 }
 
 func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
@@ -42,12 +36,11 @@ func (m *Manager) Setup() error {
 	}
 
 	// Create the contacting server
-	netConnId := shila.NetFlow{Src: networkEndpoint.Generator{}.NewLocalAddress(m.config.NetworkSide.ContactingServerPort)}
-	m.contactingServer = networkEndpoint.Generator{}.NewServer(netConnId, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+	localContactingNetFlow := Generator{}.LocalContactingNetFlow()
+	m.contactingServer 	   = Generator{}.NewServer(localContactingNetFlow, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
 
 	// Create the mappings
 	m.serverTrafficEndpoints 		= make(shila.ServerEndpointMapping)
-
 	m.clientContactingEndpoints 	= make(shila.ClientEndpointMapping)
 	m.clientTrafficEndpoints 		= make(shila.ClientEndpointMapping)
 
@@ -62,8 +55,6 @@ func (m *Manager) Start() error {
 		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
-	//log.Verbose.Println("Starting network side...")
-
 	if err := m.contactingServer.SetupAndRun(); err != nil {
 		return Error(fmt.Sprint("Unable to setup and run contacting server. - ", err.Error()))
 	}
@@ -72,8 +63,6 @@ func (m *Manager) Start() error {
 	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: m.contactingServer, Channel: m.contactingServer.TrafficChannels().Ingress}
 
 	m.state.Set(shila.Running)
-
-	//log.Verbose.Println("Network side started.")
 
 	return nil
 }
@@ -112,7 +101,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (shila.Pack
 
 	// If there is no server endpoint listening, we first have to set one up.
 	if !ok {
-		newServerEndpoint   := networkEndpoint.Generator{}.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newServerEndpoint   := Generator{}.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
 		if err := newServerEndpoint.SetupAndRun(); err != nil {
 			return shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new server {",
 				shila.ContactingNetworkEndpoint, "} listening to {", flow.NetFlow.Src, "}. - ", err.Error()))
@@ -140,8 +129,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	flow.NetFlow.Path = networkEndpoint.Generator{}.GetDefaultContactingPath(flow.NetFlow.Dst)
-	flow.NetFlow.Dst  = networkEndpoint.Generator{}.GenerateContactingAddress(flow.NetFlow.Dst)
+	flow = Generator{}.GenerateRemoteContactingFlow(flow)
 
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
@@ -150,7 +138,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 		Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
 	} else {
 		// Establish a new contacting client endpoint
-		newContactingClientEndpoint := networkEndpoint.Generator{}.NewClient(flow.NetFlow, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+		newContactingClientEndpoint := Generator{}.NewClient(flow.NetFlow, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
 		if contactingNetConnId, err := newContactingClientEndpoint.SetupAndRun(); err != nil {
 			return shila.NetFlow{}, shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new client {",
 				shila.ContactingNetworkEndpoint, "} connected to {", flow.NetFlow.Dst, "}. - ", err.Error()))
@@ -180,7 +168,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (shila.NetF
 			Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
 	} else {
 		// Otherwise establish a new one
-		newTrafficClientEndpoint := networkEndpoint.Generator{}.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newTrafficClientEndpoint := Generator{}.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
 		// Wait a certain amount of time to give the server endpoint time to establish itself
 		time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
 		if trafficNetConnId, err := newTrafficClientEndpoint.SetupAndRun(); err != nil {

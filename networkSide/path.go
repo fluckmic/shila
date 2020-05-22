@@ -1,4 +1,4 @@
-package networkEndpoint
+package networkSide
 
 import "shila/core/shila"
 
