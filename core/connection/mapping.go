@@ -1,7 +1,7 @@
 package connection
 
 import (
-	"shila/core/router"
+	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/networkSide"
@@ -12,12 +12,12 @@ import (
 type Mapping struct {
 	kernelSide 	*kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing 	*router.Router
+	routing 	*netflow.Router
 	connections map[shila.IPFlowKey] *Connection
 	lock		sync.Mutex
 }
 
-func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *router.Router) *Mapping {
+func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *netflow.Router) *Mapping {
 	m := &Mapping{
 		kernelSide: 	kernelSide,
 		networkSide: 	networkSide,

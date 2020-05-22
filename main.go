@@ -4,7 +4,7 @@ import (
 	"os"
 	"shila/config"
 	"shila/core/connection"
-	"shila/core/router"
+	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/log"
@@ -63,7 +63,7 @@ func realMain() int {
 	defer networkSide.CleanUp()
 
 	// Create the mapping holding the network addresses
-	routing := router.New()
+	routing := netflow.NewRouter()
 
 	// TODO. ############## Testing ##############
 	key := "(10.7.0.9:2727)"
@@ -72,7 +72,7 @@ func realMain() int {
 	srcAddr := networkEndpoint.Generator{}.NewEmptyAddress()
 	// TODO. ############## Testing ##############
 
-	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), srcAddr, dstAddr, path)
+	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, dstAddr, path})
 
 	// Create the mapping holding the connections
 	connections := connection.NewMapping(kernelSide, networkSide, routing)

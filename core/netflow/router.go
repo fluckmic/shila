@@ -1,4 +1,4 @@
-package router
+package netflow
 
 import (
 "fmt"
@@ -11,8 +11,7 @@ type Router struct {
 	addressesFromDstIPv4 map[shila.IPAddressPortKey]		shila.NetFlow
 }
 
-
-func New() *Router {
+func NewRouter() *Router {
 	return &Router{
 		addressesFromToken: 	make(map[mptcp.EndpointToken]shila.NetFlow),
 		addressesFromDstIPv4: 	make(map[shila.IPAddressPortKey]shila.NetFlow),
@@ -29,24 +28,27 @@ func (m Router) RetrieveFromIPAddressPortKey(key shila.IPAddressPortKey) (shila.
 	return packetHeader, ok
 }
 
-func (m Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, srcAddr shila.NetworkAddress, dstAddr shila.NetworkAddress, path shila.NetworkPath) error {
-
+func (m Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, flow shila.NetFlow) error {
 	if _, ok := m.addressesFromDstIPv4[key]; ok {
-		return Error(fmt.Sprint("Unable to insert routing entry for destination IPv4 {", key ,"}. - Entry already exists."))
+		return Error(fmt.Sprint("Entry already exists."))
 	} else {
-		m.addressesFromDstIPv4[key] = shila.NetFlow{srcAddr, path, dstAddr}
+		m.addressesFromDstIPv4[key] = flow
+		return nil
 	}
-	return nil
 }
 
-func (m Router) UpdateFromSynAckMpCapable(p *shila.Packet) error {
+func (m Router) InsertFromSynAckMpCapable(p *shila.Packet, flow shila.NetFlow) error {
 	if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
 		if err == nil {
 			if token, err := mptcp.EndpointKeyToToken(key); err != nil {
 				return Error(fmt.Sprint("Unable to convert token from key. - ", err.Error()))
 			} else {
-				m.addressesFromToken[token] = p.Flow.NetFlow
-				return nil
+				if _, ok := m.addressesFromToken[token]; ok {
+					return Error(fmt.Sprint("Entry already exists."))
+				} else {
+					m.addressesFromToken[token] = flow
+					return nil
+				}
 			}
 		} else {
 			return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))

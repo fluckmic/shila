@@ -2,7 +2,7 @@ package connection
 
 import (
 	"fmt"
-	"shila/core/router"
+	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
@@ -22,7 +22,7 @@ type Connection struct {
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	routing     *router.Router
+	routing     *netflow.Router
 }
 
 type channels struct {
@@ -31,7 +31,7 @@ type channels struct {
 	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *router.Router) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *netflow.Router) *Connection {
 	return &Connection{
 		flow:        flow,
 		state:       newState(),
@@ -167,8 +167,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
-							p.Flow.NetFlow = conn.flow.NetFlow
-							if err := conn.routing.UpdateFromSynAckMpCapable(p); err != nil {
+							if err := conn.routing.InsertFromSynAckMpCapable(p, conn.flow.NetFlow); err != nil {
 								return Error(fmt.Sprint("Unable to update routing. - ", err.Error()))
 							}
 

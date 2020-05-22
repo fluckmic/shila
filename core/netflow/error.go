@@ -1,4 +1,4 @@
-package router
+package netflow
 
 type Error string
 
