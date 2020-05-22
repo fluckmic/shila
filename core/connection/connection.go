@@ -164,24 +164,14 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							return nil
 
-	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
+	case clientEstablished: p.Flow.NetFlow = conn.flow.NetFlow
+
+							// The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
 							if err := conn.routing.UpdateFromSynAckMpCapable(p); err != nil {
 								return Error(fmt.Sprint("Unable to update routing. - ", err.Error()))
 							}
-
-							/*
-							if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
-								if err == nil {
-									if err := conn.routing.insertFromMPTCPEndpointKey(key, conn.flow.NetFlow); err != nil {
-										return Error(fmt.Sprint("Unable to insert MPTCP endpoint key. - ", err.Error()))
-									}
-								} else {
-									return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
-								}
-							}
-							 */
 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
@@ -191,7 +181,8 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							return nil
 
-	case established: 		conn.touched = time.Now()
+	case established: 		p.Flow.NetFlow 	= conn.flow.NetFlow
+							conn.touched 	= time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.state.set(established)
 							return nil
