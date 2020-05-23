@@ -31,14 +31,12 @@ func (m *Manager) CleanUp() {
 }
 
 func (m *Manager) Start() error {
-
 	go func() {
 		for anc := range m.trafficChannelAnnouncements {
-			// log.Verbose.Print("Working side received announcement for new traffic channel {", anc.Announcer.Key()," ",anc.Announcer.Label(),"}.")
+			log.Verbose.Print("Working side received announcement for new traffic channel {", anc.Announcer.Key(), ",", anc.Announcer.Label(), "}.")
 			go m.serveChannel(anc.Channel, m.config.WorkingSide.NumberOfWorkerPerChannel)
 		}
 	}()
-
 	return nil
 }
 
