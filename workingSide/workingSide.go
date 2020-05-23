@@ -55,10 +55,22 @@ func (m *Manager) handleChannel(buffer shila.PacketChannel) {
 }
 
 func (m *Manager) processChannel(p *shila.Packet) {
-	// Not the connection and process the packet
+
+	// Get the corresponding connection and processes the packet..
 	con := m.connections.Retrieve(p.Flow)
-	if err := con.ProcessPacket(p); err != nil {
-		log.Error.Panicln(err.Error())
+
+	err := con.ProcessPacket(p)
+
+	// Any error leads inevitably to the closing of the connection.
+	// All later packet that are processed by the same connection are silently dropped.
+	// The closed connection is removed after a while; after its removal a packet is might
+	// abel to use the packet without any error.
+
+	switch err := err.(type) {
+	case shila.ThirdPartyError: 	log.Info.Print(err.Error())		// Really not our fault.
+	case shila.TolerableError:  	log.Info.Panic(err.Error())		// Probably our fault.
+	case shila.CriticalError:		log.Error.Panic(err.Error()) 	// Most likely our fault.
+	default:						return
 	}
 }
 
