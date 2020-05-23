@@ -229,7 +229,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	// Try to connect to the address via path, a corresponding server should be there listening
 	go func() {
 		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
-			panic("Implement feedback to user!") // TODO!
+			log.Error.Panic("Implement feedback to user. - ", err.Error()) // TODO!
 			conn.Close()
 		} else {
 			conn.flow.NetFlow = trafficNetFlow

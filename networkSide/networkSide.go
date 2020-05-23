@@ -103,7 +103,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 
 	if ok {
 		endpoint.Register(flow.IPFlow.Key())
-		channels = endpoint.TrafficChannels()
+		channels = endpoint.NetworkServerEndpoint.TrafficChannels()
 		return
 	}
 
@@ -115,7 +115,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 	}
 
 	// Add the endpoint to the mapping
-	endpoint = shila.NewNetworkServerEndpointIPFlowRegister(endpoint)
+	endpoint = shila.NewNetworkServerEndpointIPFlowRegister(newEndpoint)
 	m.serverTrafficEndpoints[key] = endpoint
 
 	// Register the new IP flow at the server endpoint
