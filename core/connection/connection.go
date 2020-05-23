@@ -213,13 +213,13 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
 			conn.Close(err)
 		} else {
+			conn.lock.Lock()
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
-			conn.lock.Lock()
 			conn.setState(clientEstablished)
-			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+			conn.lock.Unlock()
 		}
 	}()
 
