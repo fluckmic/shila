@@ -209,7 +209,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	p.Flow.NetFlow = conn.flow.NetFlow
 
 	// Create the contacting connection
-	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
+	contactingNetFlow, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
 	if err != nil {
 		conn.setState(closed)
 		panic("Implement custom error type or feedback to user") // TODO!
@@ -220,7 +220,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	// The contacting network connection id contains as src the local network endpoint which
 	// was used by the network to established the contacting connection. Once a traffic connection
 	// is established, we send this information to the corresponding server side.
-	conn.flow.NetFlow.Src = contactingNetConnId.Src
+	conn.flow.NetFlow.Src = contactingNetFlow.Src
 
 	// Send the packet via the contacting channel
 	conn.touched = time.Now()
