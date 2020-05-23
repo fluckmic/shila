@@ -15,6 +15,11 @@ type mappings struct {
 	fromIPPortKey  map[shila.IPAddressPortKey]	shila.NetFlow
 }
 
+type Error string
+func (e Error) Error() string {
+	return string(e)
+}
+
 func NewRouter() *Router {
 	return &Router{
 		flows: mappings{

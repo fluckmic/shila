@@ -46,11 +46,11 @@ func NewServer(flow shila.NetFlow, label shila.EndpointLabel, config config.Netw
 func (s *Server) SetupAndRun() error {
 
 	if s.IsRunning() {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server is already running."))
+		return  shila.CriticalError(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server is already running."))
 	}
 
 	if !s.IsValid() {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server no longer valid."))
+		return  shila.CriticalError(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server no longer valid."))
 	}
 
 	if s.IsSetup() {
@@ -61,7 +61,7 @@ func (s *Server) SetupAndRun() error {
 	src := s.netFlow.Src.(*net.TCPAddr)
 	listener, err := net.ListenTCP(src.Network(), src)
 	if err != nil {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), "} listening on {", s.Key(), "}. - ", err.Error()))
+		return shila.ThirdPartyError(fmt.Sprint("Unable to setup and run server {", s.Label(), "} listening on {", s.Key(), "}. - ", err.Error()))
 	}
 
 	// Create the channels
@@ -84,8 +84,6 @@ func (s *Server) SetupAndRun() error {
 }
 
 func (s *Server) TearDown() error {
-
-	// nt("Tear down server {", s.Label(), ",", s.Key(), "}.")
 
 	s.isSetup 	= false
 	s.isValid 	= false

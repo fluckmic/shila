@@ -45,11 +45,11 @@ func (c *Client) Key() shila.EndpointKey {
 func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	if !c.IsValid() {
-		return shila.NetFlow{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
+		return shila.NetFlow{},  shila.CriticalError(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
 	}
 
 	if c.IsRunning() {
-		return shila.NetFlow{}, Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
+		return shila.NetFlow{},  shila.CriticalError(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
 	}
 
 	if c.IsSetup() {
@@ -60,9 +60,13 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	dst := c.connection.Identifier.Dst.(*net.TCPAddr)
 	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
-		return shila.NetFlow{},
-		Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
-		"}. - Unable to setup the backbone connection. - ", err.Error()))
+		if c.Label() == shila.TrafficNetworkEndpoint {
+			err = shila.TolerableError(err.Error())
+		} else {
+			// For a contacting endpoint, the issue is most likely that there is no one listening..
+			err = shila.ThirdPartyError(err.Error())
+		}
+		return shila.NetFlow{}, err
 	}
 	c.connection.Backbone = backboneConnection
 
@@ -72,9 +76,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// is required to be able to do the mapping on the server side.
 
 		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.Src.String()))); err != nil {
-			return shila.NetFlow{},
-				Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
-					"}. - Unable to send source address. - ", err.Error()))
+			return shila.NetFlow{}, shila.TolerableError(err.Error())
 		}
 	}
 

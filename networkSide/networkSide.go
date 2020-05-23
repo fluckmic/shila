@@ -35,7 +35,7 @@ func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement)
 func (m *Manager) Setup() error {
 
 	if m.state.Not(shila.Uninitialized) {
-		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	// Create the contacting server
@@ -55,11 +55,11 @@ func (m *Manager) Setup() error {
 func (m *Manager) Start() error {
 
 	if m.state.Not(shila.Initialized) {
-		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	if err := m.contactingServer.SetupAndRun(); err != nil {
-		return Error(fmt.Sprint("Unable to setup and run contacting server. - ", err.Error()))
+		return shila.PrependError(err, "Unable to establish contacting server.")
 	}
 
 	// Announce the traffic channels to the working side
@@ -92,7 +92,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 	error    			= nil
 
 	if m.state.Not(shila.Running) {
-		error = Error(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
 	}
 
 	m.lock.Lock()
@@ -109,9 +109,8 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 
 	// If there is no server endpoint listening, we first have to set one up.
 	newEndpoint := m.specificManager.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint)
-	if err := newEndpoint.SetupAndRun(); err != nil {
-		error = Error(fmt.Sprint("Unable to setup and run new server {", shila.ContactingNetworkEndpoint,
-			"} listening to {", flow.NetFlow.Src, "}. - ", err.Error())); return
+	if error = newEndpoint.SetupAndRun(); error != nil {
+		return
 	}
 
 	// Add the endpoint to the mapping
@@ -135,14 +134,14 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	error    			= nil
 
 	if m.state.Not(shila.Running) {
-		error = Error(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
 	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if _, ok := m.clientContactingEndpoints[flow.IPFlow.Key()]; ok {
-		error = Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists.")); return
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
 	}
 
 	// Establish a new contacting client endpoint
@@ -151,8 +150,6 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
-		error = Error(fmt.Sprint("Unable to setup and run new client {",
-				shila.ContactingNetworkEndpoint, "} connected to {", flow.NetFlow.Dst, "}. - ", error.Error()))
 		return
 	}
 
@@ -173,14 +170,14 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	error    			= nil
 
 	if m.state.Not(shila.Running) {
-		error = Error(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
 	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if _, ok := m.clientTrafficEndpoints[flow.IPFlow.Key()]; ok {
-		error = Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists.")); return
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
 	}
 
 	trafficEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
@@ -191,7 +188,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
-		error =	Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", error.Error())); return
+		return
 	}
 
 	// Add it to the corresponding mapping
@@ -212,7 +209,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 
 	if m.state.Not(shila.Running) {
-		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	m.lock.Lock()
@@ -234,7 +231,7 @@ func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 func (m *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) error {
 
 	if m.state.Not(shila.Running) {
-		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	m.lock.Lock()
@@ -252,7 +249,7 @@ func (m *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) error {
 func (m *Manager) TeardownTrafficClientEndpoint(ipFlow shila.IPFlow) error {
 
 	if m.state.Not(shila.Running) {
-		return Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	m.lock.Lock()
