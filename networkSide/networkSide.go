@@ -191,7 +191,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
-		error =	Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", error.Error()))
+		error =	Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", error.Error())); return
 	}
 
 	// Add it to the corresponding mapping
