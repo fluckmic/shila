@@ -286,6 +286,6 @@ func (conn *Connection) setState(state stateIdentifier) {
 	conn.state.set(state)
 	if conn.state.previous != conn.state.current {
 		log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
-			"} to {", conn.state.current, "}")
+			"} to {", conn.state.current, "}.")
 	}
 }
