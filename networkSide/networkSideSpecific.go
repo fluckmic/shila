@@ -31,20 +31,26 @@ func (specMng SpecificManager) NewServer(netConnId shila.NetFlow, label shila.En
 }
 
 func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.NetFlow {
-	remContFlow := flow
-	remContFlow.Path = specMng.getDefaultContactingPath(flow.Dst)
-	remContFlow.Dst  = specMng.generateRemoteContactingAddress(flow.Dst)
-	return remContFlow
+	return shila.NetFlow{
+		Src:  flow.Src,
+		Path: specMng.getDefaultContactingPath(flow.Dst),
+		Dst:  specMng.generateRemoteContactingAddress(flow.Dst),
+	}
 }
 
 func (specMng SpecificManager) LocalContactingNetFlow() shila.NetFlow {
-	return shila.NetFlow{Src: network.AddressGenerator{}.NewLocal(strconv.Itoa(defaultContactingPort))}
+	return shila.NetFlow{
+		Src: network.AddressGenerator{}.NewLocal(strconv.Itoa(defaultContactingPort)),
+	}
 }
 
 func (specMng SpecificManager) generateRemoteContactingAddress(address shila.NetworkAddress) shila.NetworkAddress {
 	addr := address.(*net.TCPAddr)
-	addr.Port = defaultContactingPort
-	return addr
+	return &net.TCPAddr{
+		IP:   addr.IP,
+		Port: defaultContactingPort,
+		Zone: addr.Zone,
+	}
 }
 
 func (specMng SpecificManager) getDefaultContactingPath(address shila.NetworkAddress) shila.NetworkPath {
