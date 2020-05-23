@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-var _ shila.ServerNetworkEndpoint = (*Server)(nil)
+var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
@@ -29,7 +29,7 @@ type Server struct{
 	isRunning           bool
 }
 
-func NewServer(flow shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
+func NewServer(flow shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.NetworkServerEndpoint {
 	return &Server{
 		Base: 			Base{
 								label: 	label,

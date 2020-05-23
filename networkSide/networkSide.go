@@ -13,10 +13,10 @@ import (
 type Manager struct {
 	specificManager			  SpecificManager
 	config                    config.Config
-	contactingServer          shila.ServerNetworkEndpoint
-	serverTrafficEndpoints    shila.ServerEndpointMapping
-	clientContactingEndpoints shila.ClientEndpointMapping
-	clientTrafficEndpoints    shila.ClientEndpointMapping
+	contactingServer          shila.NetworkServerEndpoint
+	serverTrafficEndpoints    shila.MappingNetworkServerEndpoint
+	clientContactingEndpoints shila.MappingNetworkClientEndpoint
+	clientTrafficEndpoints    shila.MappingNetworkClientEndpoint
 	workingSide               chan shila.PacketChannelAnnouncement
 	lock                      sync.Mutex
 	state                     shila.EntityState
@@ -43,9 +43,9 @@ func (m *Manager) Setup() error {
 	m.contactingServer 	   = m.specificManager.NewServer(localContactingNetFlow, shila.ContactingNetworkEndpoint)
 
 	// Create the mappings
-	m.serverTrafficEndpoints 		= make(shila.ServerEndpointMapping)
-	m.clientContactingEndpoints 	= make(shila.ClientEndpointMapping)
-	m.clientTrafficEndpoints 		= make(shila.ClientEndpointMapping)
+	m.serverTrafficEndpoints 		= make(shila.MappingNetworkServerEndpoint)
+	m.clientContactingEndpoints 	= make(shila.MappingNetworkClientEndpoint)
+	m.clientTrafficEndpoints 		= make(shila.MappingNetworkClientEndpoint)
 
 	m.state.Set(shila.Initialized)
 
@@ -86,36 +86,46 @@ func (m *Manager) CleanUp() error {
 	return err
 }
 
-func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (shila.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels shila.PacketChannels, error error) {
+
+	channels 			= shila.PacketChannels{}
+	error    			= nil
 
 	if m.state.Not(shila.Running) {
-		return shila.PacketChannels{}, Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		error = Error(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
 	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key     := shila.GetNetworkAddressKey(flow.NetFlow.Src)
-	sep, ok := m.serverTrafficEndpoints[key]
+	key     	 := shila.GetNetworkAddressKey(flow.NetFlow.Src)
+	endpoint, ok := m.serverTrafficEndpoints[key]
 
-	// If there is no server endpoint listening, we first have to set one up.
-	if !ok {
-		newServerEndpoint   := m.specificManager.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint)
-		if err := newServerEndpoint.SetupAndRun(); err != nil {
-			return shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new server {",
-				shila.ContactingNetworkEndpoint, "} listening to {", flow.NetFlow.Src, "}. - ", err.Error()))
-		}
-		// Add the endpoint to the mapping
-		sep = shila.ServerNetworkEndpointMapping{ServerNetworkEndpoint: newServerEndpoint, IPConnectionMapping: make(shila.IPConnectionMapping)}
-		m.serverTrafficEndpoints[key] = sep
-
-		// Announce the new traffic channels to the working side
-		m.workingSide <- shila.PacketChannelAnnouncement{Announcer: newServerEndpoint, Channel: newServerEndpoint.TrafficChannels().Ingress}
+	if ok {
+		endpoint.Register(flow.IPFlow.Key())
+		channels = endpoint.TrafficChannels()
+		return
 	}
 
-	sep.AddIPFlowKey(flow.IPFlow.Key())
+	// If there is no server endpoint listening, we first have to set one up.
+	newEndpoint := m.specificManager.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint)
+	if err := newEndpoint.SetupAndRun(); err != nil {
+		error = Error(fmt.Sprint("Unable to setup and run new server {", shila.ContactingNetworkEndpoint,
+			"} listening to {", flow.NetFlow.Src, "}. - ", err.Error())); return
+	}
 
-	return sep.TrafficChannels(), nil
+	// Add the endpoint to the mapping
+	endpoint = shila.NewNetworkServerEndpointIPFlowRegister(endpoint)
+	m.serverTrafficEndpoints[key] = endpoint
+
+	// Register the new IP flow at the server endpoint
+	endpoint.Register(flow.IPFlow.Key())
+
+	// Announce the new traffic channels to the working side
+	channels = endpoint.TrafficChannels()
+	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: newEndpoint, Channel: channels.Ingress}
+
+	return
 }
 
 func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contactingNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
@@ -156,40 +166,47 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	return
 }
 
-func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (shila.NetFlow, shila.PacketChannels, error) {
+func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
+
+	trafficNetFlow  	= shila.NetFlow{}
+	channels 			= shila.PacketChannels{}
+	error    			= nil
 
 	if m.state.Not(shila.Running) {
-		return shila.NetFlow{}, shila.PacketChannels{},
-			Error(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+		error = Error(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
 	}
 
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
 	if _, ok := m.clientTrafficEndpoints[flow.IPFlow.Key()]; ok {
-		return shila.NetFlow{}, shila.PacketChannels{},
-			Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
-	} else {
-		// Otherwise establish a new one
-		newTrafficClientEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
-		// Wait a certain amount of time to give the server endpoint time to establish itself
-		time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
-		if trafficNetConnId, err := newTrafficClientEndpoint.SetupAndRun(); err != nil {
-			return shila.NetFlow{}, shila.PacketChannels{},
-			Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", err.Error()))
-		} else {
-			// Add it to the corresponding mapping
-			m.clientTrafficEndpoints[flow.IPFlow.Key()] = newTrafficClientEndpoint
-			// Announce the new traffic channels to the working side
-			m.workingSide <- shila.PacketChannelAnnouncement{Announcer: newTrafficClientEndpoint, Channel: newTrafficClientEndpoint.TrafficChannels().Ingress}
+		error = Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists.")); return
+	}
 
-			// The removal of the corresponding client contacting endpoint is triggered by the connTr
-			// itself after obtaining the lock to change its state to established. Otherwise we are in danger
-			// that we close the endpoint to early.
+	trafficEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
 
-			return trafficNetConnId, newTrafficClientEndpoint.TrafficChannels(), nil
-			}
-		}
+	// Wait a certain amount of time to give the server endpoint time to establish itself
+	time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
+	// TODO: Configuration parameter: Waiting time traffic conn establishment
+
+	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
+	if error != nil {
+		error =	Error(fmt.Sprint("Unable to establish new traffic client endpoint. - ", error.Error()))
+	}
+
+	// Add it to the corresponding mapping
+	m.clientTrafficEndpoints[flow.IPFlow.Key()] = trafficEndpoint
+
+	// Announce the new traffic channels to the working side
+	channels = trafficEndpoint.TrafficChannels()
+	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: trafficEndpoint, Channel: channels.Ingress}
+
+	// Note:
+	// The removal of the corresponding client contacting endpoint is triggered by the connTr
+	// itself after obtaining the lock to change its state to established. Otherwise we are in danger
+	// that we close the endpoint to early.
+
+	return
 }
 
 func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
@@ -203,8 +220,8 @@ func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 
 	key     := shila.GetNetworkAddressKey(flow.NetFlow.Src)
 	if ep, ok := m.serverTrafficEndpoints[key]; ok {
-		ep.RemoveIPFlowKey(flow.IPFlow.Key())
-		if ep.Empty() {
+		ep.Unregister(flow.IPFlow.Key())
+		if ep.IsEmpty() {
 			err := ep.TearDown()
 			delete(m.serverTrafficEndpoints, key)
 			return err

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var _ shila.ClientNetworkEndpoint = (*Client)(nil)
+var _ shila.NetworkClientEndpoint = (*Client)(nil)
 
 type Client struct {
 	Base
@@ -27,7 +27,7 @@ type networkConnection struct {
 	Backbone   *net.TCPConn
 }
 
-func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ClientNetworkEndpoint {
+func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 				Base{
 								label: label,

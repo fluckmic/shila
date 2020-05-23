@@ -22,11 +22,11 @@ func NewSpecificManager(config config.Config) SpecificManager {
 	return SpecificManager{config: config}
 }
 
-func (specMng SpecificManager) NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.ClientNetworkEndpoint {
+func (specMng SpecificManager) NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkClientEndpoint {
 	return networkEndpoint.NewClient(netConnId, label, specMng.config.NetworkEndpoint)
 }
 
-func (specMng SpecificManager) NewServer(netConnId shila.NetFlow, label shila.EndpointLabel) shila.ServerNetworkEndpoint {
+func (specMng SpecificManager) NewServer(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkServerEndpoint {
 	return networkEndpoint.NewServer(netConnId, label, specMng.config.NetworkEndpoint)
 }
 

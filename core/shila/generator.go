@@ -4,8 +4,8 @@ package shila
 // implement as they are used by the manager of the network side.
 
 type SpecificNetworkSideManager interface {
-	NewClient(netConnId NetFlow, l EndpointLabel) 	ClientNetworkEndpoint
-	NewServer(netConnId NetFlow, l EndpointLabel) 	ServerNetworkEndpoint
+	NewClient(netConnId NetFlow, l EndpointLabel) NetworkClientEndpoint
+	NewServer(netConnId NetFlow, l EndpointLabel) NetworkServerEndpoint
 	LocalContactingNetFlow() 						NetFlow
 	RemoteContactingFlow(NetFlow) 					NetFlow
 }
@@ -20,12 +20,12 @@ type NetworkPathGenerator interface {
 	New(string)		NetworkPath
 }
 
-type ClientNetworkEndpoint interface {
+type NetworkClientEndpoint interface {
 	Endpoint
 	SetupAndRun() 	(NetFlow, error)
 }
 
-type ServerNetworkEndpoint interface {
+type NetworkServerEndpoint interface {
 	Endpoint
 	SetupAndRun() error
 }
