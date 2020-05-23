@@ -79,6 +79,11 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 		conn.state.set(closed)
 	}
 
+	if conn.state.previous != conn.state.current {
+		log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
+			"} to {", conn.state.current, "} after processing a packet.")
+	}
+
 	return err
 }
 
