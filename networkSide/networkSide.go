@@ -136,9 +136,9 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	}
 
 	// Establish a new contacting client endpoint
-	contactingNetFlow 		  = m.specificManager.RemoteContactingFlow(flow.NetFlow)
+	contactingNetFlow 		  = m.specificManager.RemoteContactingFlow(flow.NetFlow)	// Does not contain src network address at this point.
 	contactingEndpoint 		 := m.specificManager.NewClient(contactingNetFlow, shila.ContactingNetworkEndpoint)
-	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()
+	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
 		error = Error(fmt.Sprint("Unable to setup and run new client {",
