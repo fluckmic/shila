@@ -128,7 +128,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	flow.NetFlow = m.specificManager.RemoteContactingFlow(flow.NetFlow)
+	contactingNetFlow := m.specificManager.RemoteContactingFlow(flow.NetFlow)
 
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
@@ -137,7 +137,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 		Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
 	} else {
 		// Establish a new contacting client endpoint
-		newContactingClientEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.ContactingNetworkEndpoint)
+		newContactingClientEndpoint := m.specificManager.NewClient(contactingNetFlow, shila.ContactingNetworkEndpoint)
 		if contactingNetConnId, err := newContactingClientEndpoint.SetupAndRun(); err != nil {
 			return shila.NetFlow{}, shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new client {",
 				shila.ContactingNetworkEndpoint, "} connected to {", flow.NetFlow.Dst, "}. - ", err.Error()))
