@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"shila/config"
 	"shila/core/shila"
-	"shila/log"
 	"sync"
 	"time"
 )
 
+// This part of the network is independent of the backbone protocol chosen.
+
 type Manager struct {
+	specificManager			  SpecificManager
 	config                    config.Config
 	contactingServer          shila.ServerNetworkEndpoint
 	serverTrafficEndpoints    shila.ServerEndpointMapping
@@ -22,10 +24,11 @@ type Manager struct {
 
 func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
 	return &Manager{
-		config:      config,
-		workingSide: workingSide,
-		lock:        sync.Mutex{},
-		state:       shila.NewEntityState(),
+		specificManager: NewSpecificManager(config),
+		config:      	 config,
+		workingSide: 	 workingSide,
+		lock:        	 sync.Mutex{},
+		state:       	 shila.NewEntityState(),
 	}
 }
 
@@ -36,8 +39,8 @@ func (m *Manager) Setup() error {
 	}
 
 	// Create the contacting server
-	localContactingNetFlow := Generator{}.LocalContactingNetFlow()
-	m.contactingServer 	   = Generator{}.NewServer(localContactingNetFlow, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+	localContactingNetFlow := m.specificManager.LocalContactingNetFlow()
+	m.contactingServer 	   = m.specificManager.NewServer(localContactingNetFlow, shila.ContactingNetworkEndpoint)
 
 	// Create the mappings
 	m.serverTrafficEndpoints 		= make(shila.ServerEndpointMapping)
@@ -71,8 +74,6 @@ func (m *Manager) CleanUp() error {
 
 	var err error = nil
 
-	log.Info.Println("Tear down the network side..")
-
 	err = m.tearDownAndRemoveClientContactingEndpoints()
 	err = m.tearDownAndRemoveClientTrafficEndpoints()
 	err = m.tearDownAndRemoveServerTrafficEndpoints()
@@ -81,8 +82,6 @@ func (m *Manager) CleanUp() error {
 	m.contactingServer = nil
 
 	m.state.Set(shila.TornDown)
-
-	log.Info.Println("Network side torn down.")
 
 	return err
 }
@@ -101,7 +100,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (shila.Pack
 
 	// If there is no server endpoint listening, we first have to set one up.
 	if !ok {
-		newServerEndpoint   := Generator{}.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newServerEndpoint   := m.specificManager.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint)
 		if err := newServerEndpoint.SetupAndRun(); err != nil {
 			return shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new server {",
 				shila.ContactingNetworkEndpoint, "} listening to {", flow.NetFlow.Src, "}. - ", err.Error()))
@@ -129,7 +128,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	flow.NetFlow = Generator{}.GenerateRemoteContactingFlow(flow.NetFlow)
+	flow.NetFlow = m.specificManager.RemoteContactingFlow(flow.NetFlow)
 
 	// Fetch the default contacting contactingPath and check if there already exists
 	// a contacting endpoint which should not be the case.
@@ -138,7 +137,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (shila.N
 		Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
 	} else {
 		// Establish a new contacting client endpoint
-		newContactingClientEndpoint := Generator{}.NewClient(flow.NetFlow, shila.ContactingNetworkEndpoint, m.config.NetworkEndpoint)
+		newContactingClientEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.ContactingNetworkEndpoint)
 		if contactingNetConnId, err := newContactingClientEndpoint.SetupAndRun(); err != nil {
 			return shila.NetFlow{}, shila.PacketChannels{}, Error(fmt.Sprint("Unable to setup and run new client {",
 				shila.ContactingNetworkEndpoint, "} connected to {", flow.NetFlow.Dst, "}. - ", err.Error()))
@@ -168,7 +167,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (shila.NetF
 			Error(fmt.Sprint("Endpoint {", flow.IPFlow.Key(), "} already exists."))
 	} else {
 		// Otherwise establish a new one
-		newTrafficClientEndpoint := Generator{}.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint, m.config.NetworkEndpoint)
+		newTrafficClientEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
 		// Wait a certain amount of time to give the server endpoint time to establish itself
 		time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
 		if trafficNetConnId, err := newTrafficClientEndpoint.SetupAndRun(); err != nil {

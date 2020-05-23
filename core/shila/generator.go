@@ -1,33 +1,26 @@
 package shila
 
-import (
-	"shila/config"
-)
-
-// Defines all the interfaces which the network endpoint generator has to implement as they are used
-// by the manager of the network side.
+// Defines all the interfaces which the network endpoint generator has to
+// implement as they are used by the manager of the network side.
 
 type NetworkEndpointGenerator interface {
-	NewClient(netConnId NetFlow, l EndpointLabel, c config.NetworkEndpoint) ClientNetworkEndpoint
-	NewServer(netConnId NetFlow, l EndpointLabel, c config.NetworkEndpoint) ServerNetworkEndpoint
-}
-
-// Should be able to create a network address from a string.
-type NetworkAddressGenerator interface {
-	NewAddress(string) 								  NetworkAddress     	// Generates a new network address from a string
-	NewLocalAddress(int) 						  	  NetworkAddress        // Generates a new local network address from a string
-	GenerateRemoteContactingAddress(address NetworkAddress) NetworkAddress 	// Generates the remote contacting network address
+	NewClient(netConnId NetFlow, l EndpointLabel) ClientNetworkEndpoint
+	NewServer(netConnId NetFlow, l EndpointLabel) ServerNetworkEndpoint
 }
 
 type NetworkNetFlowGenerator interface {
-	LocalContactingNetFlow() NetFlow
-	GenerateRemoteContactingFlow(NetFlow) NetFlow
+	LocalContactingNetFlow() 		NetFlow
+	RemoteContactingFlow(NetFlow) 	NetFlow
 }
 
-// Should be able to create a network path from a string.
+type NetworkAddressGenerator interface {
+	New(string)		 NetworkAddress 	// Generates a new network address from a string.
+	NewLocal(string) NetworkAddress		// Generates a new local network address from a string.
+	NewEmpty()		 NetworkAddress 	// Generates a empty network address.
+}
+
 type NetworkPathGenerator interface {
-	NewPath(string) NetworkPath
-	GetDefaultContactingPath(address NetworkAddress) NetworkPath
+	New(string)		NetworkPath
 }
 
 type ClientNetworkEndpoint interface {

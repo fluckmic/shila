@@ -19,7 +19,7 @@ var _ shila.ServerNetworkEndpoint = (*Server)(nil)
 type Server struct{
 	Base
 	backboneConnections map[shila.NetworkAddressAndPathKey]  net.Conn
-	networkConnectionId shila.NetFlow
+	netFlow             shila.NetFlow
 	listener            net.Listener
 	lock                sync.Mutex
 	holdingArea         []*shila.Packet
@@ -28,14 +28,14 @@ type Server struct{
 	isRunning           bool
 }
 
-func NewServer(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
+func NewServer(flow shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.ServerNetworkEndpoint {
 	return &Server{
 		Base: 			Base{
 								label: 	label,
 								config: config,
 						},
 		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  net.Conn),
-		networkConnectionId: netConnId,
+		netFlow:             flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([]*shila.Packet, 0, config.SizeHoldingArea),
 		isValid:             true,
@@ -57,8 +57,8 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// set up the listener
-	src := s.networkConnectionId.Src.(network.Address)
-	listener, err := net.ListenTCP(src.Addr.Network(), &src.Addr)
+	src := s.netFlow.Src.(*net.TCPAddr)
+	listener, err := net.ListenTCP(src.Network(), src)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - ", err.Error()))
 	}
@@ -67,7 +67,7 @@ func (s *Server) SetupAndRun() error {
 	s.ingress = make(chan *shila.Packet, s.config.SizeIngressBuff)
 	s.egress  = make(chan *shila.Packet, s.config.SizeEgressBuff)
 
-	// Start listening for incoming backboneConnections.
+	// Start listening for incoming backbone connections.
 	s.listener = listener
 	go s.serveIncomingConnections()
 
@@ -120,7 +120,7 @@ func (s *Server) Label() shila.EndpointLabel {
 }
 
 func (s *Server) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetNetworkAddressKey(s.networkConnectionId.Src))
+	return shila.EndpointKey(shila.GetNetworkAddressKey(s.netFlow.Src))
 }
 
 func (s *Server) IsRunning() bool {
@@ -140,9 +140,9 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleConnection(connection net.Conn) {
 
 	// Not the address from the client side
-	srcAddr := network.NewAddress(connection.RemoteAddr().String())
+	srcAddr := network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	// Not the path taken from client to this server
-	path 	:= network.NewPath("")
+	path 	:= network.PathGenerator{}.New("")
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
@@ -154,7 +154,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
-			contactSrcAddr := network.NewAddress(strings.TrimSuffix(srcAddrReceived,"\n"))
+			contactSrcAddr := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
@@ -206,13 +206,13 @@ func (s *Server) serveIngress(connection net.Conn) {
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// Server is the contacting server, it is his responsibility
 		// to extract the necessary data from the ip packet to be able
-		// to set the correct network networkConnectionId.
+		// to set the correct network netFlow.
 		go s.packetizeContacting(ingressRaw, connection)
 
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 		// Server receives normal traffic, the connection over which the
 		// packet was received contains enough information to set
-		// the correct network networkConnectionId.
+		// the correct network netFlow.
 		go s.packetizeTraffic(ingressRaw, connection)
 	} else {
 		panic(fmt.Sprint("Wrong server label {", s.Label(), "} in serving ingress functionality of " +
@@ -273,16 +273,17 @@ func (s *Server) IsValid() bool {
 
 func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
-	// Create the packet network networkConnectionId
-	dstAddr := s.networkConnectionId.Src
-	srcAddr := network.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
-	path 	:= network.NewPath("")
+	// Create the packet network netFlow
+	dstAddr := s.netFlow.Src
+	//srcAddr := network.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
+	srcAddr := network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	path 	:= network.PathGenerator{}.New("")
 	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
+				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
@@ -295,18 +296,18 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
 
-	// Fetch the parts for the packet network networkConnectionId which are fixed.
-	path 		:= network.NewPath("")
-	srcAddr 	:= network.NewAddress(connection.RemoteAddr().String())
+	// Fetch the parts for the packet network netFlow which are fixed.
+	path 		:= network.PathGenerator{}.New("")
+	srcAddr 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of server {", s.Key(),
+				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				dstAddr := network.NewAddress(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
+				dstAddr := network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
 				header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
 			}

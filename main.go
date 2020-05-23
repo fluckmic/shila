@@ -9,6 +9,7 @@ import (
 	"shila/kernelSide"
 	"shila/log"
 	"shila/networkSide"
+	"shila/networkSide/network"
 	"shila/shutdown"
 	"shila/workingSide"
 )
@@ -45,36 +46,36 @@ func realMain() int {
 	// Create the channel used to announce new traffic channels
 	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
 
-	// Create and setup the kernel side
-	kernel := kernelSide.New(cfg, trafficChannelAnnouncements)
-	if err = kernel.Setup(); err != nil {
+	// Create and setup the kernelSide side
+	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)
+	if err = kernelSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}
 	log.Info.Println("Kernel side setup successfully.")
-	defer kernel.CleanUp()
+	defer kernelSide.CleanUp()
 
 	// Create and setup the network side
-	network := networkSide.New(cfg, trafficChannelAnnouncements)
-	if err = network.Setup(); err != nil {
+	networkSide := networkSide.New(cfg, trafficChannelAnnouncements)
+	if err = networkSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
 	}
 	log.Info.Println("Network side setup successfully.")
-	defer network.CleanUp()
+	defer networkSide.CleanUp()
 
 	// Create the mapping holding the network addresses
 	routing := netflow.NewRouter()
 
 	// TODO. ############## Testing ##############
 	key := "(10.7.0.9:2727)"
-	path := networkSide.Generator{}.NewPath("")
-	dstAddr := networkSide.Generator{}.NewAddress("192.168.34.189:2727")
-	srcAddr := networkSide.Generator{}.NewEmptyAddress()
+	path := network.PathGenerator{}.NewEmpty()
+	dstAddr := network.AddressGenerator{}.New("192.168.34.189:2727")
+	srcAddr := network.AddressGenerator{}.NewEmpty()
 	// TODO. ############## Testing ##############
 
 	routing.InsertFromIPAddressPortKey(shila.IPAddressPortKey(key), shila.NetFlow{srcAddr, path, dstAddr})
 
 	// Create the mapping holding the connections
-	connections := connection.NewMapping(kernel, network, routing)
+	connections := connection.NewMapping(kernelSide, networkSide, routing)
 
 	// Create and setup the working side
 	workingSide := workingSide.New(cfg, connections, trafficChannelAnnouncements)
@@ -90,12 +91,12 @@ func realMain() int {
 		log.Error.Fatalln("Unable to start the working side - ", err.Error())
 	}
 
-	if err = network.Start(); err != nil {
+	if err = networkSide.Start(); err != nil {
 		log.Error.Fatalln("Unable to start the network side - ", err.Error())
 	}
 
-	if err = kernel.Start(); err != nil {
-		log.Error.Fatalln("Unable to start the kernel side - ", err.Error())
+	if err = kernelSide.Start(); err != nil {
+		log.Error.Fatalln("Unable to start the kernelSide side - ", err.Error())
 	}
 
 	log.Info.Println("Machinery up and running.")

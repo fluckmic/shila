@@ -38,7 +38,7 @@ func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config
 }
 
 func (c *Client) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, network.NewPath("")))
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, network.PathGenerator{}.New("")))
 }
 
 func (c *Client) SetupAndRun() (shila.NetFlow, error) {
@@ -56,8 +56,8 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 
 	// Establish a connection to the server endpoint
-	dst := c.connection.Identifier.Dst.(network.Address)
-	backboneConnection, err := net.DialTCP(dst.Addr.Network(), nil, &dst.Addr)
+	dst := c.connection.Identifier.Dst.(*net.TCPAddr)
+	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
 		return shila.NetFlow{},
 		Error(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(),
@@ -77,7 +77,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		}
 	}
 
-	c.connection.Identifier.Src = network.Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
+	// c.connection.Identifier.Src = network.Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
+	// c.connection.Identifier.Src = network.AddressGenerator{}.New(backboneConnection.LocalAddr().String())
+	c.connection.Identifier.Src = backboneConnection.LocalAddr()
 
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, c.config.SizeIngressBuff)
@@ -177,7 +179,7 @@ func (c *Client) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic(fmt.Sprint("Unable to get IP networkConnectionId in packetizer of client {", c.Key(),
+				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of client {", c.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				c.ingress <- shila.NewPacket(c, iPHeader, rawData)
