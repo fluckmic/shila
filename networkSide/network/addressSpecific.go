@@ -50,4 +50,3 @@ func (g AddressGenerator) NewLocal(port string) shila.NetworkAddress {
 func (g AddressGenerator) NewEmpty() shila.NetworkAddress {
 	return &net.TCPAddr{}
 }
-

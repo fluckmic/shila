@@ -9,10 +9,7 @@ import (
 	"strconv"
 )
 
-// Generator functionalities are thought to be used outside of the
-// backbone protocol specific implementations (suffix "Specific").
-var _ shila.NetworkEndpointGenerator 	= (*SpecificManager)(nil)
-var _ shila.NetworkNetFlowGenerator		= (*SpecificManager)(nil)
+var _ shila.SpecificNetworkSideManager = (*SpecificManager)(nil)
 
 const defaultPath 			= ""
 const defaultContactingPort = 9876

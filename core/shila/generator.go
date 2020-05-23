@@ -3,14 +3,11 @@ package shila
 // Defines all the interfaces which the network endpoint generator has to
 // implement as they are used by the manager of the network side.
 
-type NetworkEndpointGenerator interface {
-	NewClient(netConnId NetFlow, l EndpointLabel) ClientNetworkEndpoint
-	NewServer(netConnId NetFlow, l EndpointLabel) ServerNetworkEndpoint
-}
-
-type NetworkNetFlowGenerator interface {
-	LocalContactingNetFlow() 		NetFlow
-	RemoteContactingFlow(NetFlow) 	NetFlow
+type SpecificNetworkSideManager interface {
+	NewClient(netConnId NetFlow, l EndpointLabel) 	ClientNetworkEndpoint
+	NewServer(netConnId NetFlow, l EndpointLabel) 	ServerNetworkEndpoint
+	LocalContactingNetFlow() 						NetFlow
+	RemoteContactingFlow(NetFlow) 					NetFlow
 }
 
 type NetworkAddressGenerator interface {
