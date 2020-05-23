@@ -76,12 +76,7 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	}
 
 	if err != nil {
-		conn.state.set(closed)
-	}
-
-	if conn.state.previous != conn.state.current {
-		log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
-			"} to {", conn.state.current, "} after processing a packet.")
+		conn.setState(closed)
 	}
 
 	return err
@@ -94,29 +89,29 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.Contacting.Egress <- p
-							conn.state.set(clientReady)
+							conn.setState(clientReady)
 							return nil
 
 	case serverReady: 		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.Flow.NetFlow = conn.flow.NetFlow
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.set(serverReady)
+							conn.setState(serverReady)
 							return nil
 
 	case clientEstablished:	p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.set(clientEstablished)
+							conn.setState(clientEstablished)
 							return nil
 
 	case established:		p.Flow.NetFlow = conn.flow.NetFlow
 							conn.touched = time.Now()
 							conn.channels.NetworkEndpoint.Egress <- p
-							conn.state.set(established)
+							conn.setState(established)
 							return nil
 
-	case closed: 			conn.state.set(closed)
+	case closed: 			conn.setState(closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -133,16 +128,16 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.set(serverReady)
+							conn.setState(serverReady)
 							return nil
 
 	case established: 		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.set(established)
+							conn.setState(established)
 							return nil
 
 	case closed: 			// Packets sent through a closed connection are dropped.
-							conn.state.set(closed)
+							conn.setState(closed)
 						 	return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -160,7 +155,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case serverReady:		conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.set(established)
+							conn.setState(established)
 
 							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
@@ -175,7 +170,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							conn.touched = time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.set(established)
+							conn.setState(established)
 
 							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
@@ -183,11 +178,11 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case established: 		conn.touched 	= time.Now()
 							conn.channels.KernelEndpoint.Egress <- p
-							conn.state.set(established)
+							conn.setState(established)
 							return nil
 
 	case closed: 			// Packets sent through a closed connection are dropped.
-							conn.state.set(closed)
+							conn.setState(closed)
 							return nil
 
 	default: 				return Error(fmt.Sprint("Unknown connection state."))
@@ -216,7 +211,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	// Create the contacting connection
 	contactingNetConnId, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
 	if err != nil {
-		conn.state.set(closed)
+		conn.setState(closed)
 		panic("Implement custom error type or feedback to user") // TODO!
 		return nil
 	}
@@ -240,12 +235,10 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.lock.Lock()
-			conn.state.set(clientEstablished)
+			conn.setState(clientEstablished)
 			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
-			log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
-				"} to {", conn.state.current, "} after establishing a traffic connection.")
 		}
 	}()
 
@@ -287,4 +280,12 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 	conn.state.set(serverReady)
 
 	return nil
+}
+
+func (conn *Connection) setState(state stateIdentifier) {
+	conn.state.set(state)
+	if conn.state.previous != conn.state.current {
+		log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
+			"} to {", conn.state.current, "}")
+	}
 }

@@ -61,7 +61,7 @@ func (s *Server) SetupAndRun() error {
 	src := s.netFlow.Src.(*net.TCPAddr)
 	listener, err := net.ListenTCP(src.Network(), src)
 	if err != nil {
-		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - ", err.Error()))
+		return Error(fmt.Sprint("Unable to setup and run server {", s.Label(), "} listening on {", s.Key(), "}. - ", err.Error()))
 	}
 
 	// Create the channels
@@ -72,7 +72,7 @@ func (s *Server) SetupAndRun() error {
 	s.listener = listener
 	go s.serveIncomingConnections()
 
-	// log.Verbose.Print("Server {", s.Label(), "," , s.Key(), "} started to listen for incoming backbone connections on {", s.Key(), "}.")
+	log.Verbose.Print("Server {", s.Label(), "} started to listen for incoming backbone connections on {", s.Key(), "}.")
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -169,7 +169,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 			",", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
 		} else {
 			s.backboneConnections[key] = connection
-			// log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} started handling a new backbone connection {", key, "}.")
+			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone connection {", key, "}.")
 		}
 	}
 	s.lock.Unlock()
@@ -184,7 +184,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
 	s.lock.Lock()
 	for _, key := range keys {
-		// log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} removed backbone connection {", key, "}.")
+		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone connection {", key, "}.")
 		delete(s.backboneConnections, key)
 	}
 	s.lock.Unlock()
@@ -193,7 +193,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 }
 
 func (s *Server) flushHoldingArea() {
-	// log.Verbose.Print("Server {", s.Label(), " ", s.Key(), "} flushes the holding area.")
+	log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} flushes the holding area.")
 	for _, p := range s.holdingArea {
 		s.egress <- p
 	}
@@ -252,13 +252,12 @@ func (s *Server) serveEgress() {
 					"server {", s.Label(), ",", s.Key(), "} for backbone connection key {", key ,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				_ = nBytesWritten
-				log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} wrote {", nBytesWritten, "}.")
 			}
 		} else {
 		// Currently there is no connection available to send the packet, the packet has therefore to wait
 		// in the holding area. Whenever a new connection is established all the packets in the holding area
 		// are again processed; hopefully they can be send out this time.
-			// log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} directs packet with backbone connection key {", key, "} in holding area.")
+			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for backbone connection key {", key, "} into holding area.")
 			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
