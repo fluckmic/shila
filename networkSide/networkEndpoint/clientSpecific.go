@@ -7,6 +7,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
+	"shila/log"
 	"shila/networkSide/network"
 	"time"
 )
@@ -88,8 +89,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	go c.serveIngress()
 	go c.serveEgress()
 
-	//log.Verbose.Print("Client {", c.Label()," ", c.Key(),
-	//"} successfully established connection to {", c.connection.Identifier.Dst, "}.")
+	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.Key(), "}.")
 
 	c.isSetup   = true
 	c.isRunning = true
@@ -99,7 +99,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 func (c *Client) TearDown() error {
 
-	// log.Verbose.Print("Tear down client {", c.Label(), ",", c.Key(), "}.")
+	log.Verbose.Print("Tear down client {", c.Label(), "}. connecting to {", c.Key(), "}.")
 
 	c.isValid = false
 	c.isRunning = false
@@ -166,7 +166,7 @@ func (c *Client) serveEgress() {
 			return
 		} else if err != nil {
 			// Wait some time, then check if client is still valid (server can close connection earlier..)
-			time.Sleep(time.Duration(2 * time.Second)) // TODO for SCION: Add to config
+			time.Sleep(2 * time.Second) // TODO for SCION: Add to config
 			if c.IsValid() {
 				panic(fmt.Sprint("Client {", c.Key(), "} unable to write data to backbone connection."))
 				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?
