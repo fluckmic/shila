@@ -8,6 +8,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
+	"shila/log"
 	"shila/networkSide/network"
 	"strconv"
 	"strings"
@@ -251,7 +252,7 @@ func (s *Server) serveEgress() {
 					"server {", s.Label(), ",", s.Key(), "} for backbone connection key {", key ,"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
 				_ = nBytesWritten
-				// log.Verbose.Print("Server {", s.Label()," ", s.Key(), "} wrote {", nBytesWritten, "}.")
+				log.Verbose.Print("Server {", s.Label(), ",", s.Key(), "} wrote {", nBytesWritten, "}.")
 			}
 		} else {
 		// Currently there is no connection available to send the packet, the packet has therefore to wait
