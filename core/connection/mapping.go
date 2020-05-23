@@ -38,7 +38,7 @@ func (m *Mapping) vacuum() {
 		m.lock.Lock()
 		for key, con := range m.connections {
 			if time.Since(con.touched) > (20 * time.Second) { // TODO: Configuration parameter: Max time untouched
-				con.Close()
+				con.Close(shila.ThirdPartyError("Connection got dusty."))
 				delete(m.connections, key)
 			}
 		}
