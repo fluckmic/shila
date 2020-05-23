@@ -143,7 +143,7 @@ func (c *Client) serveIngress() {
 			return
 		} else if err != nil {
 			// Wait some time, then check if client is still valid (server can close connection earlier..)
-			time.Sleep(time.Duration(2 * time.Second)) // TODO for SCION: Add to config
+			time.Sleep(2 * time.Second) // TODO for SCION: Add to config
 			if c.IsValid() {
 				panic(fmt.Sprint("Client {", c.Key(), "} unable to read data from backbone connection."))
 				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?

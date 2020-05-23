@@ -244,6 +244,8 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			defer conn.lock.Unlock()
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+			log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
+				"} to {", conn.state.current, "} after establishing a traffic connection.")
 		}
 	}()
 
