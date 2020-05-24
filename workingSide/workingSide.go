@@ -8,9 +8,9 @@ import (
 )
 
 type Manager struct {
-	config 						config.Config
-	connections 				*connection.Mapping
-	trafficChannelAnnouncements chan shila.PacketChannelAnnouncement
+	config 				config.Config
+	connections 			*connection.Mapping
+	trafficChannelAnnouncements 	chan shila.PacketChannelAnnouncement
 }
 
 type Error string
