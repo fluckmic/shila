@@ -40,6 +40,7 @@ func (m *Manager) Start() error {
 	return nil
 }
 
+// TODO: Add numberOfWorker to configuration file
 func (m *Manager) serveChannel(buffer shila.PacketChannel, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
 		go m.handleChannel(buffer)
