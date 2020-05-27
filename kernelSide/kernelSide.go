@@ -3,15 +3,14 @@ package kernelSide
 import (
 	"fmt"
 	"net"
-	"shila/config"
 	"shila/core/shila"
-	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint"
+	"shila/kernelSide/namespace"
 	"shila/log"
 )
 
 type Manager struct {
-	config    	config.Config
+	config    	Config
 	endpoints 	EndpointMapping
 	workingSide chan shila.PacketChannelAnnouncement
 	state       shila.EntityState
@@ -19,9 +18,9 @@ type Manager struct {
 
 type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
 
-func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
+func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
 	return &Manager{
-		config: 		config,
+		config:			HardCodedConfig(),
 		endpoints: 		make(EndpointMapping),
 		workingSide: 	workingSide,
 		state: 			shila.NewEntityState(),
@@ -34,7 +33,7 @@ func (m *Manager) Setup() error {
 		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
-	kCfg := m.config.KernelSide
+	kCfg := m.config
 
 	// Setup the namespaces
 	if err := m.setupNamespaces(); err != nil {
@@ -170,18 +169,18 @@ func (m *Manager) startKernelEndpoints() error {
 func (m *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
-	if m.config.KernelSide.IngressNamespace != nil {
-		if err := ipCommand.AddNamespace(m.config.KernelSide.IngressNamespace.Name); err != nil {
+	if m.config.IngressNamespace.NonEmpty {
+		if err := namespace.AddNamespace(m.config.IngressNamespace); err != nil {
 			return Error(fmt.Sprint("Unable to setup ingress namespace ",
-				m.config.KernelSide.IngressNamespace.Name, " - ", err.Error()))
+				m.config.IngressNamespace.Name, " - ", err.Error()))
 		}
 	}
 
 	// Create egress namespace
-	if m.config.KernelSide.EgressNamespace != nil {
-		if err := ipCommand.AddNamespace(m.config.KernelSide.EgressNamespace.Name); err != nil {
+	if m.config.EgressNamespace.NonEmpty {
+		if err := namespace.AddNamespace(m.config.EgressNamespace); err != nil {
 			return Error(fmt.Sprint("Unable to setup egress namespace ",
-				m.config.KernelSide.EgressNamespace.Name, " - ", err.Error()))
+				m.config.EgressNamespace.Name, " - ", err.Error()))
 		}
 	}
 
@@ -193,18 +192,18 @@ func (m *Manager) removeNamespaces() error {
 	var err error = nil
 
 	// Remove ingress namespace
-	if m.config.KernelSide.IngressNamespace != nil {
-		err = ipCommand.DeleteNamespace(m.config.KernelSide.IngressNamespace.Name)
+	if m.config.IngressNamespace.NonEmpty {
+		err = namespace.DeleteNamespace(m.config.IngressNamespace)
 	}
 	// Remove egress namespace
-	if m.config.KernelSide.EgressNamespace != nil {
-		err = ipCommand.DeleteNamespace(m.config.KernelSide.EgressNamespace.Name)
+	if m.config.EgressNamespace.NonEmpty {
+		err = namespace.DeleteNamespace(m.config.EgressNamespace)
 	}
 
 	return err
 }
 
-func (m *Manager) addKernelEndpoints(n uint, ns *ipCommand.Namespace, ip net.IP) error {
+func (m *Manager) addKernelEndpoints(n uint, ns namespace.Namespace, ip net.IP) error {
 
 	if startIP := ip.To4(); startIP == nil {
 		return Error(fmt.Sprint("Invalid starting IP: ", ip))
@@ -216,7 +215,7 @@ func (m *Manager) addKernelEndpoints(n uint, ns *ipCommand.Namespace, ip net.IP)
 				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
 
 			// ..then create the kernel endpoint..
-			newKerep := kernelEndpoint.New(newKerepId, m.config.KernelEndpoint)
+			newKerep := kernelEndpoint.New(newKerepId)
 
 			// ..and add it to the mapping.
 			newKerepKey := newKerepId.Key()
@@ -234,7 +233,7 @@ func (m *Manager) addKernelEndpoints(n uint, ns *ipCommand.Namespace, ip net.IP)
 
 func (m *Manager) setupAdditionalRouting() error {
 
-	kCfg := m.config.KernelSide
+	kCfg := m.config
 
 	// Restrict the use of MPTCP to the virtual devices
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
@@ -243,10 +242,10 @@ func (m *Manager) setupAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
-	if err := ipCommand.Execute(kCfg.IngressNamespace, args...); err != nil {
+	if err := namespace.Execute(kCfg.IngressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
-	if err := ipCommand.Execute(kCfg.EgressNamespace, args...); err != nil {
+	if err := namespace.Execute(kCfg.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -255,7 +254,7 @@ func (m *Manager) setupAdditionalRouting() error {
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "add", "to", kCfg.IngressIP.String(), "table", "1"}
-	if err := ipCommand.Execute(kCfg.EgressNamespace, args...); err != nil {
+	if err := namespace.Execute(kCfg.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -264,7 +263,7 @@ func (m *Manager) setupAdditionalRouting() error {
 
 func (m *Manager) clearAdditionalRouting() error {
 
-	kCfg := m.config.KernelSide
+	kCfg := m.config
 
 	// Roll back the restriction of the use of MPTCP to the virtual devices.
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
@@ -273,15 +272,15 @@ func (m *Manager) clearAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}
-	err := ipCommand.Execute(kCfg.IngressNamespace, args...)
-	err = ipCommand.Execute(kCfg.EgressNamespace, args...)
+	err := namespace.Execute(kCfg.IngressNamespace, args...)
+	err = namespace.Execute(kCfg.EgressNamespace, args...)
 
 	// SYN packets coming from client side connect calls are sent from the
 	// local interface, route them through one of the egress devices.
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "delete", "to", kCfg.IngressIP.String(), "table", "1"}
-	err = ipCommand.Execute(kCfg.EgressNamespace, args...)
+	err = namespace.Execute(kCfg.EgressNamespace, args...)
 
 	return err
 }

@@ -47,7 +47,7 @@ func realMain() int {
 	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
 
 	// Create and setup the kernelSide side
-	kernelSide := kernelSide.New(cfg, trafficChannelAnnouncements)
+	kernelSide := kernelSide.New(trafficChannelAnnouncements)
 	if err = kernelSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}

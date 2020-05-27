@@ -1,4 +1,4 @@
-package ipCommand
+package namespace
 
 type Error string
 

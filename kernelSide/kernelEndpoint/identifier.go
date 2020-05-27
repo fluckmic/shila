@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"net"
 	"shila/core/shila"
-	"shila/kernelSide/ipCommand"
+	"shila/kernelSide/namespace"
 )
 
 type Identifier struct {
 	number    uint
-	namespace *ipCommand.Namespace
+	namespace namespace.Namespace
 	ip        net.IP
 }
 
-func NewIdentifier(number uint, namespace *ipCommand.Namespace, ip net.IP) Identifier {
+func NewIdentifier(number uint, namespace namespace.Namespace, ip net.IP) Identifier {
 	return Identifier{number, namespace, ip}
 }
 
@@ -26,7 +26,7 @@ func (id *Identifier) Number() uint {
 }
 
 func (id *Identifier) Namespace() string {
-	if id.namespace == nil {
+	if !id.namespace.NonEmpty {
 		return ""
 	} else {
 		return id.namespace.Name
@@ -34,7 +34,7 @@ func (id *Identifier) Namespace() string {
 }
 
 func (id *Identifier) InDefaultNamespace() bool {
-	return id.namespace == nil
+	return !id.namespace.NonEmpty
 }
 
 func (id *Identifier) IP() string {

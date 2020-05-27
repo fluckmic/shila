@@ -7,8 +7,8 @@ import (
 	"io"
 	"shila/config"
 	"shila/core/shila"
-	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint/vif"
+	"shila/kernelSide/namespace"
 	"shila/layer/tcpip"
 	"shila/log"
 )
@@ -30,10 +30,9 @@ type Channels struct {
 	egress     shila.PacketChannel
 }
 
-func New(id Identifier, config config.KernelEndpoint) *Device {
+func New(id Identifier) *Device {
 	return &Device{
 		Id: 		id,
-		config: 	config,
 		isValid: 	true,
 	}
 }
@@ -154,14 +153,14 @@ func (d *Device) setupRouting() error {
 
 	// ip rule add from <dev ip> table <table id>
 	args := []string{"rule", "add", "from", d.Id.IP(), "table", fmt.Sprint(d.Id.Number())}
-	if err := ipCommand.Execute(d.Id.namespace, args...); err != nil {
+	if err := namespace.Execute(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
 	args = []string{"route", "add", "table", fmt.Sprint(d.Id.Number()), "default", "dev", d.Id.Name(), "scope", "link"}
-	if err := ipCommand.Execute(d.Id.namespace, args...); err != nil {
+	if err := namespace.Execute(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
@@ -173,11 +172,11 @@ func (d *Device) removeRouting() error {
 
 	// ip rule del table <table id>
 	args := []string{"rule", "del", "table", fmt.Sprint(d.Id.number)}
-	err := ipCommand.Execute(d.Id.namespace, args...)
+	err := namespace.Execute(d.Id.namespace, args...)
 
 	// ip route flush table <table id>
 	args = []string{"route", "flush", "table", fmt.Sprint(d.Id.number)}
-	err = ipCommand.Execute(d.Id.namespace, args...)
+	err = namespace.Execute(d.Id.namespace, args...)
 
 	return err
 }

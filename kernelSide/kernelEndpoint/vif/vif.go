@@ -3,26 +3,24 @@ package vif
 
 import (
 	"fmt"
-	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint/tun"
+	"shila/kernelSide/namespace"
 )
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
 
 type Device struct {
 	Name      string
-	Namespace *ipCommand.Namespace
+	Namespace namespace.Namespace
 	Subnet    string
 	device    *tun.Device
 	isUp      bool
 }
 
-func New(name string, namespace *ipCommand.Namespace, subnet string) *Device {
-	return &Device{name, namespace, subnet, nil, false}
+func New(name string, namespace namespace.Namespace, subnet string) *Device {
+	return &Device{
+		Name: 		name,
+		Namespace: 	namespace,
+		Subnet: 	subnet,
+	}
 }
 
 // Setup allocates the vif device.
@@ -93,7 +91,7 @@ func (d *Device) TurnUp() error {
 	}
 
 	args := []string{"link", "set", d.Name, "up"}
-	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
+	if err := namespace.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
 	}
 	d.isUp = true
@@ -115,7 +113,7 @@ func (d *Device) TurnDown() error {
 
 	// ip link set <device name> down
 	args := []string{"link", "set", d.Name, "down"}
-	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
+	if err := namespace.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
 	}
 	d.isUp = false
@@ -167,12 +165,12 @@ func (d *Device) IsUp() bool {
 func (d *Device) assignNamespace() error {
 
 	// Nothing to do if there is no namespace to be assigned
-	if d.Namespace == nil {
+	if !d.Namespace.NonEmpty {
 		return nil
 	}
 
 	// ip link set <device name> netns <namespace name>
-	err := ipCommand.Execute(nil, "link", "set", d.Name, "netns", d.Namespace.Name)
+	err := namespace.Execute(namespace.Namespace{}, "link", "set", d.Name, "netns", d.Namespace.Name)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to assign namespace ", d.Namespace.Name,
 			" to vif device ", d.Name, " - ", err.Error()))
@@ -188,7 +186,7 @@ func (d *Device) assignSubnet() error {
 
 	// ip addr add <subnet> dev <dev name>
 	args := []string{"addr", "add", d.Subnet, "dev", d.Name}
-	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
+	if err := namespace.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to assign subnet ", d.Subnet,
 			" to vif device ", d.Name, " - ", err.Error()))
 	}
@@ -199,6 +197,6 @@ func (d *Device) removeInterface() error {
 
 	// ip link delete <interface name>
 	args := []string{"link", "delete", d.Name}
-	err := ipCommand.Execute(d.Namespace, args...)
+	err := namespace.Execute(d.Namespace, args...)
 	return err
 }

@@ -16,7 +16,6 @@ type config interface {
 }
 
 type Config struct {
-	KernelSide     	KernelSide
 	KernelEndpoint 	KernelEndpoint
 	NetworkSide    	NetworkSide
 	NetworkEndpoint NetworkEndpoint
@@ -30,12 +29,6 @@ func (c *Config) InitDefault() (err error) {
 			err = e.(Error)
 		}
 	}()
-
-	// Initialize configuration for the kernel side
-	if err = c.KernelSide.InitDefault(); err != nil {
-		return Error(fmt.Sprint("Unable to initialize default "+
-			"config for kernel side - ", err.Error()))
-	}
 
 	// Initialize configuration for the kernel endpoint
 	if err = c.KernelEndpoint.InitDefault(); err != nil {
