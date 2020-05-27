@@ -42,9 +42,8 @@ func DecodeIPv4andTCPLayer(raw []byte) (layers.IPv4, layers.TCP, error) {
 	parser := gopacket.NewDecodingLayerParser(layers.LayerTypeIPv4, &ipv4, &tcp)
 	var decoded []gopacket.LayerType
 	if err := parser.DecodeLayers(raw, &decoded); err != nil {
-		if _, ok := err.(*gopacket.UnsupportedLayerType); !ok {
-			return ipv4, tcp, nil //TODO!!!
-			//return ipv4, tcp, Error(fmt.Sprint("Could not decode IPv4/TCP layer. - ", err.Error()))
+		if _, ok := err.(gopacket.UnsupportedLayerType); !ok {
+			return ipv4, tcp, err
 		}
 	}
 	return ipv4, tcp, nil
