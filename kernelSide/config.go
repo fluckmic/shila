@@ -5,7 +5,15 @@ import (
 	"shila/kernelSide/namespace"
 )
 
-type Config struct {
+var ConfigLoaded bool
+var Config config
+
+func init() {
+	Config 		 = hardCodedConfig()
+	ConfigLoaded = true
+}
+
+type config struct {
 	NEgressKerEp 		uint
 	EgressNamespace  	namespace.Namespace
 	IngressNamespace 	namespace.Namespace
@@ -13,8 +21,8 @@ type Config struct {
 	IngressIP 			net.IP
 }
 
-func HardCodedConfig() Config {
-	return Config{
+func hardCodedConfig() config {
+	return config{
 		NEgressKerEp:     3,
 		EgressNamespace:  namespace.NewNamespace("shila-egress"),
 		IngressNamespace: namespace.NewNamespace("shila-ingress"),

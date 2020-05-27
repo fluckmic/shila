@@ -13,7 +13,6 @@ import (
 
 type Device struct {
 	Id         Identifier
-	config     Config
 	channels   Channels
 	packetizer *Device
 	vif        *vif.Device
@@ -31,7 +30,6 @@ type Channels struct {
 func New(id Identifier) *Device {
 	return &Device{
 		Id: 		id,
-		config:		HardCodedConfig(),
 		isValid: 	true,
 	}
 }
@@ -80,9 +78,9 @@ func (d *Device) Setup() error {
 	}
 
 	// Allocate the buffers
-	d.channels.ingressRaw = make(chan byte, d.config.SizeReadBuffer)
-	d.channels.ingress    = make(chan *shila.Packet, d.config.SizeIngressBuff)
-	d.channels.egress  	  = make(chan *shila.Packet, d.config.SizeEgressBuff)
+	d.channels.ingressRaw = make(chan byte, Config.SizeReadBuffer)
+	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuff)
+	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuff)
 
 	d.isSetup = true
 	return nil
@@ -182,9 +180,9 @@ func (d *Device) removeRouting() error {
 
 func (d *Device) serveIngress() {
 	reader := io.Reader(d.vif)
-	storage := make([]byte, d.config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeReadBuffer)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, d.config.BatchSizeRead)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
@@ -212,7 +210,7 @@ func (d *Device) serveEgress() {
 
 func (d *Device) packetize() {
 	for {
-		rawData, _ := tcpip.PacketizeRawData(d.channels.ingressRaw, d.config.SizeReadBuffer)		// TODO: Handle error
+		rawData, _ := tcpip.PacketizeRawData(d.channels.ingressRaw, Config.SizeReadBuffer)		// TODO: Handle error
 		if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!

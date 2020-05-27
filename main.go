@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"shila/config"
 	"shila/core/connection"
 	"shila/core/netflow"
 	"shila/core/shila"
@@ -26,7 +25,6 @@ func realMain() int {
 
 	// TODO: Encourage user to run shila in separate namespace for ingress and egress
 
-	var cfg config.Config
 	var err error
 
 	// Initialize logging functionality
@@ -36,12 +34,6 @@ func realMain() int {
 	shutdown.Init()
 
 	log.Info.Println("Setup started...")
-
-	// Load the initialization
-	// TODO: Load config from a file as an alternative.
-	if err = cfg.InitDefault(); err != nil {
-		log.Error.Fatalln("Fatal error -", err.Error())
-	}
 
 	// Create the channel used to announce new traffic channels
 	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
@@ -55,7 +47,7 @@ func realMain() int {
 	defer kernelSide.CleanUp()
 
 	// Create and setup the network side
-	networkSide := networkSide.New(cfg, trafficChannelAnnouncements)
+	networkSide := networkSide.New(trafficChannelAnnouncements)
 	if err = networkSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
 	}
@@ -78,7 +70,7 @@ func realMain() int {
 	connections := connection.NewMapping(kernelSide, networkSide, routing)
 
 	// Create and setup the working side
-	workingSide := workingSide.New(cfg, connections, trafficChannelAnnouncements)
+	workingSide := workingSide.New(connections, trafficChannelAnnouncements)
 	if err := workingSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the working side - ", err.Error())
 	}

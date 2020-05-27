@@ -1,42 +1,36 @@
 package workingSide
 
 import (
-	"shila/config"
 	"shila/core/connection"
 	"shila/core/shila"
 	"shila/log"
 )
 
 type Manager struct {
-	config 				config.Config
-	connections 			*connection.Mapping
-	trafficChannelAnnouncements 	chan shila.PacketChannelAnnouncement
+	connections     *connection.Mapping
+	trafficChannels chan shila.PacketChannelAnnouncement
 }
 
-type Error string
-func (e Error) Error() string {
-	return string(e)
+func New(connections *connection.Mapping, trafficChannels chan shila.PacketChannelAnnouncement) *Manager {
+	return &Manager{
+		connections:     connections,
+		trafficChannels: trafficChannels,
+	}
 }
 
-func New(config config.Config, connections *connection.Mapping, trafficChannelAnnouncements chan shila.PacketChannelAnnouncement) *Manager {
-	return &Manager{config, connections, trafficChannelAnnouncements}
-}
-
-func (m *Manager) Setup() error {
-	return nil
-}
-
-func (m *Manager) CleanUp() {
-	
-}
+func (m *Manager) CleanUp() { }
 
 func (m *Manager) Start() error {
 	go func() {
-		for anc := range m.trafficChannelAnnouncements {
+		for anc := range m.trafficChannels {
 			log.Verbose.Print("Working side received announcement for new traffic channel {", anc.Announcer.Key(), ",", anc.Announcer.Label(), "}.")
-			go m.serveChannel(anc.Channel, m.config.WorkingSide.NumberOfWorkerPerChannel)
+			go m.serveChannel(anc.Channel, Config.NumberOfWorkerPerChannel)
 		}
 	}()
+	return nil
+}
+
+func (m *Manager) Setup() error {
 	return nil
 }
 

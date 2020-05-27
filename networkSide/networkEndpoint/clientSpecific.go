@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
 	"shila/log"
@@ -27,11 +26,10 @@ type networkConnection struct {
 	Backbone   *net.TCPConn
 }
 
-func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.NetworkClientEndpoint {
+func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 				Base{
 								label: label,
-								config: config,
 							},
 		connection:		    networkConnection{Identifier: netConnId},
 		isValid: 			true,
@@ -85,8 +83,8 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	c.connection.Identifier.Src = backboneConnection.LocalAddr()
 
 	// Create the channels
-	c.ingress = make(chan *shila.Packet, c.config.SizeIngressBuff)
-	c.egress  = make(chan *shila.Packet, c.config.SizeEgressBuff)
+	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuff)
+	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuff)
 
 	go c.serveIngress()
 	go c.serveEgress()
@@ -132,13 +130,13 @@ func (c *Client) Label() shila.EndpointLabel {
 
 func (c *Client) serveIngress() {
 
-	ingressRaw := make(chan byte, c.config.SizeReadBuffer)
+	ingressRaw := make(chan byte, Config.SizeReadBuffer)
 	go c.packetize(ingressRaw)
 
 	reader := io.Reader(c.connection.Backbone)
-	storage := make([]byte, c.config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeReadBuffer)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, c.config.BatchSizeRead)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
 		if err != nil && !c.IsValid() {
 			// Client is no longer valid, there is no need to try to stay alive.
 			close(ingressRaw)
@@ -179,7 +177,7 @@ func (c *Client) serveEgress() {
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, c.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of client {", c.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!

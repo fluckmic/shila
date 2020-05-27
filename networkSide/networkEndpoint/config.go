@@ -1,4 +1,4 @@
-package kernelEndpoint
+package networkEndpoint
 
 var ConfigLoaded bool
 var Config config
@@ -13,19 +13,18 @@ type config struct {
 	SizeIngressBuff int
 	SizeEgressBuff  int
 	// kernel <-> kerep (in Byte)
-	SizeReadBuffer 	int
+	SizeReadBuffer	int
 	BatchSizeRead  	int
-	MaxNVifReader 	int
-	MaxNVifWriter 	int
+	SizeHoldingArea int
 }
 
 func hardCodedConfig() config {
 	return config{
-		SizeIngressBuff:	10,
-		SizeEgressBuff:		10,
-		SizeReadBuffer:		1500,
-		BatchSizeRead:		30,
-		MaxNVifReader:		1,
-		MaxNVifWriter:		1,
+		SizeIngressBuff: 10,
+		SizeEgressBuff:  10,
+		SizeReadBuffer:  1500,
+		BatchSizeRead:   30,
+		SizeHoldingArea: 100,
 	}
 }
+

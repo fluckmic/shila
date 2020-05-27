@@ -2,7 +2,6 @@ package networkSide
 
 import (
 	"net"
-	"shila/config"
 	"shila/core/shila"
 	"shila/networkSide/network"
 	"shila/networkSide/networkEndpoint"
@@ -11,23 +10,18 @@ import (
 
 var _ shila.SpecificNetworkSideManager = (*SpecificManager)(nil)
 
-const defaultPath 			= ""
-const defaultContactingPort = 9876
+type SpecificManager struct { }
 
-type SpecificManager struct {
-	config config.Config
-}
-
-func NewSpecificManager(config config.Config) SpecificManager {
-	return SpecificManager{config: config}
+func NewSpecificManager() SpecificManager {
+	return SpecificManager{	}
 }
 
 func (specMng SpecificManager) NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkClientEndpoint {
-	return networkEndpoint.NewClient(netConnId, label, specMng.config.NetworkEndpoint)
+	return networkEndpoint.NewClient(netConnId, label)
 }
 
 func (specMng SpecificManager) NewServer(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkServerEndpoint {
-	return networkEndpoint.NewServer(netConnId, label, specMng.config.NetworkEndpoint)
+	return networkEndpoint.NewServer(netConnId, label)
 }
 
 func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.NetFlow {
@@ -40,7 +34,7 @@ func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.Ne
 
 func (specMng SpecificManager) LocalContactingNetFlow() shila.NetFlow {
 	return shila.NetFlow{
-		Src: network.AddressGenerator{}.NewLocal(strconv.Itoa(defaultContactingPort)),
+		Src: network.AddressGenerator{}.NewLocal(strconv.Itoa(Config.ContactingServerPort)),
 	}
 }
 
@@ -48,7 +42,7 @@ func (specMng SpecificManager) generateRemoteContactingAddress(address shila.Net
 	addr := address.(*net.TCPAddr)
 	return &net.TCPAddr{
 		IP:   addr.IP,
-		Port: defaultContactingPort,
+		Port: Config.ContactingServerPort,
 		Zone: addr.Zone,
 	}
 }

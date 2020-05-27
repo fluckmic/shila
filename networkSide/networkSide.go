@@ -2,7 +2,6 @@ package networkSide
 
 import (
 	"fmt"
-	"shila/config"
 	"shila/core/shila"
 	"sync"
 	"time"
@@ -12,7 +11,6 @@ import (
 
 type Manager struct {
 	specificManager			  SpecificManager
-	config                    config.Config
 	contactingServer          shila.NetworkServerEndpoint
 	serverTrafficEndpoints    shila.MappingNetworkServerEndpoint
 	clientContactingEndpoints shila.MappingNetworkClientEndpoint
@@ -22,15 +20,15 @@ type Manager struct {
 	state                     shila.EntityState
 }
 
-func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
+func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
 	return &Manager{
-		specificManager: NewSpecificManager(config),
-		config:      	 config,
+		specificManager: NewSpecificManager(),
 		workingSide: 	 workingSide,
 		lock:        	 sync.Mutex{},
 		state:       	 shila.NewEntityState(),
 	}
 }
+
 
 func (m *Manager) Setup() error {
 
@@ -183,7 +181,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	trafficEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
 
 	// Wait a certain amount of time to give the server endpoint time to establish itself
-	time.Sleep(time.Duration(m.config.NetworkSide.WaitingTimeTrafficConnEstablishment) * time.Second)
+	time.Sleep(time.Duration(Config.WaitingTimeTrafficConnEstablishment) * time.Second)
 	// TODO: Configuration parameter: Waiting time traffic conn establishment
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()

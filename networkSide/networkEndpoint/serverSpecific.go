@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"shila/config"
 	"shila/core/shila"
 	"shila/layer/tcpip"
 	"shila/log"
@@ -29,16 +28,15 @@ type Server struct{
 	isRunning           bool
 }
 
-func NewServer(flow shila.NetFlow, label shila.EndpointLabel, config config.NetworkEndpoint) shila.NetworkServerEndpoint {
+func NewServer(flow shila.NetFlow, label shila.EndpointLabel) shila.NetworkServerEndpoint {
 	return &Server{
 		Base: 			Base{
 								label: 	label,
-								config: config,
 						},
 		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  net.Conn),
 		netFlow:             flow,
 		lock:                sync.Mutex{},
-		holdingArea:         make([]*shila.Packet, 0, config.SizeHoldingArea),
+		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
 		isValid:             true,
 	}
 }
@@ -65,8 +63,8 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// Create the channels
-	s.ingress = make(chan *shila.Packet, s.config.SizeIngressBuff)
-	s.egress  = make(chan *shila.Packet, s.config.SizeEgressBuff)
+	s.ingress = make(chan *shila.Packet, Config.SizeIngressBuff)
+	s.egress  = make(chan *shila.Packet, Config.SizeEgressBuff)
 
 	// Start listening for incoming backbone connections.
 	s.listener = listener
@@ -200,7 +198,7 @@ func (s *Server) flushHoldingArea() {
 func (s *Server) serveIngress(connection net.Conn) {
 
 	// Prepare everything for the packetizer
-	ingressRaw := make(chan byte, s.config.SizeReadBuffer)
+	ingressRaw := make(chan byte, Config.SizeReadBuffer)
 
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// Server is the contacting server, it is his responsibility
@@ -219,9 +217,9 @@ func (s *Server) serveIngress(connection net.Conn) {
 	}
 
 	reader := io.Reader(connection)
-	storage := make([]byte, s.config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeReadBuffer)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, s.config.BatchSizeRead)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
 		// If the incoming connection suffers from an error, we close it and return.
 		// The server instance is still able to receive backboneConnections as long as it is not
 		// shut down by the manager of the network side.
@@ -279,7 +277,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
@@ -300,7 +298,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, s.config.SizeReadBuffer); rawData != nil { // TODO: Handle error
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
