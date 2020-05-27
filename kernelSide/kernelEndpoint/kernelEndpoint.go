@@ -218,7 +218,6 @@ func (d *Device) packetize() {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			log.Verbose.Print(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
 			d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 		}
 	}
