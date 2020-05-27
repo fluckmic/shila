@@ -1,4 +1,3 @@
-// TODO: tun package deserves a description.
 package tun
 
 /*
@@ -48,30 +47,27 @@ import "C"
 import (
 	"fmt"
 	"os"
+	"shila/core/shila"
 	"unsafe"
 )
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
 type Device struct {
-	Name string
-	file *os.File
+	Name 	string
+	file 	*os.File
+	state   shila.EntityState
 }
 
 func New(name string) *Device {
-	return &Device{name, nil}
+	return &Device{
+		Name: 	name,
+		state: 	shila.NewEntityState(),
+	}
 }
 
-// TODO: Allocate deserves a description.
 func (d *Device) Allocate() error {
 
-	if d.file != nil {
-		return Error(fmt.Sprint("Unable to allocate tun device ",
-			d.Name, " - ", "Device already allocated."))
+	if d.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 
 	var errno C.int
@@ -82,43 +78,31 @@ func (d *Device) Allocate() error {
 
 	if fd < 0 {
 		var errorString = C.GoString(C.strerror(errno))
-		return Error(fmt.Sprint("Unable to allocate tun device ",
-			d.Name, " - ", errorString, "."))
+		return shila.ThirdPartyError(errorString)
 	}
 
 	d.file = os.NewFile(uintptr(fd), d.Name)
+	d.state.Set(shila.Initialized)
 	return nil
 }
 
-// TODO: De-allocate deserves a description.
 func (d *Device) Deallocate() error {
-	if d.file == nil {
-		return Error(fmt.Sprint("Unable to de-allocate tun device ",
-			d.Name, " - ", "Device not allocated."))
-	}
 	err := d.file.Close()
 	d.file = nil
+	d.state.Set(shila.TornDown)
 	return err
 }
 
-func (d *Device) IsAllocated() bool {
-	return d.file != nil
-}
-
 func (d *Device) Read(b []byte) (int, error) {
-	if !d.IsAllocated() {
-		err := Error(fmt.Sprint("Unable to read from tun device ",
-			d.Name, " - ", "Device not allocated."))
-		return 0, err
+	if d.state.Not(shila.Initialized) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 	return d.file.Read(b)
 }
 
 func (d *Device) Write(b []byte) (int, error) {
-	if !d.IsAllocated() {
-		err := Error(fmt.Sprint("Unable to write to tun device ",
-			d.Name, " - ", "Device not allocated."))
-		return 0, err
+	if d.state.Not(shila.Initialized) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 	return d.file.Write(b)
 }

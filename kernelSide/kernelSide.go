@@ -5,7 +5,7 @@ import (
 	"net"
 	"shila/config"
 	"shila/core/shila"
-	"shila/helper"
+	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/log"
 )
@@ -13,29 +13,25 @@ import (
 type Manager struct {
 	config    	config.Config
 	endpoints 	EndpointMapping
-	isRunning 	bool
-	isSetup   	bool
 	workingSide chan shila.PacketChannelAnnouncement
+	state       shila.EntityState
 }
 
 type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
 
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
-
 func New(config config.Config, workingSide chan shila.PacketChannelAnnouncement) *Manager {
-	// Setup the mapping holding the kernel endpoints
-	return &Manager{config,make(EndpointMapping), false, false, workingSide}
+	return &Manager{
+		config: 		config,
+		endpoints: 		make(EndpointMapping),
+		workingSide: 	workingSide,
+		state: 			shila.NewEntityState(),
+	}
 }
 
 func (m *Manager) Setup() error {
 
-	if m.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", "Already setup."))
+	if m.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
 	kCfg := m.config.KernelSide
@@ -82,17 +78,14 @@ func (m *Manager) Setup() error {
 			" - ", err.Error()))
 	}
 
-	m.isSetup = true
+	m.state.Set(shila.Initialized)
+
 	return nil
 }
 
 func (m *Manager) CleanUp() error {
 
 	var err error = nil
-
-	if !m.IsSetup() {
-		return err
-	}
 
 	log.Info.Println("Mopping up the kernel side..")
 
@@ -101,50 +94,31 @@ func (m *Manager) CleanUp() error {
 	err = m.clearAdditionalRouting()
 	err = m.removeNamespaces()
 
-	m.isSetup 	= false
-	m.isRunning = false
+	m.state.Set(shila.TornDown)
 
 	log.Info.Println("Kernel side mopped.")
+
 	return err
 }
 
 func (m *Manager) Start() error {
 
-	if !m.IsSetup() {
-		return Error(fmt.Sprint("Cannot start kernel side",
-			" - ", "Kernel side not yet setup."))
+	if m.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
-	if m.IsRunning() {
-		return Error(fmt.Sprint("Cannot start kernel side",
-			" - ", "Kernel side already running."))
-	}
-
-	// log.Verbose.Println("Starting kernel side...")
-
-	if err := m.startKernelEndpoints(); err != nil {
-		return Error(fmt.Sprint("Cannot start kernel side",
-			" - ", err.Error()))
-	}
+	log.Verbose.Println("Starting kernel side...")
 
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
 		m.workingSide <- shila.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
 	}
 
-	m.isRunning = true
+	m.state.Set(shila.Running)
 
-	// log.Verbose.Println("Kernel side started.")
+	log.Verbose.Println("Kernel side started.")
 
 	return nil
-}
-
-func (m *Manager) IsSetup() bool {
-	return m.isSetup
-}
-
-func (m *Manager) IsRunning() bool {
-	return m.isRunning
 }
 
 func (m *Manager) setupKernelEndpoints() error {
@@ -197,7 +171,7 @@ func (m *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
 	if m.config.KernelSide.IngressNamespace != nil {
-		if err := helper.AddNamespace(m.config.KernelSide.IngressNamespace.Name); err != nil {
+		if err := ipCommand.AddNamespace(m.config.KernelSide.IngressNamespace.Name); err != nil {
 			return Error(fmt.Sprint("Unable to setup ingress namespace ",
 				m.config.KernelSide.IngressNamespace.Name, " - ", err.Error()))
 		}
@@ -205,7 +179,7 @@ func (m *Manager) setupNamespaces() error {
 
 	// Create egress namespace
 	if m.config.KernelSide.EgressNamespace != nil {
-		if err := helper.AddNamespace(m.config.KernelSide.EgressNamespace.Name); err != nil {
+		if err := ipCommand.AddNamespace(m.config.KernelSide.EgressNamespace.Name); err != nil {
 			return Error(fmt.Sprint("Unable to setup egress namespace ",
 				m.config.KernelSide.EgressNamespace.Name, " - ", err.Error()))
 		}
@@ -220,17 +194,17 @@ func (m *Manager) removeNamespaces() error {
 
 	// Remove ingress namespace
 	if m.config.KernelSide.IngressNamespace != nil {
-		err = helper.DeleteNamespace(m.config.KernelSide.IngressNamespace.Name)
+		err = ipCommand.DeleteNamespace(m.config.KernelSide.IngressNamespace.Name)
 	}
 	// Remove egress namespace
 	if m.config.KernelSide.EgressNamespace != nil {
-		err = helper.DeleteNamespace(m.config.KernelSide.EgressNamespace.Name)
+		err = ipCommand.DeleteNamespace(m.config.KernelSide.EgressNamespace.Name)
 	}
 
 	return err
 }
 
-func (m *Manager) addKernelEndpoints(n uint, ns *helper.Namespace, ip net.IP) error {
+func (m *Manager) addKernelEndpoints(n uint, ns *ipCommand.Namespace, ip net.IP) error {
 
 	if startIP := ip.To4(); startIP == nil {
 		return Error(fmt.Sprint("Invalid starting IP: ", ip))
@@ -269,10 +243,10 @@ func (m *Manager) setupAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
-	if err := helper.ExecuteIpCommand(kCfg.IngressNamespace, args...); err != nil {
+	if err := ipCommand.Execute(kCfg.IngressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
-	if err := helper.ExecuteIpCommand(kCfg.EgressNamespace, args...); err != nil {
+	if err := ipCommand.Execute(kCfg.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -281,7 +255,7 @@ func (m *Manager) setupAdditionalRouting() error {
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "add", "to", kCfg.IngressIP.String(), "table", "1"}
-	if err := helper.ExecuteIpCommand(kCfg.EgressNamespace, args...); err != nil {
+	if err := ipCommand.Execute(kCfg.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -299,15 +273,15 @@ func (m *Manager) clearAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}
-	err := helper.ExecuteIpCommand(kCfg.IngressNamespace, args...)
-	err = helper.ExecuteIpCommand(kCfg.EgressNamespace, args...)
+	err := ipCommand.Execute(kCfg.IngressNamespace, args...)
+	err = ipCommand.Execute(kCfg.EgressNamespace, args...)
 
 	// SYN packets coming from client side connect calls are sent from the
 	// local interface, route them through one of the egress devices.
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "delete", "to", kCfg.IngressIP.String(), "table", "1"}
-	err = helper.ExecuteIpCommand(kCfg.EgressNamespace, args...)
+	err = ipCommand.Execute(kCfg.EgressNamespace, args...)
 
 	return err
 }

@@ -1,15 +1,8 @@
-// TODO: Find a better name?
-package helper
+package ipCommand
 
 import (
 	"os/exec"
 )
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
 
 type Namespace struct {
 	Name string
@@ -50,7 +43,7 @@ func execIpCmdInNamespace(ns string, args ...string) error {
 	return execIpCmd(append([]string{"netns", "exec", ns, "ip"}, args...)...)
 }
 
-func ExecuteIpCommand(ns *Namespace, args ...string) error {
+func Execute(ns *Namespace, args ...string) error {
 	if ns == nil {
 		return execIpCmd(args...)
 	} else {

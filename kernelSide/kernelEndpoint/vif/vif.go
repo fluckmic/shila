@@ -3,7 +3,7 @@ package vif
 
 import (
 	"fmt"
-	"shila/helper"
+	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint/tun"
 )
 
@@ -15,13 +15,13 @@ func (e Error) Error() string {
 
 type Device struct {
 	Name      string
-	Namespace *helper.Namespace
+	Namespace *ipCommand.Namespace
 	Subnet    string
 	device    *tun.Device
 	isUp      bool
 }
 
-func New(name string, namespace *helper.Namespace, subnet string) *Device {
+func New(name string, namespace *ipCommand.Namespace, subnet string) *Device {
 	return &Device{name, namespace, subnet, nil, false}
 }
 
@@ -93,7 +93,7 @@ func (d *Device) TurnUp() error {
 	}
 
 	args := []string{"link", "set", d.Name, "up"}
-	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
+	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
 	}
 	d.isUp = true
@@ -115,7 +115,7 @@ func (d *Device) TurnDown() error {
 
 	// ip link set <device name> down
 	args := []string{"link", "set", d.Name, "down"}
-	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
+	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
 	}
 	d.isUp = false
@@ -172,7 +172,7 @@ func (d *Device) assignNamespace() error {
 	}
 
 	// ip link set <device name> netns <namespace name>
-	err := helper.ExecuteIpCommand(nil, "link", "set", d.Name, "netns", d.Namespace.Name)
+	err := ipCommand.Execute(nil, "link", "set", d.Name, "netns", d.Namespace.Name)
 	if err != nil {
 		return Error(fmt.Sprint("Unable to assign namespace ", d.Namespace.Name,
 			" to vif device ", d.Name, " - ", err.Error()))
@@ -188,7 +188,7 @@ func (d *Device) assignSubnet() error {
 
 	// ip addr add <subnet> dev <dev name>
 	args := []string{"addr", "add", d.Subnet, "dev", d.Name}
-	if err := helper.ExecuteIpCommand(d.Namespace, args...); err != nil {
+	if err := ipCommand.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to assign subnet ", d.Subnet,
 			" to vif device ", d.Name, " - ", err.Error()))
 	}
@@ -199,6 +199,6 @@ func (d *Device) removeInterface() error {
 
 	// ip link delete <interface name>
 	args := []string{"link", "delete", d.Name}
-	err := helper.ExecuteIpCommand(d.Namespace, args...)
+	err := ipCommand.Execute(d.Namespace, args...)
 	return err
 }

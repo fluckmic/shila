@@ -19,7 +19,7 @@ func (te TolerableError) Error() string {
 }
 
 // Terminate the shila, running it any further makes no sense.
-// Issue with the implementation
+// Most Issue with the implementation
 type CriticalError string
 func (ce CriticalError) Error() string {
 	return string(ce)

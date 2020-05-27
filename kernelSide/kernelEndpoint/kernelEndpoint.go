@@ -7,19 +7,11 @@ import (
 	"io"
 	"shila/config"
 	"shila/core/shila"
-	"shila/helper"
+	"shila/kernelSide/ipCommand"
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/layer/tcpip"
 	"shila/log"
 )
-
-const doVerbosePackageLogging = false
-
-func verbolog(loggingMessage string) {
-	if doVerbosePackageLogging {
-		log.Verbose.Print(loggingMessage)
-	}
-}
 
 type Device struct {
 	Id         Identifier
@@ -36,12 +28,6 @@ type Channels struct {
 	ingressRaw chan byte
 	ingress    shila.PacketChannel
 	egress     shila.PacketChannel
-}
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
 }
 
 func New(id Identifier, config config.KernelEndpoint) *Device {
@@ -168,14 +154,14 @@ func (d *Device) setupRouting() error {
 
 	// ip rule add from <dev ip> table <table id>
 	args := []string{"rule", "add", "from", d.Id.IP(), "table", fmt.Sprint(d.Id.Number())}
-	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
+	if err := ipCommand.Execute(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
 	args = []string{"route", "add", "table", fmt.Sprint(d.Id.Number()), "default", "dev", d.Id.Name(), "scope", "link"}
-	if err := helper.ExecuteIpCommand(d.Id.namespace, args...); err != nil {
+	if err := ipCommand.Execute(d.Id.namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
 			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
 	}
@@ -187,11 +173,11 @@ func (d *Device) removeRouting() error {
 
 	// ip rule del table <table id>
 	args := []string{"rule", "del", "table", fmt.Sprint(d.Id.number)}
-	err := helper.ExecuteIpCommand(d.Id.namespace, args...)
+	err := ipCommand.Execute(d.Id.namespace, args...)
 
 	// ip route flush table <table id>
 	args = []string{"route", "flush", "table", fmt.Sprint(d.Id.number)}
-	err = helper.ExecuteIpCommand(d.Id.namespace, args...)
+	err = ipCommand.Execute(d.Id.namespace, args...)
 
 	return err
 }
@@ -201,7 +187,7 @@ func (d *Device) serveIngress() {
 	storage := make([]byte, d.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, d.config.BatchSizeRead)
-		verbolog(fmt.Sprint("Kernel endpoint {", d.Key() ,"} has read {", nBytesRead, "} " +
+		log.Verbose.Print(fmt.Sprint("Kernel endpoint {", d.Key() ,"} has read {", nBytesRead, "} " +
 			"bytes which are now send to the ingress raw."))
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
@@ -235,7 +221,7 @@ func (d *Device) packetize() {
 			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
 				"}. - ", err.Error())) // TODO: Handle panic!
 		} else {
-			verbolog(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
+			log.Verbose.Print(fmt.Sprint("Kernel endpoint {", d.Id.Key() ,"} enqueued new ingress packet."))
 			d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 		}
 	}
@@ -245,7 +231,6 @@ func (d *Device) Label() shila.EndpointLabel {
 	return shila.KernelEndpoint
 }
 
-// TODO:
 func (d *Device) Key() shila.EndpointKey {
 	return shila.EndpointKey(d.Id.Key())
 }

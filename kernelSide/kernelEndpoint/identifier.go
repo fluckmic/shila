@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"net"
 	"shila/core/shila"
-	"shila/helper"
+	"shila/kernelSide/ipCommand"
 )
 
 type Identifier struct {
 	number    uint
-	namespace *helper.Namespace
+	namespace *ipCommand.Namespace
 	ip        net.IP
 }
 
-func NewIdentifier(number uint, namespace *helper.Namespace, ip net.IP) Identifier {
+func NewIdentifier(number uint, namespace *ipCommand.Namespace, ip net.IP) Identifier {
 	return Identifier{number, namespace, ip}
 }
 
