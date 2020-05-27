@@ -1,18 +1,19 @@
-// TODO: vif package deserves a description.
+
 package vif
 
 import (
 	"fmt"
+	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint/tun"
 	"shila/kernelSide/namespace"
 )
 
 type Device struct {
-	Name      string
-	Namespace namespace.Namespace
-	Subnet    string
-	device    *tun.Device
-	isUp      bool
+	Name      	string
+	Namespace 	namespace.Namespace
+	Subnet    	string
+	device    	tun.Device
+	state   	shila.EntityState
 }
 
 func New(name string, namespace namespace.Namespace, subnet string) *Device {
@@ -20,15 +21,15 @@ func New(name string, namespace namespace.Namespace, subnet string) *Device {
 		Name: 		name,
 		Namespace: 	namespace,
 		Subnet: 	subnet,
+		state:		shila.NewEntityState(),
 	}
 }
 
 // Setup allocates the vif device.
 func (d *Device) Setup() error {
 
-	if d.IsSetup() {
-		return Error(fmt.Sprint("Unable to setup vif device ",
-			d.Name, " - ", "Device already setup."))
+	if d.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 
 	// Create and allocated a new tun device
@@ -51,115 +52,60 @@ func (d *Device) Setup() error {
 		return err
 	}
 
+	d.state.Set(shila.Initialized)
 	return nil
 }
 
 // Teardown de-allocate and deletes the vif device.
 func (d *Device) Teardown() error {
-
-	if !d.IsSetup() {
-		return Error(fmt.Sprint("Unable to tear down vif device ", d.Name,
-			" - ", "Device not even setup."))
-	}
-
 	var err error
-	// Return the most recent error, if there is one.
-	// However we proceed with the teardown nevertheless.
-
-	// Remove the interface from the system
 	err = d.removeInterface()
-
-	// Deallocate the corresponding instance of the interface
 	err = d.device.Deallocate()
-
-	d.device = nil
-
+	d.state.Set(shila.TornDown)
 	return err
 }
 
 // TurnUp enables the vif device.
 func (d *Device) TurnUp() error {
 
-	if !d.IsSetup() {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
-			" up - ", "Device not even setup."))
-	}
-
-	if d.IsUp() {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
-			" up - ", "Device already up."))
+	if d.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 
 	args := []string{"link", "set", d.Name, "up"}
 	if err := namespace.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
 	}
-	d.isUp = true
+
+	d.state.Set(shila.Running)
 	return nil
 }
 
 // TurnDown disables the vif device.
 func (d *Device) TurnDown() error {
 
-	if !d.IsSetup() {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
-			" down - ", "Device not even setup."))
-	}
-
-	if !d.IsUp() {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name,
-			" down - ", "Device already down."))
-	}
-
 	// ip link set <device name> down
 	args := []string{"link", "set", d.Name, "down"}
 	if err := namespace.Execute(d.Namespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
 	}
-	d.isUp = false
+
+	d.state.Set(shila.Initialized)
 	return nil
 }
 
 func (d *Device) Read(b []byte) (int, error) {
-
-	if !d.IsSetup() {
-		err := Error(fmt.Sprint("Cannot read from vif device ", d.Name,
-			" - ", "Device not even setup."))
-		return 0, err
+	if d.state.Not(shila.Running) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
-
-	if !d.IsUp() {
-		err := Error(fmt.Sprint("Cannot read from vif device ", d.Name,
-			" - ", "Device is not up."))
-		return 0, err
-	}
-
 	return d.device.Read(b)
 }
 
 func (d *Device) Write(b []byte) (int, error) {
-
-	if !d.IsSetup() {
-		err := Error(fmt.Sprint("Cannot write to vif device ", d.Name,
-			" - ", "Device not even setup."))
-		return 0, err
+	if d.state.Not(shila.Running) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
-
-	if !d.IsUp() {
-		err := Error(fmt.Sprint("Cannot write to vif device ", d.Name,
-			" - ", "Device is not up."))
-		return 0, err
-	}
-
 	return d.device.Write(b)
-}
-
-func (d *Device) IsSetup() bool {
-	return d.device != nil
-}
-
-func (d *Device) IsUp() bool {
-	return d.isUp
 }
 
 func (d *Device) assignNamespace() error {

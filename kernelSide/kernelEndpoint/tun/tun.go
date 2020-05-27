@@ -57,8 +57,8 @@ type Device struct {
 	state   shila.EntityState
 }
 
-func New(name string) *Device {
-	return &Device{
+func New(name string) Device {
+	return Device{
 		Name: 	name,
 		state: 	shila.NewEntityState(),
 	}
