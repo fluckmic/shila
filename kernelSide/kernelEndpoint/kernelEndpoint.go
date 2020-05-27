@@ -9,7 +9,6 @@ import (
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/kernelSide/namespace"
 	"shila/layer/tcpip"
-	"shila/log"
 )
 
 type Device struct {
