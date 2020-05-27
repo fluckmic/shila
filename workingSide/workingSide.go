@@ -7,18 +7,20 @@ import (
 )
 
 type Manager struct {
-	connections     *connection.Mapping
+	connections     connection.Mapping
 	trafficChannels chan shila.PacketChannelAnnouncement
 }
 
-func New(connections *connection.Mapping, trafficChannels chan shila.PacketChannelAnnouncement) *Manager {
+func New(connections connection.Mapping, trafficChannels chan shila.PacketChannelAnnouncement) *Manager {
 	return &Manager{
 		connections:     connections,
 		trafficChannels: trafficChannels,
 	}
 }
 
-func (m *Manager) CleanUp() { }
+func (m *Manager) Setup() error {
+	return nil
+}
 
 func (m *Manager) Start() error {
 	go func() {
@@ -30,11 +32,8 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-func (m *Manager) Setup() error {
-	return nil
-}
+func (m *Manager) CleanUp() { }
 
-// TODO: Add numberOfWorker to configuration file
 func (m *Manager) serveChannel(buffer shila.PacketChannel, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
 		go m.handleChannel(buffer)

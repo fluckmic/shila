@@ -17,8 +17,8 @@ type Mapping struct {
 	lock		sync.Mutex
 }
 
-func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *netflow.Router) *Mapping {
-	m := &Mapping{
+func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, routing *netflow.Router) Mapping {
+	m := Mapping{
 		kernelSide: 	kernelSide,
 		networkSide: 	networkSide,
 		routing: 		routing,
@@ -34,10 +34,10 @@ func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager
 // is no more reference pointing to the connection.
 func (m *Mapping) vacuum() {
 	for {
-		time.Sleep(time.Second)	// TODO: Configuration parameter: Vacuum interval
+		time.Sleep(Config.VacuumInterval)
 		m.lock.Lock()
 		for key, con := range m.connections {
-			if time.Since(con.touched) > (20 * time.Second) { // TODO: Configuration parameter: Max time untouched
+			if time.Since(con.touched) > (Config.MaxTimeUntouched) {
 				con.Close(shila.ThirdPartyError("Connection got dusty."))
 				delete(m.connections, key)
 			}

@@ -1,17 +1,17 @@
-package workingSide
+package log
 
 var Config config
 
 func init() {
-	Config = hardCodedConfig()
+	Config 		 = hardCodedConfig()
 }
 
 type config struct {
-	NumberOfWorkerPerChannel int
+	PrintVerbose 		bool
 }
 
 func hardCodedConfig() config {
 	return config{
-		NumberOfWorkerPerChannel: 1,
+		PrintVerbose:     false,
 	}
 }

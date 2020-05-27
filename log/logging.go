@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-const (
-	verbose = true
-)
-
 var (
 	Error   log.Logger
 	Info    log.Logger
@@ -28,7 +24,7 @@ func Init() {
 	Info.SetPrefix("INFO: ")
 	Info.SetFlags(log.Lshortfile)
 
-	if !verbose {
+	if !Config.PrintVerbose {
 		Verbose.SetOutput(ioutil.Discard)
 	} else {
 		Verbose.SetOutput(os.Stdout)
@@ -37,5 +33,4 @@ func Init() {
 	}
 
 	initialized = true
-
 }
