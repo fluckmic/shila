@@ -2,6 +2,7 @@ package namespace
 
 import (
 	"os/exec"
+	"shila/core/shila"
 )
 
 type Namespace struct {
@@ -38,9 +39,9 @@ func execIpCmd(args ...string) error {
 	if err != nil {
 		// From the official documentation: "Any returned error will *usually be of type *ExitError."
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return Error(exitError.Stderr)
+			return shila.ThirdPartyError(exitError.Stderr)
 		} else {
-			return err
+			return shila.ThirdPartyError(err.Error())
 		}
 	}
 
