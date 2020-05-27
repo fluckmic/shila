@@ -108,6 +108,10 @@ func (m *Manager) Start() error {
 
 	log.Verbose.Println("Starting kernel side...")
 
+	if err := m.startKernelEndpoints(); err != nil {
+		return err
+	}
+
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
 		m.workingSide <- shila.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
