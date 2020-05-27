@@ -186,8 +186,6 @@ func (d *Device) serveIngress() {
 	storage := make([]byte, d.config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, d.config.BatchSizeRead)
-		log.Verbose.Print(fmt.Sprint("Kernel endpoint {", d.Key() ,"} has read {", nBytesRead, "} " +
-			"bytes which are now send to the ingress raw."))
 		if err != nil && !d.IsValid() {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
