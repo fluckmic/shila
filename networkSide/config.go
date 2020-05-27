@@ -1,11 +1,9 @@
 package networkSide
 
-var ConfigLoaded bool
 var Config config
 
 func init() {
 	Config 		 = hardCodedConfig()
-	ConfigLoaded = true
 }
 
 type config struct {
