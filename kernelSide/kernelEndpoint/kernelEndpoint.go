@@ -5,7 +5,6 @@ package kernelEndpoint
 import (
 	"fmt"
 	"io"
-	"shila/config"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/kernelSide/namespace"
@@ -15,8 +14,8 @@ import (
 
 type Device struct {
 	Id         Identifier
+	config     Config
 	channels   Channels
-	config     config.KernelEndpoint
 	packetizer *Device
 	vif        *vif.Device
 	isValid    bool
@@ -33,6 +32,7 @@ type Channels struct {
 func New(id Identifier) *Device {
 	return &Device{
 		Id: 		id,
+		config:		HardCodedConfig(),
 		isValid: 	true,
 	}
 }

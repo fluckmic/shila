@@ -6,15 +6,11 @@ import (
 )
 
 type Config struct {
-
-	NEgressKerEp uint
-
-	EgressNamespace  namespace.Namespace
-	IngressNamespace namespace.Namespace
-
-	EgressIP  net.IP
-	IngressIP net.IP
-
+	NEgressKerEp 		uint
+	EgressNamespace  	namespace.Namespace
+	IngressNamespace 	namespace.Namespace
+	EgressIP  			net.IP
+	IngressIP 			net.IP
 }
 
 func HardCodedConfig() Config {

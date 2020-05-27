@@ -82,24 +82,6 @@ func (m *Manager) Setup() error {
 	return nil
 }
 
-func (m *Manager) CleanUp() error {
-
-	var err error = nil
-
-	log.Info.Println("Mopping up the kernel side..")
-
-	err = m.tearDownKernelEndpoints()
-	m.clearKernelEndpoints()
-	err = m.clearAdditionalRouting()
-	err = m.removeNamespaces()
-
-	m.state.Set(shila.TornDown)
-
-	log.Info.Println("Kernel side mopped.")
-
-	return err
-}
-
 func (m *Manager) Start() error {
 
 	if m.state.Not(shila.Initialized) {
@@ -122,6 +104,24 @@ func (m *Manager) Start() error {
 	log.Verbose.Println("Kernel side started.")
 
 	return nil
+}
+
+func (m *Manager) CleanUp() error {
+
+	var err error = nil
+
+	log.Info.Println("Mopping up the kernel side..")
+
+	err = m.tearDownKernelEndpoints()
+	m.clearKernelEndpoints()
+	err = m.clearAdditionalRouting()
+	err = m.removeNamespaces()
+
+	m.state.Set(shila.TornDown)
+
+	log.Info.Println("Kernel side mopped.")
+
+	return err
 }
 
 func (m *Manager) setupKernelEndpoints() error {
