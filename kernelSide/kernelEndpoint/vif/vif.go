@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint/tun"
-	"shila/kernelSide/namespace"
+	"shila/kernelSide/network"
 )
 
 type Device struct {
-	Name      	string
-	Namespace 	namespace.Namespace
-	Subnet    	string
-	device    	tun.Device
-	state   	shila.EntityState
+	Name      string
+	Namespace network.Namespace
+	Subnet    network.Subnet
+	device    tun.Device
+	state     shila.EntityState
 }
 
-func New(name string, namespace namespace.Namespace, subnet string) *Device {
-	return &Device{
+func New(name string, namespace network.Namespace, subnet network.Subnet) Device {
+	return Device{
 		Name: 		name,
 		Namespace: 	namespace,
 		Subnet: 	subnet,
@@ -36,20 +36,20 @@ func (d *Device) Setup() error {
 	d.device = tun.New(d.Name)
 	if err := d.device.Allocate(); err != nil {
 		_ = d.device.Deallocate()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to allocate device {", d.Name, "}."))
 	}
 
 	// Assign the device to the namespace
 	if err := d.assignNamespace(); err != nil {
 		_ = d.device.Deallocate()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to assign namespace."))
 	}
 
 	// Assign subnet to the device
 	if err := d.assignSubnet(); err != nil {
 		_ = d.removeInterface()
 		_ = d.device.Deallocate()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to assign subnet."))
 	}
 
 	d.state.Set(shila.Initialized)
@@ -58,10 +58,10 @@ func (d *Device) Setup() error {
 
 // Teardown de-allocate and deletes the vif device.
 func (d *Device) Teardown() error {
+	d.state.Set(shila.TornDown)
 	var err error
 	err = d.removeInterface()
 	err = d.device.Deallocate()
-	d.state.Set(shila.TornDown)
 	return err
 }
 
@@ -73,8 +73,8 @@ func (d *Device) TurnUp() error {
 	}
 
 	args := []string{"link", "set", d.Name, "up"}
-	if err := namespace.Execute(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " up - ", err.Error()))
+	if err := network.Execute(d.Namespace, args...); err != nil {
+		return err
 	}
 
 	d.state.Set(shila.Running)
@@ -86,8 +86,8 @@ func (d *Device) TurnDown() error {
 
 	// ip link set <device name> down
 	args := []string{"link", "set", d.Name, "down"}
-	if err := namespace.Execute(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to turn vif device ", d.Name, " down - ", err.Error()))
+	if err := network.Execute(d.Namespace, args...); err != nil {
+		return err
 	}
 
 	d.state.Set(shila.Initialized)
@@ -116,10 +116,9 @@ func (d *Device) assignNamespace() error {
 	}
 
 	// ip link set <device name> netns <namespace name>
-	err := namespace.Execute(namespace.Namespace{}, "link", "set", d.Name, "netns", d.Namespace.Name)
+	err := network.Execute(network.Namespace{}, "link", "set", d.Name, "netns", d.Namespace.Name)
 	if err != nil {
-		return Error(fmt.Sprint("Unable to assign namespace ", d.Namespace.Name,
-			" to vif device ", d.Name, " - ", err.Error()))
+		return err
 	}
 
 	return nil
@@ -129,20 +128,17 @@ func (d *Device) assignNamespace() error {
 // then it is assumed that the device is already part of this namespace, i.e. that there was
 // was already a successful call to assignNamespace().
 func (d *Device) assignSubnet() error {
-
 	// ip addr add <subnet> dev <dev name>
-	args := []string{"addr", "add", d.Subnet, "dev", d.Name}
-	if err := namespace.Execute(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to assign subnet ", d.Subnet,
-			" to vif device ", d.Name, " - ", err.Error()))
+	args := []string{"addr", "add", string(d.Subnet), "dev", d.Name}
+	if err := network.Execute(d.Namespace, args...); err != nil {
+		return err
 	}
 	return nil
 }
 
 func (d *Device) removeInterface() error {
-
 	// ip link delete <interface name>
 	args := []string{"link", "delete", d.Name}
-	err := namespace.Execute(d.Namespace, args...)
+	err := network.Execute(d.Namespace, args...)
 	return err
 }

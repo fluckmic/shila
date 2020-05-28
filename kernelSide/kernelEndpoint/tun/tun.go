@@ -87,9 +87,9 @@ func (d *Device) Allocate() error {
 }
 
 func (d *Device) Deallocate() error {
+	d.state.Set(shila.TornDown)
 	err := d.file.Close()
 	d.file = nil
-	d.state.Set(shila.TornDown)
 	return err
 }
 

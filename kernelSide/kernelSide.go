@@ -5,7 +5,7 @@ import (
 	"net"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint"
-	"shila/kernelSide/namespace"
+	"shila/kernelSide/network"
 	"shila/log"
 )
 
@@ -148,9 +148,7 @@ func (m *Manager) clearKernelEndpoints() {
 func (m *Manager) tearDownKernelEndpoints() error {
 	var err error = nil
 	for _, kerep := range m.endpoints {
-		if kerep.IsSetup() {
 			_ = kerep.TearDown()
-		}
 	}
 	return err
 }
@@ -170,7 +168,7 @@ func (m *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
 	if Config.IngressNamespace.NonEmpty {
-		if err := namespace.AddNamespace(Config.IngressNamespace); err != nil {
+		if err := network.AddNamespace(Config.IngressNamespace); err != nil {
 			return Error(fmt.Sprint("Unable to setup ingress namespace ",
 				Config.IngressNamespace.Name, " - ", err.Error()))
 		}
@@ -178,7 +176,7 @@ func (m *Manager) setupNamespaces() error {
 
 	// Create egress namespace
 	if Config.EgressNamespace.NonEmpty {
-		if err := namespace.AddNamespace(Config.EgressNamespace); err != nil {
+		if err := network.AddNamespace(Config.EgressNamespace); err != nil {
 			return Error(fmt.Sprint("Unable to setup egress namespace ",
 				Config.EgressNamespace.Name, " - ", err.Error()))
 		}
@@ -193,34 +191,33 @@ func (m *Manager) removeNamespaces() error {
 
 	// Remove ingress namespace
 	if Config.IngressNamespace.NonEmpty {
-		err = namespace.DeleteNamespace(Config.IngressNamespace)
+		err = network.DeleteNamespace(Config.IngressNamespace)
 	}
 	// Remove egress namespace
 	if Config.EgressNamespace.NonEmpty {
-		err = namespace.DeleteNamespace(Config.EgressNamespace)
+		err = network.DeleteNamespace(Config.EgressNamespace)
 	}
 
 	return err
 }
 
-func (m *Manager) addKernelEndpoints(n uint, ns namespace.Namespace, ip net.IP) error {
-
+func (m *Manager) addKernelEndpoints(n uint, ns network.Namespace, ip net.IP) error {
+	// TODO!
 	if startIP := ip.To4(); startIP == nil {
 		return Error(fmt.Sprint("Invalid starting IP: ", ip))
 	} else {
 		for i := 0; i < int(n); i++ {
 
-			// First create the identifier..
-			newKerepId := kernelEndpoint.NewIdentifier(uint(len(m.endpoints)+1), ns,
-				net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i)))
+			number  := uint8(len(m.endpoints)+1)
+			ip 		:= net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i))
 
 			// ..then create the kernel endpoint..
-			newKerep := kernelEndpoint.New(newKerepId)
+			newKerep := kernelEndpoint.New(number, ns, ip)
 
 			// ..and add it to the mapping.
-			newKerepKey := newKerepId.Key()
+			newKerepKey := shila.GetIPAddressKey(ip)
 			if _, ok := m.endpoints[newKerepKey]; !ok {
-				m.endpoints[newKerepId.Key()] = newKerep
+				m.endpoints[newKerepKey] = &newKerep
 				// log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
 			} else {
 				// Cannot have two endpoints w/ the same key.
@@ -240,10 +237,10 @@ func (m *Manager) setupAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
-	if err := namespace.Execute(Config.IngressNamespace, args...); err != nil {
+	if err := network.Execute(Config.IngressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
-	if err := namespace.Execute(Config.EgressNamespace, args...); err != nil {
+	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -252,7 +249,7 @@ func (m *Manager) setupAdditionalRouting() error {
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", "1"}
-	if err := namespace.Execute(Config.EgressNamespace, args...); err != nil {
+	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
 
@@ -268,15 +265,15 @@ func (m *Manager) clearAdditionalRouting() error {
 	// also want to participate. // TODO: handle these cases.
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}
-	err := namespace.Execute(Config.IngressNamespace, args...)
-	err = namespace.Execute(Config.EgressNamespace, args...)
+	err := network.Execute(Config.IngressNamespace, args...)
+	err = network.Execute(Config.EgressNamespace, args...)
 
 	// SYN packets coming from client side connect calls are sent from the
 	// local interface, route them through one of the egress devices.
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
 	args = []string{"rule", "delete", "to", Config.IngressIP.String(), "table", "1"}
-	err = namespace.Execute(Config.EgressNamespace, args...)
+	err = network.Execute(Config.EgressNamespace, args...)
 
 	return err
 }

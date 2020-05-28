@@ -2,7 +2,7 @@ package kernelSide
 
 import (
 	"net"
-	"shila/kernelSide/namespace"
+	"shila/kernelSide/network"
 )
 
 var Config config
@@ -12,18 +12,18 @@ func init() {
 }
 
 type config struct {
-	NEgressKerEp 		uint
-	EgressNamespace  	namespace.Namespace
-	IngressNamespace 	namespace.Namespace
-	EgressIP  			net.IP
-	IngressIP 			net.IP
+	NEgressKerEp     uint
+	EgressNamespace  network.Namespace
+	IngressNamespace network.Namespace
+	EgressIP         net.IP
+	IngressIP        net.IP
 }
 
 func hardCodedConfig() config {
 	return config{
 		NEgressKerEp:     3,
-		EgressNamespace:  namespace.NewNamespace("shila-egress"),
-		IngressNamespace: namespace.NewNamespace("shila-ingress"),
+		EgressNamespace:  network.NewNamespace("shila-egress"),
+		IngressNamespace: network.NewNamespace("shila-ingress"),
 		EgressIP:         net.IPv4(10, 0, 0, 1),
 		IngressIP:        net.IPv4(10, 7, 0, 9),
 	}

@@ -36,6 +36,10 @@ func (es *EntityState) Not(s EntityStateIdentifier) bool {
 	return es.EntityStateIdentifier != s
 }
 
+func (es *EntityState) Is(s EntityStateIdentifier) bool {
+	return es.EntityStateIdentifier == s
+}
+
 func (es *EntityState) String() string {
 	return es.EntityStateIdentifier.String()
 }

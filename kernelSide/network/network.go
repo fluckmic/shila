@@ -1,4 +1,4 @@
-package namespace
+package network
 
 import (
 	"os/exec"
@@ -16,6 +16,8 @@ func NewNamespace(name string) Namespace {
 		NonEmpty:	true,
 	}
 }
+
+type Subnet string
 
 // ip netns add <namespace name>
 func AddNamespace(namespace Namespace) error {

@@ -1,24 +1,23 @@
-// TODO: Add a more detailed description.
-// application endpoint
 package kernelEndpoint
 
 import (
 	"fmt"
 	"io"
+	"net"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint/vif"
-	"shila/kernelSide/namespace"
+	"shila/kernelSide/network"
 	"shila/layer/tcpip"
 )
 
 type Device struct {
-	Id         Identifier
-	channels   Channels
-	packetizer *Device
-	vif        *vif.Device
-	isValid    bool
-	isSetup    bool // TODO: merge to "state" object
-	isRunning  bool
+	Number 		uint8
+	Name		string
+	Namespace	network.Namespace
+	IP			net.IP
+	channels   	Channels
+	vif        	vif.Device
+	state   	shila.EntityState
 }
 
 type Channels struct {
@@ -27,36 +26,28 @@ type Channels struct {
 	egress     shila.PacketChannel
 }
 
-func New(id Identifier) *Device {
-	return &Device{
-		Id: 		id,
-		isValid: 	true,
+func New(number uint8, namespace network.Namespace, ip net.IP) Device {
+	return Device{
+		Number:		number,
+		Name:		fmt.Sprint("tun", number),
+		Namespace:	namespace,
+		IP:			ip,
+		state:		shila.NewEntityState(),
 	}
 }
 
 func (d *Device) Setup() error {
 
-	if !d.IsValid() {
-		return Error(fmt.Sprint("Unable to setup kernel endpoint ",
-			d.Id.Name(), " - ", "Device no longer valid."))
-	}
-
-	if d.IsRunning() {
-		return Error(fmt.Sprint("Unable to setup kernel endpoint ",
-			d.Id.Name(), " - ", "Device already running."))
-	}
-
-	if d.IsSetup() {
-		return nil
+	if d.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 
 	// Allocate the vif
-	d.vif = vif.New(d.Id.Name(), d.Id.namespace, d.Id.IP())
+	d.vif = vif.New(d.Name, d.Namespace, network.Subnet(d.IP.String()))
 
 	// Setup the vif
 	if err := d.vif.Setup(); err != nil {
 		_ = d.vif.Teardown()
-		d.vif = nil
 		return err
 	}
 
@@ -64,7 +55,6 @@ func (d *Device) Setup() error {
 	if err := d.vif.TurnUp(); err != nil {
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
-		d.vif = nil
 		return err
 	}
 
@@ -73,7 +63,6 @@ func (d *Device) Setup() error {
 		_ = d.removeRouting()
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
-		d.vif = nil
 		return err
 	}
 
@@ -82,15 +71,13 @@ func (d *Device) Setup() error {
 	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuff)
 	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuff)
 
-	d.isSetup = true
+	d.state.Set(shila.Initialized)
 	return nil
 }
 
 func (d *Device) TearDown() error {
 
-	d.isValid = false
-	d.isRunning = false
-	d.isSetup = false
+	d.state.Set(shila.TornDown)
 
 	// Remove the routing table associated with the kernel endpoint
 	err := d.removeRouting()
@@ -99,7 +86,6 @@ func (d *Device) TearDown() error {
 	err = d.vif.TurnDown()
 	err = d.vif.Teardown()
 
-	d.vif = nil
 	d.channels.ingressRaw 	= nil
 	d.channels.ingress 		= nil
 	d.channels.egress 		= nil
@@ -109,57 +95,32 @@ func (d *Device) TearDown() error {
 
 func (d *Device) Start() error {
 
-	if !d.IsValid() {
-		return Error(fmt.Sprint("Cannot start kernel endpoint ",
-			d.Id.Name(), " - ", "Device no longer valid."))
-	}
-
-	if !d.IsSetup() {
-		return Error(fmt.Sprint("Cannot start kernel endpoint ",
-			d.Id.Name(), " - ", "Device not yet setup."))
-	}
-
-	if d.IsRunning() {
-		return Error(fmt.Sprint("Cannot start kernel endpoint ",
-			d.Id.Name(), " - ", "Device already running."))
-
+	if d.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
 	}
 
 	go d.packetize()
 	go d.serveIngress()
 	go d.serveEgress()
 
-	d.isRunning = true
-
+	d.state.Set(shila.Running)
 	return nil
-}
-
-func (d *Device) IsValid() bool {
-	return d.isValid
-}
-
-func (d *Device) IsSetup() bool {
-	return d.isSetup
-}
-
-func (d *Device) IsRunning() bool {
-	return d.isRunning
 }
 
 func (d *Device) setupRouting() error {
 
 	// ip rule add from <dev ip> table <table id>
-	args := []string{"rule", "add", "from", d.Id.IP(), "table", fmt.Sprint(d.Id.Number())}
-	if err := namespace.Execute(d.Id.namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
+	args := []string{"rule", "add", "from", d.IP.String(), "table", fmt.Sprint(d.Number)}
+	if err := network.Execute(d.Namespace, args...); err != nil {
+		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Name,
+			" in namespace ", d.Namespace.Name, " - ", err.Error()))
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
-	args = []string{"route", "add", "table", fmt.Sprint(d.Id.Number()), "default", "dev", d.Id.Name(), "scope", "link"}
-	if err := namespace.Execute(d.Id.namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Id.Name(),
-			" in namespace ", d.Id.Namespace(), " - ", err.Error()))
+	args = []string{"route", "add", "table", fmt.Sprint(d.Number), "default", "dev", d.Name, "scope", "link"}
+	if err := network.Execute(d.Namespace, args...); err != nil {
+		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Name,
+			" in namespace ", d.Namespace.Name, " - ", err.Error()))
 	}
 
 	return nil
@@ -168,22 +129,22 @@ func (d *Device) setupRouting() error {
 func (d *Device) removeRouting() error {
 
 	// ip rule del table <table id>
-	args := []string{"rule", "del", "table", fmt.Sprint(d.Id.number)}
-	err := namespace.Execute(d.Id.namespace, args...)
+	args := []string{"rule", "del", "table", fmt.Sprint(d.Number)}
+	err := network.Execute(d.Namespace, args...)
 
 	// ip route flush table <table id>
-	args = []string{"route", "flush", "table", fmt.Sprint(d.Id.number)}
-	err = namespace.Execute(d.Id.namespace, args...)
+	args = []string{"route", "flush", "table", fmt.Sprint(d.Number)}
+	err = network.Execute(d.Namespace, args...)
 
 	return err
 }
 
 func (d *Device) serveIngress() {
-	reader := io.Reader(d.vif)
+	reader := io.Reader(&d.vif)
 	storage := make([]byte, Config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
-		if err != nil && !d.IsValid() {
+		if err != nil && d.state.Not(shila.Running) {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
 		} else if err != nil {
@@ -196,10 +157,10 @@ func (d *Device) serveIngress() {
 }
 
 func (d *Device) serveEgress() {
-	writer := io.Writer(d.vif)
+	writer := io.Writer(&d.vif)
 	for p := range d.channels.egress {
 		_, err := writer.Write(p.Payload)
-		if err != nil && !d.IsValid() {
+		if err != nil && !d.state.Not(shila.Running) {
 			// Error doesn't matter, kernel endpoint is no longer valid anyway.
 			return
 		} else if err != nil {
@@ -225,7 +186,7 @@ func (d *Device) Label() shila.EndpointLabel {
 }
 
 func (d *Device) Key() shila.EndpointKey {
-	return shila.EndpointKey(d.Id.Key())
+	return shila.EndpointKey(shila.GetIPAddressKey(d.IP))
 }
 
 func (d *Device) TrafficChannels() shila.PacketChannels {
