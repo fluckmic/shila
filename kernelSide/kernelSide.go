@@ -239,7 +239,7 @@ func (m *Manager) setupAdditionalRouting() error {
 	// local interface, route them through one of the egress devices
 	// ip rule add to <ip> iif lo table <id>
 	// TODO: I dont like the disconnection between table 1 here and the one used later..
-	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", "1"}
+	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", "2"}
 	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
 		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
 	}
