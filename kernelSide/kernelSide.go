@@ -2,11 +2,13 @@ package kernelSide
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/kernelSide/network"
 	"shila/log"
+	"time"
 )
 
 type Manager struct {
@@ -46,16 +48,7 @@ func (m *Manager) Setup() error {
 			" - ", err.Error()))
 	}
 	// Create the kernel endpoints
-	// Egress
-	if err := m.addKernelEndpoints(Config.NEgressKerEp, Config.EgressNamespace, Config.EgressIP); err != nil {
-		m.clearKernelEndpoints()
-		_ = m.clearAdditionalRouting()
-		_ = m.removeNamespaces()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
-	}
-	// Ingress
-	if err := m.addKernelEndpoints(1, Config.IngressNamespace, Config.IngressIP); err != nil {
+	if err := m.addKernelEndpoints(); err != nil {
 		m.clearKernelEndpoints()
 		_ = m.clearAdditionalRouting()
 		_ = m.removeNamespaces()
@@ -104,20 +97,25 @@ func (m *Manager) Start() error {
 
 func (m *Manager) CleanUp() error {
 
-	var err error = nil
-
 	log.Info.Println("Mopping up the kernel side..")
+	m.state.Set(shila.TornDown)
 
-	err = m.tearDownKernelEndpoints()
+	err := m.tearDownKernelEndpoints()
 	m.clearKernelEndpoints()
 	err = m.clearAdditionalRouting()
 	err = m.removeNamespaces()
 
-	m.state.Set(shila.TornDown)
-
 	log.Info.Println("Kernel side mopped.")
 
 	return err
+}
+
+func (m *Manager) GetTrafficChannels(key shila.IPAddressKey) (shila.PacketChannels, bool) {
+	if endpoint, ok := m.endpoints[key]; !ok {
+		return shila.PacketChannels{}, false
+	} else {
+		return endpoint.TrafficChannels(), true
+	}
 }
 
 func (m *Manager) setupKernelEndpoints() error {
@@ -127,14 +125,6 @@ func (m *Manager) setupKernelEndpoints() error {
 		}
 	}
 	return nil
-}
-
-func (m *Manager) GetTrafficChannels(key shila.IPAddressKey) (shila.PacketChannels, bool) {
-	if endpoint, ok := m.endpoints[key]; !ok {
-		return shila.PacketChannels{}, false
-	} else {
-		return endpoint.TrafficChannels(), true
-	}
 }
 
 // clearKernelEndpoints just empties the mapping
@@ -201,30 +191,31 @@ func (m *Manager) removeNamespaces() error {
 	return err
 }
 
-func (m *Manager) addKernelEndpoints(n uint, ns network.Namespace, ip net.IP) error {
-	// TODO!
-	if startIP := ip.To4(); startIP == nil {
-		return Error(fmt.Sprint("Invalid starting IP: ", ip))
-	} else {
-		for i := 0; i < int(n); i++ {
+func (m *Manager) addKernelEndpoints() error {
 
-			number  := uint8(len(m.endpoints)+1)
-			ip 		:= net.IPv4(startIP[0], startIP[1], startIP[2], startIP[3]+byte(i))
+	// Add the ingress kernel endpoint.
+	key := shila.GetIPAddressKey(Config.IngressIP)
+	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP)
+	m.endpoints[key] = &kerep
 
-			// ..then create the kernel endpoint..
-			newKerep := kernelEndpoint.New(number, ns, ip)
+	// Add the egress kernel endpoint(s).
+	numberOfEndpointsAdded := uint8(0)
+	for {
+		ip := getRandomIP()
+		key := shila.GetIPAddressKey(ip)
+		if _, ok := m.endpoints[key]; !ok {
 
-			// ..and add it to the mapping.
-			newKerepKey := shila.GetIPAddressKey(ip)
-			if _, ok := m.endpoints[newKerepKey]; !ok {
-				m.endpoints[newKerepKey] = &newKerep
-				// log.Verbose.Print("Added kernel endpoint: ", newKerepKey, ".")
-			} else {
-				// Cannot have two endpoints w/ the same key.
-				return Error(fmt.Sprint("Kernel endpoint already exists: ", newKerepKey))
-			}
+			number := numberOfEndpointsAdded + 2
+			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip)
+
+			m.endpoints[key] = &kerep
+			numberOfEndpointsAdded++
+		}
+		if numberOfEndpointsAdded == Config.NumberOfEgressInterfaces {
+			break
 		}
 	}
+
 	return nil
 }
 
@@ -276,4 +267,13 @@ func (m *Manager) clearAdditionalRouting() error {
 	err = network.Execute(Config.EgressNamespace, args...)
 
 	return err
+}
+
+func getRandomIP() net.IP {
+		rand.Seed(time.Now().Unix())
+		return net.IPv4(
+			byte(rand.Intn(256)),
+			byte(rand.Intn(256)),
+			byte(rand.Intn(256)),
+			byte(rand.Intn(256)))
 }

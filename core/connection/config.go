@@ -11,8 +11,8 @@ func init() {
 }
 
 type config struct {
-	VacuumInterval 	 time.Duration
-	MaxTimeUntouched time.Duration
+	VacuumInterval 	 time.Duration		// Minimal amount of time between two vacuum processes.
+	MaxTimeUntouched time.Duration		// Maximal amount of time a connection can stay untouched before it is closed.
 }
 
 func hardCodedConfig() config {

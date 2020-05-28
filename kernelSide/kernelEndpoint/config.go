@@ -7,23 +7,19 @@ func init() {
 }
 
 type config struct {
-	// kerep <-> core (in shila.packet)
-	SizeIngressBuff int
-	SizeEgressBuff  int
-	// kernel <-> kerep (in Byte)
-	SizeReadBuffer 	int
-	BatchSizeRead  	int
-	MaxNVifReader 	int
-	MaxNVifWriter 	int
+	SizeIngressBuffer 		int		// Size (shila packets) of the ingress buffer.
+	SizeEgressBuffer  		int		// Size (shila packets) of the egress buffer.
+	SizeRawIngressBuffer 	int		// Size (bytes) of the raw ingress buffer.
+	SizeRawIngressStorage	int		// Size (bytes) of the storage holding raw ingress data.
+	ReadSizeRawIngress    	int		// Minimal number of bytes read from the raw ingress channel at once.
 }
 
 func hardCodedConfig() config {
 	return config{
-		SizeIngressBuff:	10,
-		SizeEgressBuff:		10,
-		SizeReadBuffer:		1500,
-		BatchSizeRead:		30,
-		MaxNVifReader:		1,
-		MaxNVifWriter:		1,
+		SizeIngressBuffer:     10,
+		SizeEgressBuffer:      10,
+		SizeRawIngressBuffer:  500,
+		SizeRawIngressStorage: 1500,
+		ReadSizeRawIngress:    30,
 	}
 }

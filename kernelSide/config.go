@@ -12,19 +12,19 @@ func init() {
 }
 
 type config struct {
-	NEgressKerEp     uint
-	EgressNamespace  network.Namespace
-	IngressNamespace network.Namespace
-	EgressIP         net.IP
-	IngressIP        net.IP
+	NumberOfEgressInterfaces uint8					// Number of the egress virtual interfaces.
+	EgressNamespace          network.Namespace		// The name of the egress namespace.
+	IngressNamespace         network.Namespace		// The name of the ingress namespace.
+	IngressIP                net.IP					// The IP of the ingress virtual interface.
+	EgressIP                 net.IP
 }
 
 func hardCodedConfig() config {
 	return config{
-		NEgressKerEp:     3,
-		EgressNamespace:  network.NewNamespace("shila-egress"),
-		IngressNamespace: network.NewNamespace("shila-ingress"),
-		EgressIP:         net.IPv4(10, 0, 0, 1),
-		IngressIP:        net.IPv4(10, 7, 0, 9),
+		NumberOfEgressInterfaces: 3,
+		EgressNamespace:          network.NewNamespace("shila-egress"),
+		IngressNamespace:         network.NewNamespace("shila-ingress"),
+		IngressIP:                net.IPv4(10, 7, 0, 9),
+		EgressIP:                 net.IPv4(10, 0, 0, 1),
 	}
 }

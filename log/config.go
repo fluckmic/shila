@@ -7,7 +7,7 @@ func init() {
 }
 
 type config struct {
-	PrintVerbose 		bool
+	PrintVerbose 		bool	// Print verbose messages.
 }
 
 func hardCodedConfig() config {

@@ -7,7 +7,7 @@ func init() {
 }
 
 type config struct {
-	NumberOfWorkerPerChannel int
+	NumberOfWorkerPerChannel int	// Number of worker per packet channel.
 }
 
 func hardCodedConfig() config {

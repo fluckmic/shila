@@ -69,8 +69,8 @@ func (d *Device) Setup() error {
 
 	// Allocate the buffers
 
-	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuff)
-	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuff)
+	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuffer)
+	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	d.state.Set(shila.Initialized)
 	return nil
@@ -150,13 +150,13 @@ func (d *Device) removeRouting() error {
 
 func (d *Device) serveIngress() {
 
-	ingressRaw := make(chan byte, Config.SizeReadBuffer)
+	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
 	go d.packetize(ingressRaw)
 
 	reader := io.Reader(&d.vif)
-	storage := make([]byte, Config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
 		if err != nil && d.state.Not(shila.Running) {
 			// Error doesn't matter, kernel endpoint
 			// is no longer valid anyway.
@@ -187,7 +187,7 @@ func (d *Device) serveEgress() {
 
 func (d *Device) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil {
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic("Handle error in go routine..") //TODO!
 				/* panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {",
