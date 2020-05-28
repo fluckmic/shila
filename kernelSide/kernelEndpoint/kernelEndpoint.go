@@ -10,6 +10,8 @@ import (
 	"shila/layer/tcpip"
 )
 
+const nameTunDevice = "tun"
+
 type Device struct {
 	Number 		uint8
 	Name		string
@@ -21,7 +23,6 @@ type Device struct {
 }
 
 type Channels struct {
-	ingressRaw chan byte
 	ingress    shila.PacketChannel
 	egress     shila.PacketChannel
 }
@@ -29,7 +30,7 @@ type Channels struct {
 func New(number uint8, namespace network.Namespace, ip net.IP) Device {
 	return Device{
 		Number:		number,
-		Name:		fmt.Sprint("tun", number),
+		Name:		fmt.Sprint(nameTunDevice, number),
 		Namespace:	namespace,
 		IP:			ip,
 		state:		shila.NewEntityState(),
@@ -48,14 +49,14 @@ func (d *Device) Setup() error {
 	// Setup the vif
 	if err := d.vif.Setup(); err != nil {
 		_ = d.vif.Teardown()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to start virtual interface."))
 	}
 
 	// Turn the vif up
 	if err := d.vif.TurnUp(); err != nil {
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to start virtual interface."))
 	}
 
 	// Setup the routing
@@ -63,15 +64,28 @@ func (d *Device) Setup() error {
 		_ = d.removeRouting()
 		_ = d.vif.TurnDown()
 		_ = d.vif.Teardown()
-		return err
+		return shila.PrependError(err, fmt.Sprint("Unable to setup routing."))
 	}
 
 	// Allocate the buffers
-	d.channels.ingressRaw = make(chan byte, Config.SizeReadBuffer)
+
 	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuff)
 	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuff)
 
 	d.state.Set(shila.Initialized)
+	return nil
+}
+
+func (d *Device) Start() error {
+
+	if d.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+	}
+
+	go d.serveIngress()
+	go d.serveEgress()
+
+	d.state.Set(shila.Running)
 	return nil
 }
 
@@ -86,25 +100,22 @@ func (d *Device) TearDown() error {
 	err = d.vif.TurnDown()
 	err = d.vif.Teardown()
 
-	d.channels.ingressRaw 	= nil
-	d.channels.ingress 		= nil
-	d.channels.egress 		= nil
+	close(d.channels.ingress)
+	close(d.channels.egress)
 
 	return err
 }
 
-func (d *Device) Start() error {
+func (d *Device) Label() shila.EndpointLabel {
+	return shila.KernelEndpoint
+}
 
-	if d.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
-	}
+func (d *Device) Key() shila.EndpointKey {
+	return shila.EndpointKey(shila.GetIPAddressKey(d.IP))
+}
 
-	go d.packetize()
-	go d.serveIngress()
-	go d.serveEgress()
-
-	d.state.Set(shila.Running)
-	return nil
+func (d *Device) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
 }
 
 func (d *Device) setupRouting() error {
@@ -112,15 +123,13 @@ func (d *Device) setupRouting() error {
 	// ip rule add from <dev ip> table <table id>
 	args := []string{"rule", "add", "from", d.IP.String(), "table", fmt.Sprint(d.Number)}
 	if err := network.Execute(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Name,
-			" in namespace ", d.Namespace.Name, " - ", err.Error()))
+		return err
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
 	args = []string{"route", "add", "table", fmt.Sprint(d.Number), "default", "dev", d.Name, "scope", "link"}
 	if err := network.Execute(d.Namespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup routing for kernel endpoint ", d.Name,
-			" in namespace ", d.Namespace.Name, " - ", err.Error()))
+		return err
 	}
 
 	return nil
@@ -140,18 +149,24 @@ func (d *Device) removeRouting() error {
 }
 
 func (d *Device) serveIngress() {
+
+	ingressRaw := make(chan byte, Config.SizeReadBuffer)
+	go d.packetize(ingressRaw)
+
 	reader := io.Reader(&d.vif)
 	storage := make([]byte, Config.SizeReadBuffer)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
 		if err != nil && d.state.Not(shila.Running) {
-			// Error doesn't matter, kernel endpoint is no longer valid anyway.
+			// Error doesn't matter, kernel endpoint
+			// is no longer valid anyway.
+			close(ingressRaw)
 			return
 		} else if err != nil {
-			panic("implement me") //TODO!
+			panic("Handle error in go routine..") //TODO!
 		}
 		for _, b := range storage[:nBytesRead] {
-			d.channels.ingressRaw <- b
+			ingressRaw <- b
 		}
 	}
 }
@@ -161,34 +176,28 @@ func (d *Device) serveEgress() {
 	for p := range d.channels.egress {
 		_, err := writer.Write(p.Payload)
 		if err != nil && !d.state.Not(shila.Running) {
-			// Error doesn't matter, kernel endpoint is no longer valid anyway.
+			// Error doesn't matter, kernel endpoint
+			// is no longer valid anyway.
 			return
 		} else if err != nil {
-			panic("implement me") //TODO!
+			panic("Handle error in go routine..") //TODO!
 		}
 	}
 }
 
-func (d *Device) packetize() {
+func (d *Device) packetize(ingressRaw chan byte) {
 	for {
-		rawData, _ := tcpip.PacketizeRawData(d.channels.ingressRaw, Config.SizeReadBuffer)		// TODO: Handle error
-		if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-			panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {", d.Key(),
-				"}. - ", err.Error())) // TODO: Handle panic!
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil {
+			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
+				panic("Handle error in go routine..") //TODO!
+				/* panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {",
+				   d.Key(), "}. - ", err.Error())) */
+			} else {
+				d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
+			}
 		} else {
-			d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
+			// ingress raw closed
+			return
 		}
 	}
-}
-
-func (d *Device) Label() shila.EndpointLabel {
-	return shila.KernelEndpoint
-}
-
-func (d *Device) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetIPAddressKey(d.IP))
-}
-
-func (d *Device) TrafficChannels() shila.PacketChannels {
-	return shila.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
 }
