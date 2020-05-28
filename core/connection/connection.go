@@ -237,7 +237,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 		conn.channels.KernelEndpoint = channels
 	} else {
 		conn.state.set(closed)
-		return shila.CriticalError(fmt.Sprint("No kernel endpoint for {", dstKey, "}.")) // TODO: TO THINK!
+		return shila.CriticalError(fmt.Sprint("No kernel endpoint for {", dstKey, "}.")) // TODO: TO THINK.
 	}
 
 	// Send packet to kernel endpoint

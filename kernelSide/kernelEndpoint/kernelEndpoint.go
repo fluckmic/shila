@@ -163,7 +163,7 @@ func (d *Device) serveIngress() {
 			close(ingressRaw)
 			return
 		} else if err != nil {
-			panic("Handle error in go routine..") //TODO!
+			panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -180,7 +180,7 @@ func (d *Device) serveEgress() {
 			// is no longer valid anyway.
 			return
 		} else if err != nil {
-			panic("Handle error in go routine..") //TODO!
+			panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
 		}
 	}
 }
@@ -189,7 +189,7 @@ func (d *Device) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic("Handle error in go routine..") //TODO!
+				panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
 				/* panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {",
 				   d.Key(), "}. - ", err.Error())) */
 			} else {

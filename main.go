@@ -21,9 +21,8 @@ func realMain() int {
 
 	defer log.Info.Println("Shutdown complete.")
 
-	// TODO: Return if not run as root.
-
-	// TODO: Encourage user to run shila in separate namespace for ingress and egress
+	// TODO: Return if not run as root. (https://github.com/fluckmic/shila/issues/4)
+	// TODO: Encourage user to run separate namespace for ingress and egress (https://github.com/fluckmic/shila/issues/5)
 
 	var err error
 

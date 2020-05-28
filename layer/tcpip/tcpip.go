@@ -14,7 +14,6 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-// TODO: ByteOrder!
 var hostByteOrder = binary.BigEndian
 
 type IPv4Option interface{}

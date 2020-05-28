@@ -16,7 +16,6 @@ type config struct {
 	EgressNamespace          network.Namespace		// The name of the egress namespace.
 	IngressNamespace         network.Namespace		// The name of the ingress namespace.
 	IngressIP                net.IP					// The IP of the ingress virtual interface.
-	EgressIP                 net.IP
 }
 
 func hardCodedConfig() config {
@@ -25,6 +24,5 @@ func hardCodedConfig() config {
 		EgressNamespace:          network.NewNamespace("shila-egress"),
 		IngressNamespace:         network.NewNamespace("shila-ingress"),
 		IngressIP:                net.IPv4(10, 7, 0, 9),
-		EgressIP:                 net.IPv4(10, 0, 0, 1),
 	}
 }

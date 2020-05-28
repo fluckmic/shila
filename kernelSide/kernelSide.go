@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+// The table number depends on the number assigned to the virtual interface.
+// The ingress interface has number 1, that is, the first egress interface has number 2.
+const tableNumberOfFirstEgressInterface = "2"
+
 type Manager struct {
 	endpoints 	EndpointMapping
 	workingSide chan shila.PacketChannelAnnouncement
@@ -127,22 +131,6 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-// clearKernelEndpoints just empties the mapping
-// but does not deallocate the endpoints beforehand!
-func (m *Manager) clearKernelEndpoints() {
-	for k := range m.endpoints {
-		delete(m.endpoints, k)
-	}
-}
-
-func (m *Manager) tearDownKernelEndpoints() error {
-	var err error = nil
-	for _, kerep := range m.endpoints {
-			_ = kerep.TearDown()
-	}
-	return err
-}
-
 func (m *Manager) startKernelEndpoints() error {
 	var err error = nil
 	for _, kerep := range m.endpoints {
@@ -154,21 +142,33 @@ func (m *Manager) startKernelEndpoints() error {
 	return err
 }
 
+func (m *Manager) tearDownKernelEndpoints() error {
+	var err error = nil
+	for _, kerep := range m.endpoints {
+			_ = kerep.TearDown()
+	}
+	return err
+}
+
+func (m *Manager) clearKernelEndpoints() {
+	for k := range m.endpoints {
+		delete(m.endpoints, k)
+	}
+}
+
 func (m *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
 	if Config.IngressNamespace.NonEmpty {
 		if err := network.AddNamespace(Config.IngressNamespace); err != nil {
-			return Error(fmt.Sprint("Unable to setup ingress namespace ",
-				Config.IngressNamespace.Name, " - ", err.Error()))
+			return err
 		}
 	}
 
 	// Create egress namespace
 	if Config.EgressNamespace.NonEmpty {
 		if err := network.AddNamespace(Config.EgressNamespace); err != nil {
-			return Error(fmt.Sprint("Unable to setup egress namespace ",
-				Config.EgressNamespace.Name, " - ", err.Error()))
+			return err
 		}
 	}
 
@@ -222,26 +222,28 @@ func (m *Manager) addKernelEndpoints() error {
 func (m *Manager) setupAdditionalRouting() error {
 
 	// Restrict the use of MPTCP to the virtual devices
+
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
 	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
-	// also want to participate. // TODO: handle these cases.
+	// also want to participate. // TODO: https://github.com/fluckmic/shila/issues/16
+
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
 	if err := network.Execute(Config.IngressNamespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
+		return err
 	}
 	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
+		return err
 	}
 
 	// SYN packets coming from client side connect calls are sent from the
-	// local interface, route them through one of the egress devices
+	// local interface, route them through one of the egress devices..
+
 	// ip rule add to <ip> iif lo table <id>
-	// TODO: I dont like the disconnection between table 1 here and the one used later..
-	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", "2"}
+	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", tableNumberOfFirstEgressInterface}
 	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
-		return Error(fmt.Sprint("Unable to setup additional routing.", " - ", err.Error()))
+		return err
 	}
 
 	return nil
@@ -250,20 +252,19 @@ func (m *Manager) setupAdditionalRouting() error {
 func (m *Manager) clearAdditionalRouting() error {
 
 	// Roll back the restriction of the use of MPTCP to the virtual devices.
+
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
 	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
-	// also want to participate. // TODO: handle these cases.
+	// also want to participate. // TODO: https://github.com/fluckmic/shila/issues/16
+
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}
 	err := network.Execute(Config.IngressNamespace, args...)
 	err = network.Execute(Config.EgressNamespace, args...)
 
-	// SYN packets coming from client side connect calls are sent from the
-	// local interface, route them through one of the egress devices.
 	// ip rule add to <ip> iif lo table <id>
-	// TODO: I dont like the disconnection between table 1 here and the one used later..
-	args = []string{"rule", "delete", "to", Config.IngressIP.String(), "table", "1"}
+	args = []string{"rule", "delete", "to", Config.IngressIP.String(), "table", tableNumberOfFirstEgressInterface}
 	err = network.Execute(Config.EgressNamespace, args...)
 
 	return err
