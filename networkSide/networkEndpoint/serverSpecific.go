@@ -234,7 +234,7 @@ func (s *Server) serveEgress() {
 		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con)
 			nBytesWritten, err := writer.Write(p.Payload)
-			if err != nil && !s.IsValid() {
+			if err != nil && s.state.Not(shila.Running) {
 				// Error doesn't matter, kernel endpoint is no longer valid anyway.
 				return
 			} else if err != nil {
