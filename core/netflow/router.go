@@ -3,7 +3,10 @@ package netflow
 import (
 "fmt"
 	"shila/core/shila"
+	"shila/io"
+	"shila/io/json"
 	"shila/layer/mptcp"
+	"shila/log"
 )
 
 type Router struct {
@@ -20,13 +23,23 @@ func (e Error) Error() string {
 	return string(e)
 }
 
-func NewRouter() *Router {
-	return &Router{
+func NewRouter() Router {
+
+	router := Router{
 		flows: mappings{
 			fromMPTCPToken: make(map[mptcp.EndpointToken]shila.NetFlow),
 			fromIPPortKey:  make(map[shila.IPAddressPortKey]shila.NetFlow),
 		},
 	}
+
+	// See whether there is some routing from it which can be loaded
+	if routingEntries, err := io.LoadRoutingEntriesFromDisk(Config.Path); err != nil {
+		router.insertFromJSON(routingEntries)
+	} else {
+		log.Info.Print("Unable to load routing entries from disk. - ", err.Error())
+	}
+
+	return router
 }
 
 func (r *Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, flow shila.NetFlow) error {
@@ -108,4 +121,11 @@ func (r *Router) getFromIPAddressPortKey(key shila.IPAddressPortKey) (shila.NetF
 func (r *Router) getFromMPTCPEndpointToken(token mptcp.EndpointToken) (shila.NetFlow, bool) {
 	packetHeader, ok := r.flows.fromMPTCPToken[token]
 	return packetHeader, ok
+}
+
+func (r *Router) insertFromJSON(entries []json.RoutingEntry) {
+
+	for _, entry := range entries {
+		log.Info.Print(entry)
+	}
 }

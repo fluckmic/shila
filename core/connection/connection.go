@@ -20,7 +20,7 @@ type Connection struct {
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	router      *netflow.Router
+	router      netflow.Router
 }
 
 type channels struct {
@@ -29,7 +29,7 @@ type channels struct {
 	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router *netflow.Router) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router netflow.Router) *Connection {
 	return &Connection{
 		flow:        flow,
 		state:       newState(),
