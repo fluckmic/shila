@@ -1,3 +1,4 @@
+//
 package network
 
 import "shila/core/shila"
@@ -9,13 +10,14 @@ var _ shila.NetworkPath 		 = (*path)(nil)
 
 type PathGenerator struct {}
 
-func (g PathGenerator) New(path string) shila.NetworkPath {
+func (g PathGenerator) New(path string) (shila.NetworkPath, error) {
 	return newPath(path)
 }
 
-func newPath(p string) shila.NetworkPath {
+func newPath(p string) (shila.NetworkPath, error) {
 	// No path functionality w/ plain TCP.
-	_ = p; return path{}
+	_ = p
+	return path{}, nil
 }
 
 func (g PathGenerator) NewEmpty() shila.NetworkPath {

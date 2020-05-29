@@ -1,3 +1,4 @@
+//
 package networkSide
 
 import (
@@ -28,7 +29,6 @@ func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
 		state:       	 shila.NewEntityState(),
 	}
 }
-
 
 func (m *Manager) Setup() error {
 
@@ -70,6 +70,7 @@ func (m *Manager) Start() error {
 
 func (m *Manager) CleanUp() error {
 
+	m.state.Set(shila.TornDown)
 	var err error = nil
 
 	err = m.tearDownAndRemoveClientContactingEndpoints()
@@ -78,8 +79,6 @@ func (m *Manager) CleanUp() error {
 
 	err = m.contactingServer.TearDown()
 	m.contactingServer = nil
-
-	m.state.Set(shila.TornDown)
 
 	return err
 }
@@ -181,8 +180,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	trafficEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
 
 	// Wait a certain amount of time to give the server endpoint time to establish itself
-	time.Sleep(time.Duration(Config.WaitingTimeTrafficConnEstablishment) * time.Second)
-	// TODO: Configuration parameter: Waiting time traffic conn establishment
+	time.Sleep(Config.WaitingTimeTrafficConnEstablishment)
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {

@@ -63,8 +63,8 @@ func (s *Server) SetupAndRun() error {
 	}
 
 	// Create the channels
-	s.ingress = make(chan *shila.Packet, Config.SizeIngressBuff)
-	s.egress  = make(chan *shila.Packet, Config.SizeEgressBuff)
+	s.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
+	s.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	// Start listening for incoming backbone connections.
 	s.listener = listener
@@ -139,7 +139,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// Not the address from the client side
 	srcAddr, _ := network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	// Not the path taken from client to this server
-	path 	:= network.PathGenerator{}.New("")
+	path, _	:= network.PathGenerator{}.New("")
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
@@ -198,7 +198,7 @@ func (s *Server) flushHoldingArea() {
 func (s *Server) serveIngress(connection net.Conn) {
 
 	// Prepare everything for the packetizer
-	ingressRaw := make(chan byte, Config.SizeReadBuffer)
+	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
 
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// Server is the contacting server, it is his responsibility
@@ -217,9 +217,9 @@ func (s *Server) serveIngress(connection net.Conn) {
 	}
 
 	reader := io.Reader(connection)
-	storage := make([]byte, Config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
 		// If the incoming connection suffers from an error, we close it and return.
 		// The server instance is still able to receive backboneConnections as long as it is not
 		// shut down by the manager of the network side.
@@ -273,11 +273,11 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	dstAddr := s.netFlow.Src
 	//srcAddr := network.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
 	srcAddr, _ 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
-	path 		:= network.PathGenerator{}.New("")
+	path, _		:= network.PathGenerator{}.New("")
 	header  	:= shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
@@ -293,12 +293,12 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
 
 	// Fetch the parts for the packet network netFlow which are fixed.
-	path 		:= network.PathGenerator{}.New("")
+	path, _		:= network.PathGenerator{}.New("")
 	srcAddr, _ 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil { // TODO: Handle error
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!

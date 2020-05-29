@@ -1,3 +1,4 @@
+//
 package tcpip
 
 import (
@@ -6,19 +7,15 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"net"
+	"shila/layer"
 )
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
 
 var hostByteOrder = binary.BigEndian
 
 type IPv4Option interface{}
 
 func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
+	// TODO: https://github.com/fluckmic/shila/issues/17
 	options = []IPv4Option{}
 	return
 }
@@ -83,7 +80,7 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) ([]byte, error) 
 			// Ingress was closed in the meantime, return nil.
 			return nil, nil
 		} else {
-			return nil, Error(fmt.Sprint("Unknown IP version {", b >> 4, "}."))
+			return nil, layer.ParsingError(fmt.Sprint("Unknown IP version {", b >> 4, "}."))
 		}
 	}
 }

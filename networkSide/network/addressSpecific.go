@@ -1,10 +1,10 @@
+//
 package network
 
 import (
 	"fmt"
 	"net"
 	"shila/core/shila"
-	"shila/log"
 	"strconv"
 )
 
@@ -19,7 +19,7 @@ type AddressGenerator struct {}
 func (g AddressGenerator) New(address string) (shila.NetworkAddress, error) {
 	return newAddress(address)
 }
-
+// <ip>:<port>
 func newAddress(addr string) (shila.NetworkAddress, error) {
 	if host, port, err := net.SplitHostPort(addr); err != nil {
 		return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", addr, "}."))
@@ -37,14 +37,13 @@ func newAddress(addr string) (shila.NetworkAddress, error) {
 }
 
 // <port>
-func (g AddressGenerator) NewLocal(port string) shila.NetworkAddress {
+func (g AddressGenerator) NewLocal(port string) (shila.NetworkAddress, error) {
 		if Port, err := strconv.Atoi(port); err != nil {
-		log.Error.Panic(fmt.Sprint("Unable to create new local address from {", port, "}."))
-		return nil
+			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", port, "}."))
 	} else {
-		return &net.TCPAddr{Port: Port}
-		}
+		return &net.TCPAddr{Port: Port}, nil
 	}
+}
 
 func (g AddressGenerator) NewEmpty() shila.NetworkAddress {
 	return &net.TCPAddr{}

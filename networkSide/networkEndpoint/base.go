@@ -8,4 +8,5 @@ type Base struct {
 	label   shila.EndpointLabel
 	ingress shila.PacketChannel
 	egress  shila.PacketChannel
+	state   shila.EntityState
 }

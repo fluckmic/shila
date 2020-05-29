@@ -1,5 +1,6 @@
 package networkEndpoint
 
+import "C"
 import (
 	"fmt"
 	"io"
@@ -15,10 +16,7 @@ var _ shila.NetworkClientEndpoint = (*Client)(nil)
 
 type Client struct {
 	Base
-	connection			networkConnection
-	isValid    			bool
-	isSetup    			bool // TODO: merge to "state" object
-	isRunning 			bool
+	connection networkConnection
 }
 
 type networkConnection struct {
@@ -30,28 +28,16 @@ func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.Network
 	return &Client{
 		Base: 				Base{
 								label: label,
+								state: shila.NewEntityState(),
 							},
 		connection:		    networkConnection{Identifier: netConnId},
-		isValid: 			true,
 	}
-}
-
-func (c *Client) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, network.PathGenerator{}.New("")))
 }
 
 func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
-	if !c.IsValid() {
-		return shila.NetFlow{},  shila.CriticalError(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client no longer valid."))
-	}
-
-	if c.IsRunning() {
-		return shila.NetFlow{},  shila.CriticalError(fmt.Sprint("Unable to setup and run client {", c.Label()," ", c.Key(), "}. - Client is already running."))
-	}
-
-	if c.IsSetup() {
-		return shila.NetFlow{}, nil
+	if c.state.Not(shila.Uninitialized) {
+		return shila.NetFlow{}, shila.CriticalError(fmt.Sprint("Entity in wrong state {", c.state, "}."))
 	}
 
 	// Establish a connection to the server endpoint
@@ -69,41 +55,39 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	c.connection.Backbone = backboneConnection
 
 	if c.Label() == shila.TrafficNetworkEndpoint {
+
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-
 		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.Src.String()))); err != nil {
 			return shila.NetFlow{}, shila.TolerableError(err.Error())
 		}
 	}
 
-	// c.connection.Identifier.Src = network.Address{Addr: *backboneConnection.LocalAddr().(*net.TCPAddr)}
-	// c.connection.Identifier.Src = network.AddressGenerator{}.New(backboneConnection.LocalAddr().String())
 	c.connection.Identifier.Src = backboneConnection.LocalAddr()
 
 	// Create the channels
-	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuff)
-	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuff)
+	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
+	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	go c.serveIngress()
 	go c.serveEgress()
 
+	c.state.Set(shila.Running)
 	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.Key(), "}.")
-
-	c.isSetup   = true
-	c.isRunning = true
-
 	return c.connection.Identifier, nil
+}
+
+func (c *Client) Key() shila.EndpointKey {
+	path, _ := network.PathGenerator{}.New("")
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, path))
 }
 
 func (c *Client) TearDown() error {
 
 	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.Key(), "}.")
 
-	c.isValid = false
-	c.isRunning = false
-	c.isSetup = false
+	c.state.Set(shila.TornDown)
 
 	// Close the egress channel
 	// Client stops sending out packets
@@ -130,26 +114,24 @@ func (c *Client) Label() shila.EndpointLabel {
 
 func (c *Client) serveIngress() {
 
-	ingressRaw := make(chan byte, Config.SizeReadBuffer)
+	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
 	go c.packetize(ingressRaw)
 
 	reader := io.Reader(c.connection.Backbone)
-	storage := make([]byte, Config.SizeReadBuffer)
+	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.BatchSizeRead)
-		if err != nil && !c.IsValid() {
-			// Client is no longer valid, there is no need to try to stay alive.
-			close(ingressRaw)
-			return
-		} else if err != nil {
-			// Wait some time, then check if client is still valid (server can close connection earlier..)
-			time.Sleep(2 * time.Second) // TODO for SCION: Add to config
-			if c.IsValid() {
-				panic(fmt.Sprint("Client {", c.Key(), "} unable to read data from backbone connection."))
-				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?
+		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
+		if err != nil {
+			// Wait a little bit, the server was might earlier with
+			// regularly closing the connection.
+			time.Sleep(Config.WaitingTimeUntilConnectionRetry)
+			if c.state.Not(shila.Running) {
+				close(ingressRaw)
+				return
 			}
-			close(ingressRaw)
-			return
+			// TODO: https://github.com/fluckmic/shila/issues/14
+			log.Info.Print("Client {", c.Key(), "} unable to write data to backbone connection.")
+			panic("No reconnection functionality implemented.")
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -161,43 +143,32 @@ func (c *Client) serveEgress() {
 	writer := io.Writer(c.connection.Backbone)
 	for p := range c.egress {
 		_, err := writer.Write(p.Payload)
-		if err != nil && !c.IsValid() {
-			// Error doesn't matter, client is no longer valid anyway.
-			return
-		} else if err != nil {
-			// Wait some time, then check if client is still valid (server can close connection earlier..)
-			time.Sleep(2 * time.Second) // TODO for SCION: Add to config
-			if c.IsValid() {
-				panic(fmt.Sprint("Client {", c.Key(), "} unable to write data to backbone connection."))
-				// TODO for SCION: Client might still valid, that is, a connection relies on this client! Try to reestablish?
+		if err != nil {
+			// Wait a little bit, the server was might earlier with
+			// regularly closing the connection.
+			time.Sleep(Config.WaitingTimeUntilConnectionRetry)
+			if c.state.Not(shila.Running) {
+				return
 			}
+			// TODO: https://github.com/fluckmic/shila/issues/14
+			log.Info.Print("Client {", c.Key(), "} unable to write data to backbone connection.")
+			panic("No reconnection functionality implemented.")
 		}
 	}
 }
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
-			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of client {", c.Key(),
-					"}. - ", err.Error())) // TODO: Handle panic!
+		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil { // TODO: Handle error
+			if ipFlow, err := shila.GetIPFlow(rawData); err != nil {
+				// We were not able to get the IP flow from the raw data, but there was no issue parsing
+				// the raw data. We therefore just drop the packet and hope that the next one is better..
+				log.Error.Print("Unable to get IP net flow in packetizer of client {", c.Key(),	"}. - ", err.Error())
 			} else {
-				c.ingress <- shila.NewPacket(c, iPHeader, rawData)
+				c.ingress <- shila.NewPacket(c, ipFlow, rawData)
 			}
 		} else {
 			return
 		}
 	}
-}
-
-func (c *Client) IsValid() bool {
-	return c.isValid
-}
-
-func (c *Client) IsSetup() bool {
-	return c.isSetup
-}
-
-func (c *Client) IsRunning() bool {
-	return c.isRunning
 }

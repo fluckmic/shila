@@ -8,9 +8,6 @@ type ThirdPartyError string
 func (tpe ThirdPartyError) Error() string {
 	return string(tpe)
 }
-func (tpe ThirdPartyError) PrependMsg(msg string) ThirdPartyError {
-	return ThirdPartyError(fmt.Sprint(msg, " - ", tpe.Error()))
-}
 
 // Should not happen but we dont have to terminate shila.
 // Could be our fault, but not necessarily.

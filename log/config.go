@@ -1,3 +1,4 @@
+//
 package log
 
 var Config config

@@ -13,12 +13,12 @@ type SpecificNetworkSideManager interface {
 
 type NetworkAddressGenerator interface {
 	New(string)		 (NetworkAddress, error) 	// Generates a new network address from a string.
-	NewLocal(string) NetworkAddress				// Generates a new local network address from a string.
+	NewLocal(string) (NetworkAddress, error)	// Generates a new local network address from a string.
 	NewEmpty()		 NetworkAddress 			// Generates a empty network address.
 }
 
 type NetworkPathGenerator interface {
-	New(string)		NetworkPath
+	New(string)		(NetworkPath, error)
 }
 
 type NetworkClientEndpoint interface {

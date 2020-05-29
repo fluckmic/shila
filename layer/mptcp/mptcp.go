@@ -1,3 +1,4 @@
+//
 package mptcp
 
 import (
@@ -6,16 +7,11 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/google/gopacket/layers"
+	"shila/layer"
 	"shila/layer/tcpip"
 )
 
 const TCPOptionKindMPTCP = 30
-
-type Error string
-
-func (e Error) Error() string {
-	return string(e)
-}
 
 type Option interface{}
 
@@ -166,7 +162,7 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []Option, err error) {
 			case MultipathCapable:
 
 				if length != 12 && length != 20 {
-					err = Error(fmt.Sprint("Invalid length {", length, "} for {", MultipathCapable, "}."))
+					err = layer.ParsingError(fmt.Sprint("Invalid length {", length, "} for {", MultipathCapable, "}."))
 					return
 				}
 
@@ -239,7 +235,7 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []Option, err error) {
 					opt = JoinOptionThirdACK{OptionBase: optBase, SenderHMAC: data[2:22]}
 
 				default:
-					err = Error(fmt.Sprint("Invalid length {", length, "} for {", JoinConnection, "}."))
+					err = layer.ParsingError(fmt.Sprint("Invalid length {", length, "} for {", JoinConnection, "}."))
 					return
 				}
 

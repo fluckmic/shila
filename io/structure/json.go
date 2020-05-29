@@ -34,7 +34,7 @@ type NetworkPathJSON struct {
 	Elements []NetworkPathEntryJSON
 }
 func (pj NetworkPathJSON) GetPath() (shila.NetworkPath, error) {
-	return network.PathGenerator{}.New(""), nil
+	return network.PathGenerator{}.New("")
 }
 type NetworkPathEntryJSON struct {
 	Element interface{}

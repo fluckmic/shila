@@ -9,6 +9,8 @@ import (
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/kernelSide/network"
 	"shila/layer/tcpip"
+	"shila/log"
+	"time"
 )
 
 const nameTunDevice = "tun"
@@ -158,13 +160,15 @@ func (d *Device) serveIngress() {
 	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
-		if err != nil && d.state.Not(shila.Running) {
-			// Error doesn't matter, kernel endpoint
-			// is no longer valid anyway.
-			close(ingressRaw)
-			return
-		} else if err != nil {
-			panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
+		if err != nil {
+			time.Sleep(Config.WaitingTimeUntilEscalation)
+			if d.state.Not(shila.Running) {
+				close(ingressRaw)
+				return
+			}
+			//TODO: https://github.com/fluckmic/shila/issues/2
+			log.Info.Print("Kernel endpoint {", d.Key(), "} unable to read data.")
+			panic("Implement escalation.")
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -176,12 +180,14 @@ func (d *Device) serveEgress() {
 	writer := io.Writer(&d.vif)
 	for p := range d.channels.egress {
 		_, err := writer.Write(p.Payload)
-		if err != nil && !d.state.Not(shila.Running) {
-			// Error doesn't matter, kernel endpoint
-			// is no longer valid anyway.
-			return
-		} else if err != nil {
-			panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
+		if err != nil {
+			time.Sleep(Config.WaitingTimeUntilEscalation)
+			if d.state.Not(shila.Running) {
+				return
+			}
+			//TODO: https://github.com/fluckmic/shila/issues/2
+			log.Info.Print("Kernel endpoint {", d.Key(), "} unable to write data.")
+			panic("Implement escalation.")
 		}
 	}
 }
@@ -190,9 +196,9 @@ func (d *Device) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				panic("Handle error in go routine..") //TODO: https://github.com/fluckmic/shila/issues/2
-				/* panic(fmt.Sprint("Unable to get IP header in packetizer of kernel endpoint {",
-				   d.Key(), "}. - ", err.Error())) */
+				// We were not able to get the IP flow from the raw data, but there was no issue parsing
+				// the raw data. We therefore just drop the packet and hope that the next one is better..
+				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", d.Key(), "}. - ", err.Error())
 			} else {
 				d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 			}

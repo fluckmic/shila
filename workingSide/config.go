@@ -1,3 +1,4 @@
+//
 package workingSide
 
 var Config config
