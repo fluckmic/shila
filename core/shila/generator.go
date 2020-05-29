@@ -11,9 +11,9 @@ type SpecificNetworkSideManager interface {
 }
 
 type NetworkAddressGenerator interface {
-	New(string)		 NetworkAddress 	// Generates a new network address from a string.
-	NewLocal(string) NetworkAddress		// Generates a new local network address from a string.
-	NewEmpty()		 NetworkAddress 	// Generates a empty network address.
+	New(string)		 (NetworkAddress, error) 	// Generates a new network address from a string.
+	NewLocal(string) NetworkAddress				// Generates a new local network address from a string.
+	NewEmpty()		 NetworkAddress 			// Generates a empty network address.
 }
 
 type NetworkPathGenerator interface {

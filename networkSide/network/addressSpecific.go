@@ -16,24 +16,23 @@ var _ shila.NetworkAddress 			= (*net.TCPAddr)(nil)
 type AddressGenerator struct {}
 
 // <ip>:<port>
-func (g AddressGenerator) New(address string) shila.NetworkAddress {
+func (g AddressGenerator) New(address string) (shila.NetworkAddress, error) {
 	return newAddress(address)
 }
 
-func newAddress(addr string) shila.NetworkAddress {
+func newAddress(addr string) (shila.NetworkAddress, error) {
 	if host, port, err := net.SplitHostPort(addr); err != nil {
-		log.Error.Panic(fmt.Sprint("Unable to create new network address from {", addr, "}."))
-		return nil
+		return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", addr, "}."))
 	} else {
 		IPv4 := net.ParseIP(host)
 		Port, err := strconv.Atoi(port)
-		if IPv4 == nil || err != nil {
-			log.Error.Panic(fmt.Sprint("Unable to create new network address from {", addr, "}."))
-			return nil
+		if IPv4 == nil {
+			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", IPv4, "}."))
+		} else if err != nil {
+			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse port {", Port, "}."))
 		} else {
-			return &net.TCPAddr{IP: IPv4, Port: Port}
+			return &net.TCPAddr{IP: IPv4, Port: Port}, nil
 		}
-		return nil
 	}
 }
 

@@ -137,7 +137,7 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleConnection(connection net.Conn) {
 
 	// Not the address from the client side
-	srcAddr := network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	srcAddr, _ := network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	// Not the path taken from client to this server
 	path 	:= network.PathGenerator{}.New("")
 
@@ -151,7 +151,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
 
 		} else {
-			contactSrcAddr := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
+			contactSrcAddr, _ := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
@@ -272,9 +272,9 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 	// Create the packet network netFlow
 	dstAddr := s.netFlow.Src
 	//srcAddr := network.Address{Addr: *connection.RemoteAddr().(*net.TCPAddr)}
-	srcAddr := network.AddressGenerator{}.New(connection.RemoteAddr().String())
-	path 	:= network.PathGenerator{}.New("")
-	header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
+	srcAddr, _ 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	path 		:= network.PathGenerator{}.New("")
+	header  	:= shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
 
 	for {
 		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeReadBuffer); rawData != nil { // TODO: Handle error
@@ -294,7 +294,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 
 	// Fetch the parts for the packet network netFlow which are fixed.
 	path 		:= network.PathGenerator{}.New("")
-	srcAddr 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	srcAddr, _ 	:= network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	localAddr 	:= connection.LocalAddr().(*net.TCPAddr)
 
 	for {
@@ -303,8 +303,8 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 				panic(fmt.Sprint("Unable to get IP netFlow in packetizer of server {", s.Key(),
 					"}. - ", err.Error())) // TODO: Handle panic!
 			} else {
-				dstAddr := network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
+				dstAddr, _  := network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
+				header  	:= shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
 				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
 			}
 		} else {
