@@ -1,3 +1,4 @@
+//
 package connection
 
 import (
@@ -53,7 +54,7 @@ func (conn *Connection) Close(err error) {
 
 	conn.state.set(closed)
 
-	log.Info.Print("Closed connection {", conn.Key(), "}.")
+	log.Info.Print("Closed connection {", conn.Key(), "}. - ", err.Error())
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
