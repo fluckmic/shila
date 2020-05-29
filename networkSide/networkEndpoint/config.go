@@ -15,7 +15,7 @@ type config struct {
 	SizeRawIngressStorage  				int					// Size (bytes) of the storage holding raw ingress data.
 	ReadSizeRawIngress					int					// Minimal number of bytes read from the raw ingress channel at once.
 	WaitingTimeUntilConnectionRetry		time.Duration		// Time to wait until a client endpoint tries to reconnect after a established connection has failed.
-	SizeHoldingArea 					int
+	SizeHoldingArea 					int					// Initial size (shila packets) of the holding area.
 }
 
 func hardCodedConfig() config {

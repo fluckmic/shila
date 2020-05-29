@@ -1,6 +1,6 @@
+//
 package networkEndpoint
 
-import "C"
 import (
 	"fmt"
 	"io"

@@ -23,36 +23,25 @@ type Server struct{
 	listener            net.Listener
 	lock                sync.Mutex
 	holdingArea         []*shila.Packet
-	isValid             bool
-	isSetup             bool // TODO: merge to "state" object
-	isRunning           bool
 }
 
 func NewServer(flow shila.NetFlow, label shila.EndpointLabel) shila.NetworkServerEndpoint {
 	return &Server{
 		Base: 			Base{
-								label: 	label,
+								label: label,
+								state: shila.NewEntityState(),
 						},
 		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  net.Conn),
 		netFlow:             flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
-		isValid:             true,
 	}
 }
 
 func (s *Server) SetupAndRun() error {
 
-	if s.IsRunning() {
-		return  shila.CriticalError(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server is already running."))
-	}
-
-	if !s.IsValid() {
-		return  shila.CriticalError(fmt.Sprint("Unable to setup and run server {", s.Label(), ",", s.Key(), "}. - Server no longer valid."))
-	}
-
-	if s.IsSetup() {
-		return nil
+	if s.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", s.state, "}."))
 	}
 
 	// set up the listener
@@ -75,17 +64,13 @@ func (s *Server) SetupAndRun() error {
 	// Start to handle incoming packets
 	go s.serveEgress()
 
-	s.isSetup   = true
-	s.isRunning = true
-
+	s.state.Set(shila.Running)
 	return nil
 }
 
 func (s *Server) TearDown() error {
 
-	s.isSetup 	= false
-	s.isValid 	= false
-	s.isRunning = false
+	s.state.Set(shila.TornDown)
 
 	// Close the egress channel
 	// Server stops sending out packets
@@ -120,10 +105,6 @@ func (s *Server) Key() shila.EndpointKey {
 	return shila.EndpointKey(shila.GetNetworkAddressKey(s.netFlow.Src))
 }
 
-func (s *Server) IsRunning() bool {
-	return s.isRunning
-}
-
 func (s *Server) serveIncomingConnections(){
 	for {
 		if connection, err := s.listener.Accept(); err != nil {
@@ -136,10 +117,17 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleConnection(connection net.Conn) {
 
-	// Not the address from the client side
-	srcAddr, _ := network.AddressGenerator{}.New(connection.RemoteAddr().String())
-	// Not the path taken from client to this server
-	path, _	:= network.PathGenerator{}.New("")
+	// Get the address from the client side
+	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	if err != nil {
+		s.ignoreAndCloseConnection(connection, err); return
+	}
+
+	// Get the path taken from client to this server
+	path, err	:= network.PathGenerator{}.New("")
+	if err != nil {
+		s.ignoreAndCloseConnection(connection, err); return
+	}
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
@@ -149,7 +137,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// the src address of its corresponding contacting endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
-
+			s.ignoreAndCloseConnection(connection, err); return
 		} else {
 			contactSrcAddr, _ := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
@@ -161,8 +149,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 	for _, key := range keys {
 		if _, ok := s.backboneConnections[key]; ok {
 			s.lock.Unlock()
-			panic(fmt.Sprint("Trying to add backbone connection with key {", key, "} in " + "server {", s.Label(),
-			",", s.Key(), "}. There already exists a backbone connection with that key.")) // TODO: Handle panic!
+			s.ignoreAndCloseConnection(connection, err); return
 		} else {
 			s.backboneConnections[key] = connection
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone connection {", key, "}.")
@@ -177,6 +164,8 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// Start the ingress handler for the connection.
 	s.serveIngress(connection)
 
+	connection.Close()
+
 	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
 	s.lock.Lock()
 	for _, key := range keys {
@@ -186,6 +175,11 @@ func (s *Server) handleConnection(connection net.Conn) {
 	s.lock.Unlock()
 
 	return
+}
+
+func (s *Server) ignoreAndCloseConnection(connection net.Conn, err error) {
+	connection.Close()
+	log.Error.Print("Server {", s.Label(), "} listening on {", s.Key(), "} ignored a connection. - ", err.Error())
 }
 
 func (s *Server) flushHoldingArea() {
@@ -257,14 +251,6 @@ func (s *Server) serveEgress() {
 			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
-}
-
-func (s *Server) IsSetup() bool {
-	return s.isSetup
-}
-
-func (s *Server) IsValid() bool {
-	return s.isValid
 }
 
 func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
