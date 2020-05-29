@@ -12,6 +12,6 @@ type config struct {
 
 func hardCodedConfig() config {
 	return config{
-		PrintVerbose:     false,
+		PrintVerbose:     true,
 	}
 }

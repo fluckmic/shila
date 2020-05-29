@@ -48,10 +48,9 @@ func (r *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 		}
 
 		if err := r.InsertFromIPAddressPortKey(key, flow); err != nil {
+			log.Verbose.Print("Inserted routing entry {", flow.Key(), "} with key {", key, "}.")
 			continue
 		}
-
-		log.Verbose.Print("Inserted routing entry {", flow.Key(), "} with key {", key, "}.")
 	}
 
 	return nil

@@ -30,13 +30,13 @@ func (ipj IPAddressPortJSON) GetIPAddressPort() (net.TCPAddr, error) {
 }
 
 type NetworkPathJSON struct {
-	Entries []NetworkPathEntryJSON
+	Elements []NetworkPathEntryJSON
 }
 func (pj NetworkPathJSON) GetPath() (shila.NetworkPath, error) {
 	return network.PathGenerator{}.New(""), nil
 }
 type NetworkPathEntryJSON struct {
-	Entry interface{}
+	Element interface{}
 }
 
 type NetworkAddressAndPathJSON struct {

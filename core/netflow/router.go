@@ -121,6 +121,7 @@ func (r *Router) fillWithEntriesFromDisk() error {
 	if err != nil {
 		return err
 	}
+
 	err = r.batchInsert(routingEntries)
 
 	return nil
