@@ -167,8 +167,7 @@ func (d *Device) serveIngress() {
 				return
 			}
 			//TODO: https://github.com/fluckmic/shila/issues/2
-			log.Info.Print("Kernel endpoint {", d.Key(), "} unable to read data.")
-			panic("Implement escalation.")
+			log.Error.Panic("Kernel endpoint {", d.Key(), "} unable to read data.")
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -185,16 +184,15 @@ func (d *Device) serveEgress() {
 			if d.state.Not(shila.Running) {
 				return
 			}
-			//TODO: https://github.com/fluckmic/shila/issues/2
-			log.Info.Print("Kernel endpoint {", d.Key(), "} unable to write data.")
-			panic("Implement escalation.")
+			// TODO: https://github.com/fluckmic/shila/issues/2
+			log.Error.Panic("Kernel endpoint {", d.Key(), "} unable to write data.")
 		}
 	}
 }
 
 func (d *Device) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
+		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
@@ -203,8 +201,12 @@ func (d *Device) packetize(ingressRaw chan byte) {
 				d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 			}
 		} else {
-			// ingress raw closed
-			return
+			if err == nil {
+				// All good, ingress raw closed.
+				return
+			}
+			// TODO: https://github.com/fluckmic/shila/issues/2
+			log.Error.Panic("Error in raw data packetizer of kernel endpoint {", d.Key(), "}. - ", err.Error())
 		}
 	}
 }

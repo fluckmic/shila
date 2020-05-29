@@ -130,8 +130,7 @@ func (c *Client) serveIngress() {
 				return
 			}
 			// TODO: https://github.com/fluckmic/shila/issues/14
-			log.Info.Print("Client {", c.Key(), "} unable to write data to backbone connection.")
-			panic("No reconnection functionality implemented.")
+			log.Error.Panic("Client {", c.Key(), "} unable to write data to backbone connection.")
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -151,15 +150,14 @@ func (c *Client) serveEgress() {
 				return
 			}
 			// TODO: https://github.com/fluckmic/shila/issues/14
-			log.Info.Print("Client {", c.Key(), "} unable to write data to backbone connection.")
-			panic("No reconnection functionality implemented.")
+			log.Error.Panic("Client {", c.Key(), "} unable to write data to backbone connection.")
 		}
 	}
 }
 
 func (c *Client) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, _ := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil { // TODO: Handle error
+		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if ipFlow, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
@@ -168,7 +166,12 @@ func (c *Client) packetize(ingressRaw chan byte) {
 				c.ingress <- shila.NewPacket(c, ipFlow, rawData)
 			}
 		} else {
-			return
+			if err == nil {
+				// All good, ingress raw closed.
+				return
+			}
+			// TODO: https://github.com/fluckmic/shila/issues/2
+			log.Error.Panic("Error in raw data packetizer of client {", c.Key(), "}. - ", err.Error())
 		}
 	}
 }
