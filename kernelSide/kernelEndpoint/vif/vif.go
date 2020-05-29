@@ -1,4 +1,4 @@
-
+//
 package vif
 
 import (

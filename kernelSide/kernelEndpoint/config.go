@@ -1,3 +1,4 @@
+//
 package kernelEndpoint
 
 var Config config

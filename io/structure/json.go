@@ -1,3 +1,4 @@
+//
 package structure
 
 import (

@@ -1,3 +1,4 @@
+//
 package kernelSide
 
 import (
@@ -40,24 +41,21 @@ func (m *Manager) Setup() error {
 	// Setup the namespaces
 	if err := m.setupNamespaces(); err != nil {
 		_ = m.removeNamespaces()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
+		return shila.PrependError(err, "Unable to setup namespace.")
 	}
 
 	// Setup additional routing
 	if err := m.setupAdditionalRouting(); err != nil {
 		_ = m.clearAdditionalRouting()
 		_ = m.removeNamespaces()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
+		return shila.PrependError(err, "Unable to setup routing.")
 	}
 	// Create the kernel endpoints
 	if err := m.addKernelEndpoints(); err != nil {
 		m.clearKernelEndpoints()
 		_ = m.clearAdditionalRouting()
 		_ = m.removeNamespaces()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
+		return shila.PrependError(err, "Unable to add kernel endpoints.")
 	}
 
 	// Setup the kernel endpoints
@@ -66,8 +64,7 @@ func (m *Manager) Setup() error {
 		m.clearKernelEndpoints()
 		_ = m.clearAdditionalRouting()
 		_ = m.removeNamespaces()
-		return Error(fmt.Sprint("Unable to setup kernel side",
-			" - ", err.Error()))
+		return shila.PrependError(err, "Unable to setup kernel endpoints.")
 	}
 
 	m.state.Set(shila.Initialized)
