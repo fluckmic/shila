@@ -1,3 +1,4 @@
+//
 package netflow
 
 import (
@@ -27,7 +28,7 @@ func loadRoutingEntriesFromDisk() ([]structure.RoutingEntryJSON, error) {
 
 func (r *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 
-	// Invalid entries are silently ignored and not inserted.
+	// Invalid entries are silently ignored and not inserted!
 	for _, entry := range entries {
 
 		ipAddressPort, err := entry.Key.GetIPAddressPort()

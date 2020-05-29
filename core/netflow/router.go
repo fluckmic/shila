@@ -1,4 +1,4 @@
-// TODO!
+//
 package netflow
 
 import (
@@ -36,7 +36,7 @@ func NewRouter() Router {
 
 func (r *Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, flow shila.NetFlow) error {
 	if _, ok := r.flows.fromIPPortKey[key]; ok {
-		return Error(fmt.Sprint("Entry already exists."))
+		return shila.TolerableError("Entry already exists.")
 	} else {
 		r.flows.fromIPPortKey[key] = flow
 		return nil
@@ -47,20 +47,21 @@ func (r *Router) InsertFromSynAckMpCapable(p *shila.Packet, flow shila.NetFlow) 
 	if key, ok, err := mptcp.GetSenderKey(p.Payload); ok {
 		if err == nil {
 			if token, err := mptcp.EndpointKeyToToken(key); err != nil {
-				return Error(fmt.Sprint("Unable to convert token from key. - ", err.Error()))
+				return shila.PrependError(err, fmt.Sprint("Unable to convert token from key."))
 			} else {
 				if _, ok := r.flows.fromMPTCPToken[token]; ok {
-					return Error(fmt.Sprint("Entry already exists."))
+					return shila.TolerableError("Entry already exists.")
 				} else {
 					r.flows.fromMPTCPToken[token] = flow
 					return nil
 				}
 			}
 		} else {
-			return Error(fmt.Sprint("Error in fetching MPTCP endpoint key. - ", err.Error()))
+			return shila.PrependError(err, "Unable to fetch MPTCP endpoint key.")
 		}
 	} else {
-		// The packet does not necessarily contain the endpoint key (e.g. for a packet belonging to a subflow)
+		// The packet does not necessarily contain the endpoint key
+		// (e.g. for a packet belonging to a subflow)
 		return nil
 	}
 }
@@ -74,12 +75,10 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 				return netFlow, shila.Subflow, nil
 			} else {
 				return shila.NetFlow{}, shila.Unknown,
-				Error(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}" +
-					" beside having the packet containing it."))
+				shila.TolerableError(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}."))
 			}
 		} else {
-			return shila.NetFlow{}, shila.Unknown,
-			Error(fmt.Sprint("Unable to fetch MPTCP receiver token. - ", err.Error()))
+			return shila.NetFlow{}, shila.Unknown, shila.PrependError(err, "Unable to fetch MPTCP receiver token.")
 		}
 	}
 
@@ -88,8 +87,7 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 		if err == nil {
 			return netFlow, shila.Mainflow, nil
 		} else {
-			return shila.NetFlow{}, shila.Unknown,
-				Error(fmt.Sprint("Unable to get IP options. - ", err.Error()))
+			return shila.NetFlow{}, shila.Unknown, shila.PrependError(err, "Unable to get IP options.")
 		}
 	}
 
@@ -98,10 +96,11 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 		return netFlow, shila.Mainflow, nil
 	}
 
-	return shila.NetFlow{}, shila.Unknown, Error(fmt.Sprint("No routing information available."))
+	return shila.NetFlow{}, shila.Unknown, shila.TolerableError("No routing information available.")
 }
 
 func (r *Router) getFromIPOptions(raw []byte) (shila.NetFlow, bool, error) {
+	// TODO: https://github.com/fluckmic/shila/issues/17
 	return shila.NetFlow{}, false, nil
 }
 
@@ -116,13 +115,10 @@ func (r *Router) getFromMPTCPEndpointToken(token mptcp.EndpointToken) (shila.Net
 }
 
 func (r *Router) fillWithEntriesFromDisk() error {
-
 	routingEntries, err := loadRoutingEntriesFromDisk()
 	if err != nil {
 		return err
 	}
-
 	err = r.batchInsert(routingEntries)
-
 	return nil
 }

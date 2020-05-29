@@ -1,3 +1,4 @@
+//
 package netflow
 
 var Config config

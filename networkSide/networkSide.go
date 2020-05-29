@@ -29,6 +29,7 @@ func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
 	}
 }
 
+
 func (m *Manager) Setup() error {
 
 	if m.state.Not(shila.Uninitialized) {

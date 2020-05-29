@@ -1,3 +1,4 @@
+//
 package connection
 
 type stateIdentifier uint8
