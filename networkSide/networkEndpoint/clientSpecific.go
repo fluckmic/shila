@@ -189,5 +189,5 @@ func (c *Client) packetize(ingressRaw chan byte) {
 }
 
 func (c *Client) Flow() shila.Flow {
-	return c.Flow()
+	return c.connection.Identifier
 }
