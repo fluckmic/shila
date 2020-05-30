@@ -16,13 +16,14 @@ import (
 const nameTunDevice = "tun"
 
 type Device struct {
-	Number 		uint8
-	Name		string
-	Namespace	network.Namespace
-	IP			net.IP
-	channels   	Channels
-	vif        	vif.Device
-	state   	shila.EntityState
+	Number 			uint8
+	Name			string
+	Namespace		network.Namespace
+	IP				net.IP
+	endpointIssues 	shila.EndpointIssuePubChannel
+	channels   		Channels
+	vif        		vif.Device
+	state   		shila.EntityState
 }
 
 type Channels struct {
@@ -30,13 +31,14 @@ type Channels struct {
 	egress     shila.PacketChannel
 }
 
-func New(number uint8, namespace network.Namespace, ip net.IP) Device {
+func New(number uint8, namespace network.Namespace, ip net.IP, endpointIssues shila.EndpointIssuePubChannel) Device {
 	return Device{
-		Number:		number,
-		Name:		fmt.Sprint(nameTunDevice, number),
-		Namespace:	namespace,
-		IP:			ip,
-		state:		shila.NewEntityState(),
+		Number:			number,
+		Name:			fmt.Sprint(nameTunDevice, number),
+		Namespace:		namespace,
+		IP:				ip,
+		endpointIssues: endpointIssues,
+		state:			shila.NewEntityState(),
 	}
 }
 
@@ -103,8 +105,8 @@ func (d *Device) TearDown() error {
 	err = d.vif.TurnDown()
 	err = d.vif.Teardown()
 
+	// Ingress channel: This kernel endpoint is the only sender, therefore can close it.
 	close(d.channels.ingress)
-	close(d.channels.egress)
 
 	return err
 }
@@ -166,8 +168,11 @@ func (d *Device) serveIngress() {
 				close(ingressRaw)
 				return
 			}
-			//TODO: https://github.com/fluckmic/shila/issues/2
-			log.Error.Panic("Kernel endpoint {", d.Key(), "} unable to read data.")
+			d.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: d,
+				Error:     shila.ThirdPartyError("Unable to read data."),
+			}
+			return
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -184,8 +189,11 @@ func (d *Device) serveEgress() {
 			if d.state.Not(shila.Running) {
 				return
 			}
-			// TODO: https://github.com/fluckmic/shila/issues/2
-			log.Error.Panic("Kernel endpoint {", d.Key(), "} unable to write data.")
+			d.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: d,
+				Error:     shila.ThirdPartyError("Unable to write data."),
+			}
+			return
 		}
 	}
 }
@@ -205,8 +213,11 @@ func (d *Device) packetize(ingressRaw chan byte) {
 				// All good, ingress raw closed.
 				return
 			}
-			// TODO: https://github.com/fluckmic/shila/issues/2
-			log.Error.Panic("Error in raw data packetizer of kernel endpoint {", d.Key(), "}. - ", err.Error())
+			d.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: d,
+				Error:     shila.PrependError(err, "Error in raw data packetizer."),
+			}
+			return
 		}
 	}
 }

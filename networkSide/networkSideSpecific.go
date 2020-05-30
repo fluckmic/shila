@@ -16,12 +16,12 @@ func NewSpecificManager() SpecificManager {
 	return SpecificManager{	}
 }
 
-func (specMng SpecificManager) NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkClientEndpoint {
-	return networkEndpoint.NewClient(netConnId, label)
+func (specMng SpecificManager) NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+	return networkEndpoint.NewClient(flow, label, endpointIssues)
 }
 
-func (specMng SpecificManager) NewServer(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkServerEndpoint {
-	return networkEndpoint.NewServer(netConnId, label)
+func (specMng SpecificManager) NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
+	return networkEndpoint.NewServer(flow, label, endpointIssues)
 }
 
 func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.NetFlow {

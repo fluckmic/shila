@@ -17,18 +17,20 @@ import (
 const tableNumberOfFirstEgressInterface = "2"
 
 type Manager struct {
-	endpoints 	EndpointMapping
-	workingSide chan shila.PacketChannelAnnouncement
-	state       shila.EntityState
+	endpoints          EndpointMapping
+	trafficChannelPubs shila.PacketChannelPubChannel
+	endpointIssues 	   shila.EndpointIssuePubChannel
+	state              shila.EntityState
 }
 
 type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
 
-func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
+func New(trafficChannelPubs shila.PacketChannelPubChannel, endpointIssues shila.EndpointIssuePubChannel) *Manager {
 	return &Manager{
-		endpoints: 		make(EndpointMapping),
-		workingSide: 	workingSide,
-		state: 			shila.NewEntityState(),
+		endpoints:          make(EndpointMapping),
+		trafficChannelPubs: trafficChannelPubs,
+		endpointIssues: 	endpointIssues,
+		state:              shila.NewEntityState(),
 	}
 }
 
@@ -86,7 +88,7 @@ func (m *Manager) Start() error {
 
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
-		m.workingSide <- shila.PacketChannelAnnouncement{Announcer: kerep, Channel: kerep.TrafficChannels().Ingress}
+		m.trafficChannelPubs <- shila.PacketChannelPub{Publisher: kerep, Channel: kerep.TrafficChannels().Ingress}
 	}
 
 	m.state.Set(shila.Running)
@@ -192,7 +194,7 @@ func (m *Manager) addKernelEndpoints() error {
 
 	// Add the ingress kernel endpoint.
 	key := shila.GetIPAddressKey(Config.IngressIP)
-	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP)
+	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP, m.endpointIssues)
 	m.endpoints[key] = &kerep
 
 	// Add the egress kernel endpoint(s).
@@ -203,7 +205,7 @@ func (m *Manager) addKernelEndpoints() error {
 		if _, ok := m.endpoints[key]; !ok {
 
 			number := numberOfEndpointsAdded + 2
-			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip)
+			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip, m.endpointIssues)
 
 			m.endpoints[key] = &kerep
 			numberOfEndpointsAdded++

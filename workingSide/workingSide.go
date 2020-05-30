@@ -2,20 +2,26 @@
 package workingSide
 
 import (
+	"fmt"
 	"shila/core/connection"
 	"shila/core/shila"
 	"shila/log"
+	"shila/networkSide/networkEndpoint"
+	"shila/shutdown"
 )
 
 type Manager struct {
-	connections     connection.Mapping
-	trafficChannels chan shila.PacketChannelAnnouncement
+	connections     	connection.Mapping
+	trafficChannelPubs 	shila.PacketChannelPubChannel
+	endpointIssues 	   	shila.EndpointIssuePubChannel
 }
 
-func New(connections connection.Mapping, trafficChannels chan shila.PacketChannelAnnouncement) *Manager {
+func New(connections connection.Mapping, trafficChannelPubs shila.PacketChannelPubChannel,
+	endpointIssues shila.EndpointIssuePubChannel) *Manager {
 	return &Manager{
-		connections:     connections,
-		trafficChannels: trafficChannels,
+		connections:     	connections,
+		trafficChannelPubs: trafficChannelPubs,
+		endpointIssues:    	endpointIssues,
 	}
 }
 
@@ -24,30 +30,38 @@ func (m *Manager) Setup() error {
 }
 
 func (m *Manager) Start() error {
-	go func() {
-		for anc := range m.trafficChannels {
-			log.Verbose.Print("Working side received announcement for new traffic channel {", anc.Announcer.Key(), ",", anc.Announcer.Label(), "}.")
-			go m.serveChannel(anc.Channel, Config.NumberOfWorkerPerChannel)
-		}
-	}()
+
+	shutdown.Check()
+
+	go m.trafficWorker()
+	go m.issueWorker()
+
 	return nil
 }
 
 func (m *Manager) CleanUp() { }
 
-func (m *Manager) serveChannel(buffer shila.PacketChannel, numberOfWorker int) {
+func (m *Manager) trafficWorker() {
+	for trafficChannelPub := range m.trafficChannelPubs {
+		log.Verbose.Print("Working side received announcement for new traffic channel {",
+			trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.Label(), "}.")
+		go m.serveTrafficChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
+	}
+}
+
+func (m *Manager) serveTrafficChannel(buffer shila.PacketChannel, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
-		go m.handleChannel(buffer)
+		go m.handleTrafficChannel(buffer)
 	}
 }
 
-func (m *Manager) handleChannel(buffer shila.PacketChannel) {
+func (m *Manager) handleTrafficChannel(buffer shila.PacketChannel) {
 	for p := range buffer {
-		m.processChannel(p)
+		m.processTrafficChannel(p)
 	}
 }
 
-func (m *Manager) processChannel(p *shila.Packet) {
+func (m *Manager) processTrafficChannel(p *shila.Packet) {
 
 	// Get the corresponding connection and processes the packet..
 	con := m.connections.Retrieve(p.Flow)
@@ -67,3 +81,47 @@ func (m *Manager) processChannel(p *shila.Packet) {
 	}
 }
 
+
+func (m *Manager) issueWorker() {
+	for issue := range m.endpointIssues {
+
+		// Handle issues from the kernel endpoint
+		if issue.Publisher.Label() == shila.KernelEndpoint {
+			m.handleKernelEndpointIssue(issue)
+		}
+
+		var ep interface{} = issue.Publisher
+		if server, ok := ep.(*networkEndpoint.Server); ok {
+			m.handleNetworkServerIssue(server, issue)
+		}
+
+		if client, ok := ep.(*networkEndpoint.Client); ok {
+			m.handleNetworkClientIssue(client, issue)
+		}
+
+		// Should really not happen..
+		log.Error.Panic(fmt.Sprint("Unknown endpoint point label {",
+			issue.Publisher.Label(), "} in issue worker."))
+	}
+}
+
+func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
+	log.Error.Print("Kernel endpoint issue in {", issue.Publisher.Key(), "}.")
+	shutdown.Fatal(issue.Error)
+}
+
+func (m *Manager) handleNetworkServerIssue(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
+
+	log.Error.Print("Server endpoint issue in {", server.Key(), "}.")
+
+	// Take care, contacting server endpoint is not part of a connection and has to be threaded separately!
+}
+
+func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
+
+	log.Error.Print("Client endpoint issue in {", client.Label(), "}.")
+
+	// If there is an error in a network client endpoint we just close the associated connection.
+	con := m.connections.Retrieve(client.Flow())
+	con.Close(issue.Error)
+}

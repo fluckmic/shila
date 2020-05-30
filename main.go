@@ -33,11 +33,12 @@ func realMain() int {
 
 	log.Info.Println("Setup started...")
 
-	// Create the channel used to announce new traffic channels
-	trafficChannelAnnouncements := make(chan shila.PacketChannelAnnouncement)
+	// Create the channel used to announce new traffic channels and possible issues within endpoints.
+	trafficChannelPubs := make(shila.PacketChannelPubChannel)
+	endpointIssues := make(shila.EndpointIssuePubChannel)
 
 	// Create and setup the kernelSide side
-	kernelSide := kernelSide.New(trafficChannelAnnouncements)
+	kernelSide := kernelSide.New(trafficChannelPubs, endpointIssues)
 	if err = kernelSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
 	}
@@ -45,7 +46,7 @@ func realMain() int {
 	defer kernelSide.CleanUp()
 
 	// Create and setup the network side
-	networkSide := networkSide.New(trafficChannelAnnouncements)
+	networkSide := networkSide.New(trafficChannelPubs, endpointIssues)
 	if err = networkSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
 	}
@@ -59,7 +60,7 @@ func realMain() int {
 	connections := connection.NewMapping(kernelSide, networkSide, routing)
 
 	// Create and setup the working side
-	workingSide := workingSide.New(connections, trafficChannelAnnouncements)
+	workingSide := workingSide.New(connections, trafficChannelPubs, endpointIssues)
 	if err := workingSide.Setup(); err != nil {
 		log.Error.Fatalln("Unable to setup the working side - ", err.Error())
 	}

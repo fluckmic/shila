@@ -20,17 +20,18 @@ type Client struct {
 }
 
 type networkConnection struct {
-	Identifier shila.NetFlow
+	Identifier shila.Flow
 	Backbone   *net.TCPConn
 }
 
-func NewClient(netConnId shila.NetFlow, label shila.EndpointLabel) shila.NetworkClientEndpoint {
+func NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 				Base{
-								label: label,
-								state: shila.NewEntityState(),
+								label: 			label,
+								state: 			shila.NewEntityState(),
+								endpointIssues: endpointIssues,
 							},
-		connection:		    networkConnection{Identifier: netConnId},
+		connection:		    networkConnection{Identifier: flow},
 	}
 }
 
@@ -41,7 +42,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 
 	// Establish a connection to the server endpoint
-	dst := c.connection.Identifier.Dst.(*net.TCPAddr)
+	dst := c.connection.Identifier.NetFlow.Dst.(*net.TCPAddr)
 	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
 		if c.Label() == shila.TrafficNetworkEndpoint {
@@ -59,12 +60,12 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.Src.String()))); err != nil {
+		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.NetFlow.Src.String()))); err != nil {
 			return shila.NetFlow{}, shila.TolerableError(err.Error())
 		}
 	}
 
-	c.connection.Identifier.Src = backboneConnection.LocalAddr()
+	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
 
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
@@ -75,12 +76,12 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	c.state.Set(shila.Running)
 	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.Key(), "}.")
-	return c.connection.Identifier, nil
+	return c.connection.Identifier.NetFlow, nil
 }
 
 func (c *Client) Key() shila.EndpointKey {
 	path, _ := network.PathGenerator{}.New("")
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.Dst, path))
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.NetFlow.Dst, path))
 }
 
 func (c *Client) TearDown() error {
@@ -88,10 +89,6 @@ func (c *Client) TearDown() error {
 	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.Key(), "}.")
 
 	c.state.Set(shila.TornDown)
-
-	// Close the egress channel
-	// Client stops sending out packets
-	close(c.egress)
 
 	// Close the connection
 	// Stops the ingress processing
@@ -130,7 +127,13 @@ func (c *Client) serveIngress() {
 				return
 			}
 			// TODO: https://github.com/fluckmic/shila/issues/14
-			log.Error.Panic("Client {", c.Key(), "} unable to write data to backbone connection.")
+
+			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
+			c.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: c,
+				Error:     shila.ThirdPartyError("Unable to read data."),
+			}
+			return
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
@@ -150,7 +153,13 @@ func (c *Client) serveEgress() {
 				return
 			}
 			// TODO: https://github.com/fluckmic/shila/issues/14
-			log.Error.Panic("Client {", c.Key(), "} unable to write data to backbone connection.")
+
+			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
+			c.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: c,
+				Error:     shila.ThirdPartyError("Unable to write data."),
+			}
+			return
 		}
 	}
 }
@@ -170,8 +179,15 @@ func (c *Client) packetize(ingressRaw chan byte) {
 				// All good, ingress raw closed.
 				return
 			}
-			// TODO: https://github.com/fluckmic/shila/issues/2
-			log.Error.Panic("Error in raw data packetizer of client {", c.Key(), "}. - ", err.Error())
+			c.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: c,
+				Error:     shila.PrependError(err, "Error in raw data packetizer."),
+			}
+			return
 		}
 	}
+}
+
+func (c *Client) Flow() shila.Flow {
+	return c.Flow()
 }

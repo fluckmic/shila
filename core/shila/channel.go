@@ -1,11 +1,18 @@
 //
 package shila
 
-type PacketChannel chan *Packet
+type PacketChannel 			 chan *Packet
+type EndpointIssuePubChannel chan EndpointIssuePub
+type PacketChannelPubChannel chan PacketChannelPub
 
-type PacketChannelAnnouncement struct {
-	Announcer Endpoint
+type PacketChannelPub struct {
+	Publisher Endpoint
 	Channel   PacketChannel
+}
+
+type EndpointIssuePub struct {
+	Publisher Endpoint
+	Error 	  error
 }
 
 type PacketChannels struct {

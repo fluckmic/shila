@@ -5,8 +5,9 @@ import (
 )
 
 type Base struct {
-	label   shila.EndpointLabel
-	ingress shila.PacketChannel
-	egress  shila.PacketChannel
-	state   shila.EntityState
+	label   		shila.EndpointLabel
+	ingress 		shila.PacketChannel
+	egress  		shila.PacketChannel
+	state   		shila.EntityState
+	endpointIssues 	shila.EndpointIssuePubChannel
 }

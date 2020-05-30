@@ -11,7 +11,7 @@
 //
 // The main program should call shutdown.Init() when it's starting.
 //
-// Any library producing shutdown errors should call shutdown.Not() when it starts.
+// Any library producing shutdown errors should call shutdown.Check() when it starts.
 package shutdown
 
 import (
@@ -87,7 +87,7 @@ func Check() {
 // Fatal produces a shutdown error. This function never exits.
 func Fatal(err error) {
 
-	log.Error.Println("Fatal error -", err.Error())
+	log.Error.Println("Fatal error. - ", err.Error())
 
 	// Grace period to gather more logs in case that
 	// the first shutdown error wasn't the most informative one.
@@ -102,7 +102,7 @@ func Fatal(err error) {
 		// If the main goroutine fatals out correctly,
 		// this won't get a chance to run.
 		time.AfterFunc(GraceInterval, func() {
-			log.Error.Fatalln("Main goroutine did not shut down within", GraceInterval, "- Forcing shutdown.")
+			log.Error.Fatalln("Main goroutine did not shut down within {", GraceInterval, "} - Forcing shutdown.")
 		})
 	}
 	fatalMtx.Unlock()
@@ -118,7 +118,7 @@ func Fatal(err error) {
 // Shutdown blocks forever.
 func Orderly(d time.Duration) {
 
-	log.Info.Println("Shutdown initiated. - Wait", d, "until forceful shutdown.")
+	log.Info.Println("Shutdown initiated. - Wait {", d, "} until forceful shutdown.")
 
 	// Inform drainer if not informed already
 	orderlyMtx.Lock()
@@ -129,7 +129,7 @@ func Orderly(d time.Duration) {
 		// If the main goroutine shuts down everything in time,
 		// this won't get a chance to run.
 		time.AfterFunc(d, func() {
-			log.Error.Fatalln("Main goroutine did not shut down within", d, " - Forcing shutdown.")
+			log.Error.Fatalln("Main goroutine did not shut down within {", d, "} - Forcing shutdown.")
 		})
 	}
 	orderlyMtx.Unlock()

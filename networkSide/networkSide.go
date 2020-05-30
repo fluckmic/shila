@@ -16,17 +16,19 @@ type Manager struct {
 	serverTrafficEndpoints    shila.MappingNetworkServerEndpoint
 	clientContactingEndpoints shila.MappingNetworkClientEndpoint
 	clientTrafficEndpoints    shila.MappingNetworkClientEndpoint
-	workingSide               chan shila.PacketChannelAnnouncement
+	trafficChannelPubs        shila.PacketChannelPubChannel
+	endpointIssues 	   		  shila.EndpointIssuePubChannel
 	lock                      sync.Mutex
 	state                     shila.EntityState
 }
 
-func New(workingSide chan shila.PacketChannelAnnouncement) *Manager {
+func New(trafficChannelPubs shila.PacketChannelPubChannel, 	endpointIssues shila.EndpointIssuePubChannel) *Manager {
 	return &Manager{
-		specificManager: NewSpecificManager(),
-		workingSide: 	 workingSide,
-		lock:        	 sync.Mutex{},
-		state:       	 shila.NewEntityState(),
+		specificManager: 	NewSpecificManager(),
+		trafficChannelPubs: trafficChannelPubs,
+		endpointIssues: 	endpointIssues,
+		lock:        	 	sync.Mutex{},
+		state:       	 	shila.NewEntityState(),
 	}
 }
 
@@ -38,7 +40,8 @@ func (m *Manager) Setup() error {
 
 	// Create the contacting server
 	localContactingNetFlow := m.specificManager.LocalContactingNetFlow()
-	m.contactingServer 	   = m.specificManager.NewServer(localContactingNetFlow, shila.ContactingNetworkEndpoint)
+	constructingFlow := shila.Flow{ NetFlow: localContactingNetFlow }
+	m.contactingServer 	   = m.specificManager.NewServer(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues)
 
 	// Create the mappings
 	m.serverTrafficEndpoints 		= make(shila.MappingNetworkServerEndpoint)
@@ -61,7 +64,7 @@ func (m *Manager) Start() error {
 	}
 
 	// Announce the traffic channels to the working side
-	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: m.contactingServer, Channel: m.contactingServer.TrafficChannels().Ingress}
+	m.trafficChannelPubs <- shila.PacketChannelPub{Publisher: m.contactingServer, Channel: m.contactingServer.TrafficChannels().Ingress}
 
 	m.state.Set(shila.Running)
 
@@ -105,7 +108,7 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 	}
 
 	// If there is no server endpoint listening, we first have to set one up.
-	newEndpoint := m.specificManager.NewServer(flow.NetFlow, shila.TrafficNetworkEndpoint)
+	newEndpoint := m.specificManager.NewServer(flow, shila.TrafficNetworkEndpoint, m.endpointIssues)
 	if error = newEndpoint.SetupAndRun(); error != nil {
 		return
 	}
@@ -119,13 +122,14 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 
 	// Announce the new traffic channels to the working side
 	channels = endpoint.TrafficChannels()
-	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: newEndpoint, Channel: channels.Ingress}
+	m.trafficChannelPubs <- shila.PacketChannelPub{Publisher: newEndpoint, Channel: channels.Ingress}
 
 	return
 }
 
 func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contactingNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
 
+	constructingFlow 	:= shila.Flow{IPFlow: flow.IPFlow, Kind: flow.Kind}
 	contactingNetFlow  	= shila.NetFlow{}
 	channels 			= shila.PacketChannels{}
 	error    			= nil
@@ -142,8 +146,8 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	}
 
 	// Establish a new contacting client endpoint
-	contactingNetFlow 		  = m.specificManager.RemoteContactingFlow(flow.NetFlow)	// Does not contain src network address at this point.
-	contactingEndpoint 		 := m.specificManager.NewClient(contactingNetFlow, shila.ContactingNetworkEndpoint)
+	constructingFlow.NetFlow  = m.specificManager.RemoteContactingFlow(flow.NetFlow)	// Does not contain src network address at this point.
+	contactingEndpoint 		 := m.specificManager.NewClient(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
@@ -155,7 +159,7 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 
 	// Announce the new traffic channels to the working side
 	channels = contactingEndpoint.TrafficChannels()
-	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: contactingEndpoint, Channel: channels.Ingress}
+	m.trafficChannelPubs <- shila.PacketChannelPub{Publisher: contactingEndpoint, Channel: channels.Ingress}
 
 	return
 }
@@ -177,7 +181,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
 	}
 
-	trafficEndpoint := m.specificManager.NewClient(flow.NetFlow, shila.TrafficNetworkEndpoint)
+	trafficEndpoint := m.specificManager.NewClient(flow, shila.TrafficNetworkEndpoint, m.endpointIssues)
 
 	// Wait a certain amount of time to give the server endpoint time to establish itself
 	time.Sleep(Config.WaitingTimeTrafficConnEstablishment)
@@ -192,7 +196,7 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 
 	// Announce the new traffic channels to the working side
 	channels = trafficEndpoint.TrafficChannels()
-	m.workingSide <- shila.PacketChannelAnnouncement{Announcer: trafficEndpoint, Channel: channels.Ingress}
+	m.trafficChannelPubs <- shila.PacketChannelPub{Publisher: trafficEndpoint, Channel: channels.Ingress}
 
 	// Note:
 	// The removal of the corresponding client contacting endpoint is triggered by the connTr
