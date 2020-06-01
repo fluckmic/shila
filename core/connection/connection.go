@@ -84,18 +84,23 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 	case raw:				return conn.processPacketFromKerepStateRaw(p)
 
 	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
-							conn.touched = time.Now()
+							// conn.touched = time.Now()
 							conn.channels.Contacting.Egress <- p
+							return nil
+
+	case clientEstablished:	p.Flow.NetFlow = conn.flow.NetFlow
+							// conn.touched = time.Now()
+							conn.channels.NetworkEndpoint.Egress <- p
 							return nil
 
 	case serverReady: 		// Put packet into egress queue of connection. If the connection is established at one one point, these packets
 							// are sent. If not they are lost. (--> Take care, could block if too many packets are in queue
 							p.Flow.NetFlow = conn.flow.NetFlow
 							conn.channels.NetworkEndpoint.Egress <- p
+							conn.setState(serverEstablished)
 							return nil
 
-	case clientEstablished:	p.Flow.NetFlow = conn.flow.NetFlow
-							conn.touched = time.Now()
+	case serverEstablished: p.Flow.NetFlow = conn.flow.NetFlow
 							conn.channels.NetworkEndpoint.Egress <- p
 							return nil
 
@@ -118,8 +123,12 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 
 	case clientReady:		return shila.CriticalError("Both endpoints in client state.") // TODO: TO THINK.
 
-	case serverReady:		conn.touched = time.Now()
-							conn.channels.KernelEndpoint.Egress <- p
+	case clientEstablished: return shila.CriticalError(fmt.Sprint("Invalid connection state {", conn.state.current, "}."))
+
+	case serverReady:		conn.channels.KernelEndpoint.Egress <- p
+							return nil
+
+	case serverEstablished: conn.channels.KernelEndpoint.Egress <- p
 							return nil
 
 	case established: 		conn.touched = time.Now()
@@ -141,14 +150,6 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							// A packet from the traffic endpoint is just received if network connection is established
 	case clientReady:		return shila.CriticalError(fmt.Sprint("Invalid connection state {", conn.state.current, "}."))
 
-	case serverReady:		conn.touched = time.Now()
-							conn.channels.KernelEndpoint.Egress <- p
-							conn.setState(established)
-
-							log.Info.Print("Established new connection {", conn.Key(), "}.")
-
-							return nil
-
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
@@ -162,6 +163,16 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 							log.Info.Print("Established new connection {", conn.Key(), "}.")
 
+							return nil
+
+	case serverReady:		// Packets sent to the traffic endpoint before the connection is established are ignored.
+							return nil
+
+	case serverEstablished: conn.touched = time.Now()
+							conn.channels.KernelEndpoint.Egress <- p
+							conn.setState(established)
+
+							log.Info.Print("Established new connection {", conn.Key(), "}.")
 							return nil
 
 	case established: 		conn.touched 	= time.Now()
@@ -232,7 +243,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet) error {
 
-	// Not the kernel endpoint from the kernel side manager
+	// Get the kernel endpoint from the kernel side manager
 	dstKey := p.Flow.IPFlow.DstIPKey()
 	if channels, ok := conn.kernelSide.GetTrafficChannels(dstKey); ok {
 		conn.channels.KernelEndpoint = channels

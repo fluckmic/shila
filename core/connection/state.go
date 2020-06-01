@@ -6,6 +6,7 @@ const (
 	_                           = iota
 	established stateIdentifier = iota
 	serverReady
+	serverEstablished
 	clientReady
 	clientEstablished
 	closed
@@ -16,6 +17,7 @@ func(s stateIdentifier) String() string {
 	switch s {
 	case established: 			return "Established"
 	case serverReady: 			return "ServerReady"
+	case serverEstablished:		return "ServerEstablished"
 	case clientReady: 			return "ClientReady"
 	case clientEstablished:		return "ClientEstablished"
 	case closed:				return "Closed"
