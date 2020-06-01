@@ -123,8 +123,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	if err := decoder.Decode(&receivedFlow); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
-	var srcNetworkAddr *net.TCPAddr
-	if err := decoder.Decode(srcNetworkAddr); err != nil {
+	var srcNetworkAddr net.TCPAddr
+	if err := decoder.Decode(&srcNetworkAddr); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
 
