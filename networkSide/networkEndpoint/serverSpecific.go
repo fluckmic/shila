@@ -121,39 +121,41 @@ func (s *Server) serveIncomingConnections(){
 	}
 }
 
-func (s *Server) handleConnection(connection net.Conn) {
+func (s *Server) handleConnection(backboneConnection net.Conn) {
 
-	// The very first thing we do for a accepted connection is to see
+	// The very first thing we do for a accepted backbone connection is to see
 	// whether we can get the corresponding flow.
-	IPFlowString, err := bufio.NewReader(connection).ReadString('\n')
+	IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
 	if  err != nil {
-		s.closeConnection(connection, err); return
+		s.closeConnection(backboneConnection, err); return
 	}
 
 	IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
 	if err != nil {
-		s.closeConnection(connection, err); return
+		s.closeConnection(backboneConnection, err); return
 	}
 
-	_ = IPFlow
-
 	// If we aren't able to get the flow, for whatever reason, we just
-	// throw away the connection request. The server keeps ready to receive
+	// throw away the backbone connection request. The server keeps ready to receive
 	// incoming requests.
 
-	// Very good if we get the flow. (IP Flow and probably the src address of the
-	// corresponding contacting endpoint.
+	// If we get the flow, we create a server network connection object. We are now able
+	// to correspond the backbone connection to a shila connection.
+	connection := serverNetworkConnection{
+		Identifier: shila.Flow{IPFlow: IPFlow},
+		Backbone:   backboneConnection,
+	}
 
 	// Get the address from the client side
-	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
+	srcAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
 	if err != nil {
-		s.closeConnection(connection, err); return
+		s.closeConnection(backboneConnection, err); return
 	}
 
 	// Get the path taken from client to this server
 	path, err	:= network.PathGenerator{}.New("")
 	if err != nil {
-		s.closeConnection(connection, err); return
+		s.closeConnection(backboneConnection, err); return
 	}
 
 	// Generate the keys
@@ -163,36 +165,36 @@ func (s *Server) handleConnection(connection net.Conn) {
 	// The client traffic endpoint sends as a very first message
 	// the src address of its corresponding contacting endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
-		if srcAddrReceived, err := bufio.NewReader(connection).ReadString('\n'); err != nil {
-			s.closeConnection(connection, err); return
+		if srcAddrReceived, err := bufio.NewReader(backboneConnection).ReadString('\n'); err != nil {
+			s.closeConnection(backboneConnection, err); return
 		} else {
 			contactSrcAddr, _ := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
 
-	// Add the new connection to the mapping, such that it can be found by the egress handler.
+	// Add the new backboneConnection to the mapping, such that it can be found by the egress handler.
 	s.lock.Lock()
 	for _, key := range keys {
 		if _, ok := s.backboneConnections[key]; ok {
 			s.lock.Unlock()
-			s.closeConnection(connection, err); return
+			s.closeConnection(backboneConnection, err); return
 		} else {
 			s.backboneConnections[key] = serverNetworkConnection{
-				Backbone: connection,
+				Backbone: backboneConnection,
 			}
-			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone connection {", key, "}.")
+			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone backboneConnection {", key, "}.")
 		}
 	}
 	s.lock.Unlock()
 
-	// Start the ingress handler for the connection.
-	s.serveIngress(connection)
+	// Start the ingress handler for the backboneConnection.
+	s.serveIngress(backboneConnection)
 
-	// No longer necessary or possible to serve the ingress, remove the connection from the mapping.
+	// No longer necessary or possible to serve the ingress, remove the backboneConnection from the mapping.
 	s.lock.Lock()
 	for _, key := range keys {
-		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone connection {", key, "}.")
+		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone backboneConnection {", key, "}.")
 		delete(s.backboneConnections, key)
 	}
 	s.lock.Unlock()
