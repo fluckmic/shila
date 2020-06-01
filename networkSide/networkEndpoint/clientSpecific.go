@@ -2,8 +2,6 @@
 package networkEndpoint
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"io"
@@ -58,12 +56,13 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 	c.connection.Backbone = backboneConnection
 
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
+	writer := io.Writer(c.connection.Backbone)
+	encoder := gob.NewEncoder(writer)
 	if err := encoder.Encode(c.connection.Identifier); err != nil {
 		shila.PrependError(err, "Failed to encode flow.")
 	}
 
+	/*
 	lenBuffer := make([]byte, 8)
 	binary.BigEndian.PutUint64(lenBuffer, uint64(buffer.Len()))
 	if _, err = c.connection.Backbone.Write(lenBuffer); err != nil {

@@ -1,8 +1,6 @@
 package networkEndpoint
 
 import (
-	"bytes"
-	"encoding/binary"
 	"encoding/gob"
 	"fmt"
 	"io"
@@ -120,6 +118,7 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	reader := io.Reader(backboneConnection)
+	/*
 	lenBuffer := make([]byte, 8)
 	if _, err := io.ReadFull(reader, lenBuffer); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
@@ -129,9 +128,9 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	if _, err := io.ReadFull(reader, buffer); err != nil {
 		s.closeBackboneConnection(backboneConnection, err);	return
 	}
-
+	*/
 	var receivedFlow shila.Flow
-	decoder := gob.NewDecoder(bytes.NewReader(buffer))
+	decoder := gob.NewDecoder(reader)
 	if err := decoder.Decode(&receivedFlow); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
