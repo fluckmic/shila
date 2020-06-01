@@ -1,8 +1,9 @@
 package networkEndpoint
 
 import (
-	"bufio"
+	"bytes"
 	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"net"
@@ -11,7 +12,6 @@ import (
 	"shila/log"
 	"shila/networkSide/network"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -125,20 +125,29 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
 	len := binary.BigEndian.Uint64(lenBuffer)
-	_ = len
+	buffer := make([]byte, len)
+	if _, err := io.ReadFull(reader, buffer); err != nil {
+		s.closeBackboneConnection(backboneConnection, err);	return
+	}
 
-	/*
-	// The very first thing we do for a accepted backbone connection is to see
-	// whether we can get the corresponding flow.
-	IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
-	if  err != nil {
+	var receivedFlow shila.Flow
+	decoder := gob.NewDecoder(bytes.NewBuffer(buffer))
+	if err := decoder.Decode(&receivedFlow); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
-	IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
-	if err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
-	 */
+
+		/*
+		// The very first thing we do for a accepted backbone connection is to see
+		// whether we can get the corresponding flow.
+		IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
+		if  err != nil {
+			s.closeBackboneConnection(backboneConnection, err); return
+		}
+		IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
+		if err != nil {
+			s.closeBackboneConnection(backboneConnection, err); return
+		}
+		 */
 	// If we aren't able to get the flow, for whatever reason, we just throw away the backbone connection request.
 	// The server remains ready to receive incoming requests.
 
@@ -156,7 +165,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	var srcAddr shila.NetworkAddress
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		localAddr 	 := backboneConnection.LocalAddr().(*net.TCPAddr)
-		srcAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(IPFlow.Dst.Port)))
+		srcAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(receivedFlow.IPFlow.Dst.Port)))
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 		srcAddr = s.flow.NetFlow.Src
 	} else {
@@ -164,7 +173,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	connection := networkConnection{
-		Identifier: shila.Flow{IPFlow: IPFlow, NetFlow: shila.NetFlow{
+		Identifier: shila.Flow{IPFlow: receivedFlow.IPFlow, NetFlow: shila.NetFlow{
 			Src:  srcAddr,
 			Path: path,
 			Dst:  dstAddr,
