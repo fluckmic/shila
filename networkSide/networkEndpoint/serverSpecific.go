@@ -212,7 +212,7 @@ func (s *Server) serveIngress(connection networkConnection) {
 
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
-	go s.packetize(ingressRaw)
+	go s.packetize(connection.Identifier, ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)
@@ -231,10 +231,10 @@ func (s *Server) serveIngress(connection networkConnection) {
 	}
 }
 
-func (s *Server) packetize(ingressRaw chan byte) {
+func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-				s.ingress <- shila.NewPacket(s, s.flow.IPFlow, rawData)
+				s.ingress <- shila.NewPacket(s, flow.IPFlow, rawData)
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.
@@ -242,7 +242,7 @@ func (s *Server) packetize(ingressRaw chan byte) {
 			}
 			s.endpointIssues <- shila.EndpointIssuePub{
 				Publisher: 	s,
-				Flow:		s.flow,
+				Flow:		flow,
 				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
