@@ -61,7 +61,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	if err := encoder.Encode(c.connection.Identifier.IPFlow); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit IP flow.")
 	}
-	if err := encoder.Encode(c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)); err != nil {
+	if err := encoder.Encode(c.connection.Identifier.NetFlow.Src.String()); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 	}
 
