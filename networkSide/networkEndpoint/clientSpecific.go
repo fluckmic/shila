@@ -56,7 +56,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	c.connection.Backbone = backboneConnection
 
 	// As a very first message, client sends the IP flow to the server
-	if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.IPFlow.Key()))); err != nil {
+	if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.IPFlow.String()))); err != nil {
 		return shila.NetFlow{}, shila.TolerableError(err.Error())
 	}
 
