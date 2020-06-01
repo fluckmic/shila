@@ -2,6 +2,7 @@ package networkEndpoint
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
@@ -118,6 +119,15 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
+	reader := io.Reader(backboneConnection)
+	lenBuffer := make([]byte, 8)
+	if _, err := io.ReadFull(reader, lenBuffer); err != nil {
+		s.closeBackboneConnection(backboneConnection, err); return
+	}
+	len := binary.BigEndian.Uint64(lenBuffer)
+	_ = len
+
+	/*
 	// The very first thing we do for a accepted backbone connection is to see
 	// whether we can get the corresponding flow.
 	IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
@@ -128,6 +138,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	if err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
+	 */
 	// If we aren't able to get the flow, for whatever reason, we just throw away the backbone connection request.
 	// The server remains ready to receive incoming requests.
 
@@ -165,6 +176,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	var keys []shila.NetworkAddressAndPathKey
 	keys = append(keys, shila.GetNetworkAddressAndPathKey(dstAddr, path))
 
+	/*
 	// Before sending any traffic data, the traffic client endpoint sends the source address of the
 	// corresponding contacting client endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
@@ -175,6 +187,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
 		}
 	}
+	 */
 
 	// Add the new backboneConnection to the mapping, such that it can be found by the egress handler.
 	s.lock.Lock()
