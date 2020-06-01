@@ -131,8 +131,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	var receivedFlow shila.Flow
-	readBuff := bytes.NewReader(buffer)
-	decoder := gob.NewDecoder(readBuff)
+	decoder := gob.NewDecoder(bytes.NewReader(buffer))
 	if err := decoder.Decode(&receivedFlow); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
