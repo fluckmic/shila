@@ -58,15 +58,15 @@ func GetIPFlowFromString(s string) (IPFlow, error) {
 	if 	!strings.HasPrefix(s, KeyPrefix) {
 		return flow, TolerableError(fmt.Sprint("Flow string has to start with {", KeyPrefix, "}."))
 	} else {
-		s = strings.TrimPrefix(KeyPrefix, s)
+		s = strings.TrimPrefix(s, KeyPrefix)
 	}
 	if 	!strings.HasSuffix(s, KeySuffix) {
 		return flow, TolerableError(fmt.Sprint("Flow string has to end with {", KeySuffix, "}."))
 	} else {
-		s = strings.TrimSuffix(KeySuffix, s)
+		s = strings.TrimSuffix(s, KeySuffix)
 	}
 
-	split := strings.Split(KeyDelimiter, s)
+	split := strings.Split(s, KeyDelimiter)
 
 	if len(split) != 2 {
 		return flow, TolerableError(fmt.Sprint("Flow string has to contain a delimiter {", KeyDelimiter, "}."))
