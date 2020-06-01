@@ -234,7 +234,7 @@ func (s *Server) serveIngress(connection networkConnection) {
 func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-				s.ingress <- shila.NewPacket(s, flow.IPFlow, rawData)
+				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow, flow.NetFlow, rawData)
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.
