@@ -151,19 +151,21 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 	if err != nil {
 		s.closeConnection(backboneConnection, err); return
 	}
+	connection.Identifier.NetFlow.Src = srcAddr
 
 	// Get the path taken from client to this server
 	path, err	:= network.PathGenerator{}.New("")
 	if err != nil {
 		s.closeConnection(backboneConnection, err); return
 	}
+	connection.Identifier.NetFlow.Path = path
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
 	keys = append(keys, shila.GetNetworkAddressAndPathKey(srcAddr, path))
 
-	// The client traffic endpoint sends as a very first message
-	// the src address of its corresponding contacting endpoint.
+	// Before sending any traffic data, the traffic client endpoint sends the source address of the
+	// corresponding contacting client endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		if srcAddrReceived, err := bufio.NewReader(backboneConnection).ReadString('\n'); err != nil {
 			s.closeConnection(backboneConnection, err); return
@@ -180,9 +182,7 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 			s.lock.Unlock()
 			s.closeConnection(backboneConnection, err); return
 		} else {
-			s.backboneConnections[key] = serverNetworkConnection{
-				Backbone: backboneConnection,
-			}
+			s.backboneConnections[key] = connection
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone backboneConnection {", key, "}.")
 		}
 	}
