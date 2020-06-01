@@ -19,16 +19,11 @@ var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	backboneConnections map[shila.NetworkAddressAndPathKey]  serverNetworkConnection
+	backboneConnections map[shila.NetworkAddressAndPathKey]  networkConnection
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
 	holdingArea         []*shila.Packet
-}
-
-type serverNetworkConnection struct {
-	Identifier shila.Flow
-	Backbone   net.Conn
 }
 
 func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
@@ -38,7 +33,7 @@ func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 								state: 			shila.NewEntityState(),
 								endpointIssues: endpointIssues,
 						},
-		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  serverNetworkConnection),
+		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  networkConnection),
 		flow:             	 flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
@@ -116,49 +111,55 @@ func (s *Server) serveIncomingConnections(){
 		if connection, err := s.listener.Accept(); err != nil {
 			return
 		} else {
-			go s.handleConnection(connection)
+			go s.handleBackboneConnection(connection.(*net.TCPConn))
 		}
 	}
 }
 
-func (s *Server) handleConnection(backboneConnection net.Conn) {
+func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	// The very first thing we do for a accepted backbone connection is to see
 	// whether we can get the corresponding flow.
 	IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
 	if  err != nil {
-		s.closeConnection(backboneConnection, err); return
+		s.closeBackboneConnection(backboneConnection, err); return
 	}
-
 	IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
 	if err != nil {
-		s.closeConnection(backboneConnection, err); return
+		s.closeBackboneConnection(backboneConnection, err); return
 	}
+	// If we aren't able to get the flow, for whatever reason, we just throw away the backbone connection request.
+	// The server remains ready to receive incoming requests.
 
-	// If we aren't able to get the flow, for whatever reason, we just
-	// throw away the backbone connection request. The server keeps ready to receive
-	// incoming requests.
-
-	// If we get the flow, we create a server network connection object. We are now able
-	// to correspond the backbone connection to a shila connection.
-	connection := serverNetworkConnection{
-		Identifier: shila.Flow{IPFlow: IPFlow},
-		Backbone:   backboneConnection,
-	}
-
-	// Get the address from the client side
+	// Fetch the network address from the client side as well as the path taken.
 	srcAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
 	if err != nil {
-		s.closeConnection(backboneConnection, err); return
+		s.closeBackboneConnection(backboneConnection, err); return
 	}
-	connection.Identifier.NetFlow.Src = srcAddr
-
-	// Get the path taken from client to this server
 	path, err	:= network.PathGenerator{}.New("")
 	if err != nil {
-		s.closeConnection(backboneConnection, err); return
+		s.closeBackboneConnection(backboneConnection, err); return
 	}
-	connection.Identifier.NetFlow.Path = path
+
+	// Determine the network address of this network endpoint depending on the functionality
+	var dstAddr shila.NetworkAddress
+	if s.Label() == shila.ContactingNetworkEndpoint {
+		dstAddr 	 = s.flow.NetFlow.Src
+	} else if s.Label() == shila.TrafficNetworkEndpoint {
+		localAddr 	 := backboneConnection.LocalAddr().(*net.TCPAddr)
+		dstAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(IPFlow.Dst.Port)))
+	} else {
+		s.closeBackboneConnection(backboneConnection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
+	}
+
+	connection := networkConnection{
+		Identifier: shila.Flow{IPFlow: IPFlow, NetFlow: shila.NetFlow{
+			Src:  dstAddr,
+			Path: path,
+			Dst:  srcAddr,
+		}},
+		Backbone:   backboneConnection,
+	}
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
@@ -168,7 +169,7 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 	// corresponding contacting client endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		if srcAddrReceived, err := bufio.NewReader(backboneConnection).ReadString('\n'); err != nil {
-			s.closeConnection(backboneConnection, err); return
+			s.closeBackboneConnection(backboneConnection, err); return
 		} else {
 			contactSrcAddr, _ := network.AddressGenerator{}.New(strings.TrimSuffix(srcAddrReceived,"\n"))
 			keys = append(keys, shila.GetNetworkAddressAndPathKey(contactSrcAddr, path))
@@ -180,7 +181,7 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 	for _, key := range keys {
 		if _, ok := s.backboneConnections[key]; ok {
 			s.lock.Unlock()
-			s.closeConnection(backboneConnection, err); return
+			s.closeBackboneConnection(backboneConnection, err); return
 		} else {
 			s.backboneConnections[key] = connection
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone backboneConnection {", key, "}.")
@@ -189,7 +190,7 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 	s.lock.Unlock()
 
 	// Start the ingress handler for the backboneConnection.
-	s.serveIngress(backboneConnection)
+	s.serveIngress(connection)
 
 	// No longer necessary or possible to serve the ingress, remove the backboneConnection from the mapping.
 	s.lock.Lock()
@@ -202,9 +203,9 @@ func (s *Server) handleConnection(backboneConnection net.Conn) {
 	return
 }
 
-func (s *Server) closeConnection(connection net.Conn, err error) {
+func (s *Server) closeBackboneConnection(connection *net.TCPConn, err error) {
 	connection.Close()
-	log.Error.Print("Closed connection in Server {", s.Label(), ",", s.Key(), "}. - ", err.Error())
+	log.Error.Print("Closed backbone connection in Server {", s.Label(), ",", s.Key(), "}. - ", err.Error())
 }
 
 func (s *Server) resending() {
@@ -225,27 +226,12 @@ func (s *Server) resending() {
 	}
 }
 
-func (s *Server) serveIngress(connection net.Conn) {
+func (s *Server) serveIngress(connection networkConnection) {
 
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
 
-	if s.Label() == shila.ContactingNetworkEndpoint {
-		// Server is the contacting server, it is his responsibility
-		// to extract the necessary data from the ip packet to be able
-		// to set the correct network netFlow.
-		go s.packetizeContacting(ingressRaw, connection)
-
-	} else if s.Label() == shila.TrafficNetworkEndpoint {
-		// Server receives normal traffic, the connection over which the
-		// packet was received contains enough information to set
-		// the correct network netFlow.
-		go s.packetizeTraffic(ingressRaw, connection)
-	} else {
-		s.closeConnection(connection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
-	}
-
-	reader := io.Reader(connection)
+	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
@@ -295,12 +281,12 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 
 	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	if err != nil {
-		s.closeConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
+		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
 	}
 
 	path, err	 := network.PathGenerator{}.New("")
 	if err != nil {
-		s.closeConnection(connection, shila.PrependError(err, "Unable to get path.")); return
+		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get path.")); return
 	}
 
 	header  	 := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
@@ -319,7 +305,7 @@ func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
 				// All good, ingress raw closed.
 				return
 			}
-			s.closeConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
+			s.closeBackboneConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
 		}
 	}
 }
@@ -331,12 +317,12 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 	// Fetch the parts for the packet network netFlow which are fixed.
 	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
 	if err != nil {
-		s.closeConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
+		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
 	}
 
 	path, err	 := network.PathGenerator{}.New("")
 	if err != nil {
-		s.closeConnection(connection, shila.PrependError(err, "Unable to get path.")); return
+		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get path.")); return
 	}
 
 	localAddr 	 := connection.LocalAddr().(*net.TCPAddr)
@@ -357,7 +343,7 @@ func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) 
 				// All good, ingress raw closed.
 				return
 			}
-			s.closeConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
+			s.closeBackboneConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
 		}
 	}
 }
