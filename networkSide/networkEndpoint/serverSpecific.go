@@ -208,28 +208,11 @@ func (s *Server) closeBackboneConnection(connection *net.TCPConn, err error) {
 	log.Error.Print("Closed backbone connection in Server {", s.Label(), ",", s.Key(), "}. - ", err.Error())
 }
 
-func (s *Server) resending() {
-	for {
-		time.Sleep(Config.ServerResendInterval)
-		for _, p := range s.holdingArea {
-			if p.TTL > 0 {
-				p.TTL--
-				s.egress <- p
-			} else {
-				s.endpointIssues <- shila.EndpointIssuePub{
-					Publisher: s,
-					Flow:      p.Flow,
-					Error:     shila.ThirdPartyError("Unable to write data."),
-				}
-			}
-		}
-	}
-}
-
 func (s *Server) serveIngress(connection networkConnection) {
 
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
+	go s.packetize(ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)
@@ -244,6 +227,43 @@ func (s *Server) serveIngress(connection networkConnection) {
 		}
 		for _, b := range storage[:nBytesRead] {
 			ingressRaw <- b
+		}
+	}
+}
+
+func (s *Server) packetize(ingressRaw chan byte) {
+	for {
+		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
+				s.ingress <- shila.NewPacket(s, s.flow.IPFlow, rawData)
+		} else {
+			if err == nil {
+				// All good, ingress raw closed.
+				return
+			}
+			s.endpointIssues <- shila.EndpointIssuePub{
+				Publisher: 	s,
+				Flow:		s.flow,
+				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
+			}
+			return
+		}
+	}
+}
+
+func (s *Server) resending() {
+	for {
+		time.Sleep(Config.ServerResendInterval)
+		for _, p := range s.holdingArea {
+			if p.TTL > 0 {
+				p.TTL--
+				s.egress <- p
+			} else {
+				s.endpointIssues <- shila.EndpointIssuePub{
+					Publisher: s,
+					Flow:      p.Flow,
+					Error:     shila.ThirdPartyError("Unable to write data."),
+				}
+			}
 		}
 	}
 }
@@ -268,82 +288,6 @@ func (s *Server) serveEgress() {
 			s.holdingArea = append(s.holdingArea, p)
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for " +
 				"backbone connection key {", key, "} into holding area.")
-		}
-	}
-}
-
-func (s *Server) packetizeTraffic(ingressRaw chan byte, connection net.Conn) {
-
-	// Closing the connection inside of this go routine terminates the corresponding ingress handler!
-
-	// Create the packet network netFlow
-	dstAddr 	 := s.flow.NetFlow.Src
-
-	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
-	if err != nil {
-		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
-	}
-
-	path, err	 := network.PathGenerator{}.New("")
-	if err != nil {
-		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get path.")); return
-	}
-
-	header  	 := shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr }
-
-	for {
-		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				// We were not able to get the IP flow from the raw data, but there was no issue parsing
-				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in traffic packetizer of server {", s.Key(),	"}. - ", err.Error())
-			} else {
-				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
-			}
-		} else {
-			if err == nil {
-				// All good, ingress raw closed.
-				return
-			}
-			s.closeBackboneConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
-		}
-	}
-}
-
-func (s *Server) packetizeContacting(ingressRaw chan byte, connection net.Conn) {
-
-	// Closing the connection inside of this go routine terminates the corresponding ingress handler!
-
-	// Fetch the parts for the packet network netFlow which are fixed.
-	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
-	if err != nil {
-		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get source address.")); return
-	}
-
-	path, err	 := network.PathGenerator{}.New("")
-	if err != nil {
-		s.closeBackboneConnection(connection, shila.PrependError(err, "Unable to get path.")); return
-	}
-
-	localAddr 	 := connection.LocalAddr().(*net.TCPAddr)
-
-	for {
-		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
-				// We were not able to get the IP flow from the raw data, but there was no issue parsing
-				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in contact packetizer of server {", s.Key(),	"}. - ", err.Error())
-			} else {
-				dstAddr, _  := network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(iPHeader.Dst.Port)))
-				header  	:= shila.NetFlow{Src: dstAddr, Path: path, Dst: srcAddr}
-				s.ingress <- shila.NewPacketWithNetFlow(s, iPHeader, header, rawData)
-			}
-		} else {
-			if err == nil {
-				// All good, ingress raw closed.
-				return
-			}
-			s.closeBackboneConnection(connection, shila.PrependError(err, "Issue in raw packetizer."))
 		}
 	}
 }
