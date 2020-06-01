@@ -88,15 +88,18 @@ func (m *Manager) issueWorker() {
 		// Handle issues from the kernel endpoint
 		if issue.Publisher.Label() == shila.KernelEndpoint {
 			m.handleKernelEndpointIssue(issue)
+			return
 		}
 
 		var ep interface{} = issue.Publisher
 		if server, ok := ep.(*networkEndpoint.Server); ok {
 			m.handleNetworkServerIssue(server, issue)
+			return
 		}
 
 		if client, ok := ep.(*networkEndpoint.Client); ok {
 			m.handleNetworkClientIssue(client, issue)
+			return
 		}
 
 		// Should really not happen..
