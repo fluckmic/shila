@@ -132,7 +132,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// The server remains ready to receive incoming requests.
 
 	// Fetch the network address from the client side as well as the path taken.
-	srcAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
+	dstAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
 	if err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
@@ -142,28 +142,28 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	// Determine the network address of this network endpoint depending on the functionality
-	var dstAddr shila.NetworkAddress
+	var srcAddr shila.NetworkAddress
 	if s.Label() == shila.ContactingNetworkEndpoint {
-		dstAddr 	 = s.flow.NetFlow.Src
-	} else if s.Label() == shila.TrafficNetworkEndpoint {
 		localAddr 	 := backboneConnection.LocalAddr().(*net.TCPAddr)
-		dstAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(IPFlow.Dst.Port)))
+		srcAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(IPFlow.Dst.Port)))
+	} else if s.Label() == shila.TrafficNetworkEndpoint {
+		srcAddr = s.flow.NetFlow.Src
 	} else {
 		s.closeBackboneConnection(backboneConnection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
 	}
 
 	connection := networkConnection{
 		Identifier: shila.Flow{IPFlow: IPFlow, NetFlow: shila.NetFlow{
-			Src:  dstAddr,
+			Src:  srcAddr,
 			Path: path,
-			Dst:  srcAddr,
+			Dst:  dstAddr,
 		}},
 		Backbone:   backboneConnection,
 	}
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
-	keys = append(keys, shila.GetNetworkAddressAndPathKey(srcAddr, path))
+	keys = append(keys, shila.GetNetworkAddressAndPathKey(dstAddr, path))
 
 	// Before sending any traffic data, the traffic client endpoint sends the source address of the
 	// corresponding contacting client endpoint.
