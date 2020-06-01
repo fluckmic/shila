@@ -2,10 +2,8 @@
 package shila
 
 import (
-	"fmt"
 	"net"
 	"shila/layer/tcpip"
-	"strings"
 )
 
 type Flow struct {
@@ -50,71 +48,3 @@ func GetIPFlow(raw []byte) (IPFlow, error) {
 		return IPFlow{Src: src, Dst: dst}, nil
 	}
 }
-
-func GetIPFlowFromString(s string) (IPFlow, error) {
-
-	flow := IPFlow{}
-
-	if 	!strings.HasPrefix(s, KeyPrefix) {
-		return flow, TolerableError(fmt.Sprint("Flow string has to start with {", KeyPrefix, "}."))
-	} else {
-		s = strings.TrimPrefix(s, KeyPrefix)
-	}
-	if 	!strings.HasSuffix(s, KeySuffix) {
-		return flow, TolerableError(fmt.Sprint("Flow string has to end with {", KeySuffix, "}."))
-	} else {
-		s = strings.TrimSuffix(s, KeySuffix)
-	}
-
-	split := strings.Split(s, KeyDelimiter)
-
-	if len(split) != 2 {
-		return flow, TolerableError(fmt.Sprint("Flow string has to contain a delimiter {", KeyDelimiter, "}."))
-	}
-
-	src, err := tcpip.DecodeTCPAddrFromString(split[0])
-	if err != nil {
-		return flow, PrependError(err, "Cannot parse src address.")
-	}
-	dst, err := tcpip.DecodeTCPAddrFromString(split[1])
-	if err != nil {
-		return flow, PrependError(err, "Cannot parse dst address.")
-	}
-
-	flow.Dst = dst
-	flow.Src = src
-
-	return flow, nil
-
-}
-
-/*
-func MarshalBinary(addr net.TCPAddr) ([]byte, error){
-
-	type addrWrapper struct {
-		IP   []byte
-		Port int
-		Zone string
-	}
-
-	ip, err := addr.IP.MarshalText()
-	if err != nil {
-		return nil, err
-	}
-
-	wrapped := addrWrapper{
-		IP:   ip,
-		Port: addr.Port,
-		Zone: addr.Zone,
-	}
-
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
-	if err := encoder.Encode(&wrapped); err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
- */
