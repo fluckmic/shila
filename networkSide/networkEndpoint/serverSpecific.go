@@ -130,7 +130,7 @@ func (s *Server) handleConnection(connection net.Conn) {
 		s.closeConnection(connection, err); return
 	}
 
-	IPFlow, err := shila.GetIPFlowFromString(IPFlowString)
+	IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
 	if err != nil {
 		s.closeConnection(connection, err); return
 	}
