@@ -12,6 +12,7 @@ type PacketChannelPub struct {
 
 type EndpointIssuePub struct {
 	Publisher Endpoint
+	Flow	  Flow
 	Error 	  error
 }
 

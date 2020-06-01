@@ -114,7 +114,11 @@ func (m *Manager) handleNetworkServerIssue(server shila.NetworkServerEndpoint, i
 
 	log.Error.Print("Server endpoint issue in {", server.Key(), "}.")
 
-	// Take care, contacting server endpoint is not part of a connection and has to be threaded separately!
+	if server.Label() == shila.TrafficNetworkEndpoint {
+		// If the endpoint is a traffic endpoint, then it was created by a connection, i.e. we find one..
+		con := m.connections.Retrieve(issue.Flow)
+		con.Close(issue.Error)
+	}
 }
 
 func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
@@ -122,6 +126,7 @@ func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, i
 	log.Error.Print("Client endpoint issue in {", client.Label(), "}.")
 
 	// If there is an error in a network client endpoint we just close the associated connection.
-	con := m.connections.Retrieve(client.Flow())
+	// Since client endpoints are just created through connections, there should always be an associated one.
+	con := m.connections.Retrieve(issue.Flow)
 	con.Close(issue.Error)
 }

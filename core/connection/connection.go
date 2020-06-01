@@ -47,6 +47,11 @@ func (conn *Connection) Close(err error) {
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
+	// Dont need to close a connection multiple times
+	if conn.state.current == closed {
+		return
+	}
+
 	// Tear down all endpoints possibly associated with this connection
 	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.flow)

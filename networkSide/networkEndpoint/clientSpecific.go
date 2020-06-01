@@ -55,6 +55,11 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 	c.connection.Backbone = backboneConnection
 
+	// As a very first message, client sends the IP flow to the server
+	if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.IPFlow.Key()))); err != nil {
+		return shila.NetFlow{}, shila.TolerableError(err.Error())
+	}
+
 	if c.Label() == shila.TrafficNetworkEndpoint {
 
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
@@ -156,8 +161,9 @@ func (c *Client) serveEgress() {
 
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
 			c.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: c,
-				Error:     shila.ThirdPartyError("Unable to write data."),
+				Publisher: 	c,
+				Flow:		c.connection.Identifier,
+				Error:     	shila.ThirdPartyError("Unable to write data."),
 			}
 			return
 		}

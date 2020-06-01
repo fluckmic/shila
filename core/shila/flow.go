@@ -2,8 +2,10 @@
 package shila
 
 import (
+	"fmt"
 	"net"
 	"shila/layer/tcpip"
+	"strings"
 )
 
 type Flow struct {
@@ -47,4 +49,41 @@ func GetIPFlow(raw []byte) (IPFlow, error) {
 	} else {
 		return IPFlow{Src: src, Dst: dst}, nil
 	}
+}
+
+func GetIPFlowFromString(s string) (IPFlow, error) {
+
+	flow := IPFlow{}
+
+	if 	!strings.HasPrefix(s, KeyPrefix) {
+		return flow, TolerableError(fmt.Sprint("Flow string has to start with {", KeyPrefix, "}."))
+	} else {
+		s = strings.TrimPrefix(KeyPrefix, s)
+	}
+	if 	!strings.HasSuffix(s, KeySuffix) {
+		return flow, TolerableError(fmt.Sprint("Flow string has to end with {", KeySuffix, "}."))
+	} else {
+		s = strings.TrimSuffix(KeySuffix, s)
+	}
+
+	split := strings.Split(KeyDelimiter, s)
+
+	if len(split) != 2 {
+		return flow, TolerableError(fmt.Sprint("Flow string has to contain a delimiter {", KeyDelimiter, "}."))
+	}
+
+	src, err := tcpip.DecodeTCPAddrFromString(split[0])
+	if err != nil {
+		return flow, PrependError(err, "Cannot parse src address.")
+	}
+	dst, err := tcpip.DecodeTCPAddrFromString(split[1])
+	if err != nil {
+		return flow, PrependError(err, "Cannot parse dst address.")
+	}
+
+	flow.Dst = dst
+	flow.Src = src
+
+	return flow, nil
+
 }

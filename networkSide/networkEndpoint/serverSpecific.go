@@ -12,17 +12,23 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	backboneConnections map[shila.NetworkAddressAndPathKey]  net.Conn
+	backboneConnections map[shila.NetworkAddressAndPathKey]  serverNetworkConnection
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
 	holdingArea         []*shila.Packet
+}
+
+type serverNetworkConnection struct {
+	Identifier shila.Flow
+	Backbone   net.Conn
 }
 
 func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
@@ -32,7 +38,7 @@ func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 								state: 			shila.NewEntityState(),
 								endpointIssues: endpointIssues,
 						},
-		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  net.Conn),
+		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  serverNetworkConnection),
 		flow:             	 flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
@@ -65,6 +71,9 @@ func (s *Server) SetupAndRun() error {
 	// Start to handle incoming packets
 	go s.serveEgress()
 
+	// Start the resending functionality
+	go s.resending()
+
 	s.state.Set(shila.Running)
 	return nil
 }
@@ -73,10 +82,6 @@ func (s *Server) TearDown() error {
 
 	s.state.Set(shila.TornDown)
 
-	// Close the egress channel
-	// Server stops sending out packets
-	close(s.egress)
-
 	// Close the listener
 	// Server no longer listens for incoming connections
 	err := s.listener.Close()
@@ -84,7 +89,7 @@ func (s *Server) TearDown() error {
 	// Close all incoming connections
 	// Terminates all workers processing incoming an connection and the corresponding packetizer
 	for _, conn := range s.backboneConnections {
-		err = conn.Close()
+		err = conn.Backbone.Close()
 	}
 
 	// Close the ingress channel
@@ -117,6 +122,27 @@ func (s *Server) serveIncomingConnections(){
 }
 
 func (s *Server) handleConnection(connection net.Conn) {
+
+	// The very first thing we do for a accepted connection is to see
+	// whether we can get the corresponding flow.
+	IPFlowString, err := bufio.NewReader(connection).ReadString('\n')
+	if  err != nil {
+		s.closeConnection(connection, err); return
+	}
+
+	IPFlow, err := shila.GetIPFlowFromString(IPFlowString)
+	if err != nil {
+		s.closeConnection(connection, err); return
+	}
+
+	_ = IPFlow
+
+	// If we aren't able to get the flow, for whatever reason, we just
+	// throw away the connection request. The server keeps ready to receive
+	// incoming requests.
+
+	// Very good if we get the flow. (IP Flow and probably the src address of the
+	// corresponding contacting endpoint.
 
 	// Get the address from the client side
 	srcAddr, err := network.AddressGenerator{}.New(connection.RemoteAddr().String())
@@ -152,15 +178,13 @@ func (s *Server) handleConnection(connection net.Conn) {
 			s.lock.Unlock()
 			s.closeConnection(connection, err); return
 		} else {
-			s.backboneConnections[key] = connection
+			s.backboneConnections[key] = serverNetworkConnection{
+				Backbone: connection,
+			}
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone connection {", key, "}.")
 		}
 	}
 	s.lock.Unlock()
-
-	// A new connection was established. This is good news for
-	// all packets waiting in the holding area.
-	go s.flushHoldingArea()
 
 	// Start the ingress handler for the connection.
 	s.serveIngress(connection)
@@ -181,10 +205,21 @@ func (s *Server) closeConnection(connection net.Conn, err error) {
 	log.Error.Print("Closed connection in Server {", s.Label(), ",", s.Key(), "}. - ", err.Error())
 }
 
-func (s *Server) flushHoldingArea() {
-	log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} flushes the holding area.")
-	for _, p := range s.holdingArea {
-		s.egress <- p
+func (s *Server) resending() {
+	for {
+		time.Sleep(Config.ServerResendInterval)
+		for _, p := range s.holdingArea {
+			if p.TTL > 0 {
+				p.TTL--
+				s.egress <- p
+			} else {
+				s.endpointIssues <- shila.EndpointIssuePub{
+					Publisher: s,
+					Flow:      p.Flow,
+					Error:     shila.ThirdPartyError("Unable to write data."),
+				}
+			}
+		}
 	}
 }
 
@@ -230,25 +265,21 @@ func (s *Server) serveEgress() {
 		// Retrieve key to get the correct connection
 		key := p.Flow.NetFlow.DstAndPathKey()
 		if con, ok := s.backboneConnections[key]; ok {
-			writer := io.Writer(con)
+			writer := io.Writer(con.Backbone)
 			_, err := writer.Write(p.Payload)
 			if err != nil && s.state.Not(shila.Running) {
 				// Server turned down anyway.
 				return
 			}
-			// If just the connection was closed, then we ignore the error. The ingress handler has observed the
-			// issue as well and will sooner or later remove the closed (or faulty) connection.
-
-			// As soon as the connection is removed, follow up packets will be directed to the holding area, but
-			// never be send out, since a reconnection has a different key.
-			// TODO: https://github.com/fluckmic/shila/issues/14
+			// If just the connection was closed, then we ignore the error and drop the packet.
+			// The ingress handler has observed the issue as well and will sooner or later remove
+			// the closed (or faulty) connection.
 		} else {
-		// Currently there is no connection available to send the packet, the packet has therefore to wait
-		// in the holding area. Whenever a new connection is established all the packets in the holding area
-		// are again processed; hopefully they can be send out this time.
+			// Currently there is no backbone connection available to send the packet.
+			// It's TTL value is decreased and it is put into the holding area.
+			s.holdingArea = append(s.holdingArea, p)
 			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for " +
 				"backbone connection key {", key, "} into holding area.")
-			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
 }

@@ -118,7 +118,7 @@ func Fatal(err error) {
 // Shutdown blocks forever.
 func Orderly(d time.Duration) {
 
-	log.Info.Println("Shutdown initiated. - Wait {", d, "} until forceful shutdown.")
+	log.Info.Print("Shutdown initiated. - Wait {", d, "} until forceful shutdown.")
 
 	// Inform drainer if not informed already
 	orderlyMtx.Lock()
@@ -129,7 +129,7 @@ func Orderly(d time.Duration) {
 		// If the main goroutine shuts down everything in time,
 		// this won't get a chance to run.
 		time.AfterFunc(d, func() {
-			log.Error.Fatalln("Main goroutine did not shut down within {", d, "} - Forcing shutdown.")
+			log.Error.Fatal("Main goroutine did not shut down within {", d, "} - Forcing shutdown.")
 		})
 	}
 	orderlyMtx.Unlock()

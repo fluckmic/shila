@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"net"
 	"shila/layer"
+	"strconv"
 )
 
 var hostByteOrder = binary.BigEndian
@@ -81,6 +82,23 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) ([]byte, error) 
 			return nil, nil
 		} else {
 			return nil, layer.ParsingError(fmt.Sprint("Unknown IP version {", b >> 4, "}."))
+		}
+	}
+}
+
+// <ip>:<port>
+func DecodeTCPAddrFromString(addr string) (net.TCPAddr, error) {
+	if host, port, err := net.SplitHostPort(addr); err != nil {
+		return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP {", addr, "}."))
+	} else {
+		IP := net.ParseIP(host)
+		Port, err := strconv.Atoi(port)
+		if IP == nil {
+			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP {", IP, "}."))
+		} else if err != nil {
+			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse port {", Port, "}."))
+		} else {
+			return net.TCPAddr{IP: IP, Port: Port}, nil
 		}
 	}
 }
