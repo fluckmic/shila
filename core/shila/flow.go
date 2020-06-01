@@ -87,3 +87,34 @@ func GetIPFlowFromString(s string) (IPFlow, error) {
 	return flow, nil
 
 }
+
+/*
+func MarshalBinary(addr net.TCPAddr) ([]byte, error){
+
+	type addrWrapper struct {
+		IP   []byte
+		Port int
+		Zone string
+	}
+
+	ip, err := addr.IP.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	wrapped := addrWrapper{
+		IP:   ip,
+		Port: addr.Port,
+		Zone: addr.Zone,
+	}
+
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+	if err := encoder.Encode(&wrapped); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+ */

@@ -6,7 +6,7 @@ import "shila/core/shila"
 // Generator functionalities are thought to be used outside of the
 // backbone protocol specific implementations (suffix "Specific")
 var _ shila.NetworkPathGenerator = (*PathGenerator)(nil)
-var _ shila.NetworkPath 		 = (*path)(nil)
+var _ shila.NetworkPath 		 = (*Path)(nil)
 
 type PathGenerator struct {}
 
@@ -15,18 +15,18 @@ func (g PathGenerator) New(path string) (shila.NetworkPath, error) {
 }
 
 func newPath(p string) (shila.NetworkPath, error) {
-	// No path functionality w/ plain TCP.
+	// No Path functionality w/ plain TCP.
 	_ = p
-	return path{}, nil
+	return Path{}, nil
 }
 
 func (g PathGenerator) NewEmpty() shila.NetworkPath {
-	return path{}
+	return Path{}
 }
 
-type path struct{}
+type Path struct{}
 
-func (p path) String() string {
-	// No path functionality w/ plain TCP.
+func (p Path) String() string {
+	// No Path functionality w/ plain TCP.
 	return ""
 }

@@ -118,6 +118,12 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	reader := io.Reader(backboneConnection)
+	decoder := gob.NewDecoder(reader)
+	var receivedFlow shila.IPFlow
+	if err := decoder.Decode(&receivedFlow); err != nil {
+		s.closeBackboneConnection(backboneConnection, err); return
+	}
+
 	/*
 	lenBuffer := make([]byte, 8)
 	if _, err := io.ReadFull(reader, lenBuffer); err != nil {
@@ -128,12 +134,13 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	if _, err := io.ReadFull(reader, buffer); err != nil {
 		s.closeBackboneConnection(backboneConnection, err);	return
 	}
-	*/
+
 	var receivedFlow shila.Flow
-	decoder := gob.NewDecoder(reader)
+	decoder := gob.NewDecoder(bytes.NewReader(buffer))
 	if err := decoder.Decode(&receivedFlow); err != nil {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
+	*/
 
 		/*
 		// The very first thing we do for a accepted backbone connection is to see
@@ -164,7 +171,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	var srcAddr shila.NetworkAddress
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		localAddr 	 := backboneConnection.LocalAddr().(*net.TCPAddr)
-		srcAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(receivedFlow.IPFlow.Dst.Port)))
+		srcAddr, _   = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 		srcAddr = s.flow.NetFlow.Src
 	} else {
@@ -172,7 +179,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	connection := networkConnection{
-		Identifier: shila.Flow{IPFlow: receivedFlow.IPFlow, NetFlow: shila.NetFlow{
+		Identifier: shila.Flow{IPFlow: receivedFlow, NetFlow: shila.NetFlow{
 			Src:  srcAddr,
 			Path: path,
 			Dst:  dstAddr,
