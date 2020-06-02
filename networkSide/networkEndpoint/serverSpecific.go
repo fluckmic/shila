@@ -206,6 +206,11 @@ func (s *Server) serveIngress(connection networkConnection) {
 
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
+
+	// Representing net flow of server: src <- dst
+
+	// The destination of the incoming packets is the representing source of the server.
+	// The source of the incoming packets is the representing destination of the server.
 	go s.packetize(connection.RepresentingFlow, ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
@@ -228,7 +233,7 @@ func (s *Server) serveIngress(connection networkConnection) {
 func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow, flow.NetFlow, rawData)
+				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow, flow.NetFlow.Swapped(), rawData)
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.

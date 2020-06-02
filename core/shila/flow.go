@@ -24,6 +24,14 @@ type NetFlow struct {
 	Dst  NetworkAddress
 }
 
+func (nf NetFlow) Swapped() NetFlow {
+	return NetFlow{
+		Src:  nf.Dst,
+		Path: nf.Path,
+		Dst:  nf.Src,
+	}
+}
+
 type FlowKind uint8
 const (
 	_                 = iota
