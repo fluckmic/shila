@@ -144,13 +144,17 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// Create the representing flow
 	representingFlow := shila.Flow{
 		IPFlow:  ctrlMsg.IPFlow,
-		NetFlow: trueNetFlow,
+		NetFlow: shila.NetFlow{
+			Src:  trueNetFlow.Dst,
+			Path: trueNetFlow.Path,
+			Dst:  trueNetFlow.Src,
+		},
 	}
 
 	// If the endpoint is a contacting endpoint, then the representing flow is different from the true one.
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// It is the responsibility of the contacting server endpoint to determine the correct network source address.
-		dstAddr, err := network.AddressGenerator{}.New(net.JoinHostPort(trueNetFlow.Dst.(*net.TCPAddr).IP.String(), strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)))
+		dstAddr, err := network.AddressGenerator{}.New(net.JoinHostPort(trueNetFlow.Dst.(*net.TCPAddr).IP.String(), strconv.Itoa(representingFlow.IPFlow.Dst.Port)))
 		if err != nil {
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate destination address of traffic server endpoint.").Error()))
 			backboneConnection.Close()
@@ -162,7 +166,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
-	keys = append(keys, shila.GetNetworkAddressAndPathKey(representingFlow.NetFlow.Src, representingFlow.NetFlow.Path))
+	keys = append(keys, shila.GetNetworkAddressAndPathKey(representingFlow.NetFlow.Dst, representingFlow.NetFlow.Path))
 	// We need also to be able to send messages to the contact client network endpoints.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		// For the moment, the path doesnt matter.
