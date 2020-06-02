@@ -249,7 +249,7 @@ func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 func (s *Server) resending() {
 	for {
 		time.Sleep(Config.ServerResendInterval)
-		for _, p := range s.holdingArea {
+		for p := range s.holdingArea {
 			if p.TTL > 0 {
 				p.TTL--
 				s.egress <- p
