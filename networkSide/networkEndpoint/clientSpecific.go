@@ -77,10 +77,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		if err := encoder.Encode(srcAddrContacting); err != nil {
 			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
-		log.Verbose.Print(c.message(fmt.Sprint("Sent contacting src network address {", srcAddrContacting, "}.")))
+		log.Verbose.Print(c.message(fmt.Sprint("Sent source address {", srcAddrContacting, "} of corresponding contact client endpoint.")))
 	}
-
-
+	
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
 	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
