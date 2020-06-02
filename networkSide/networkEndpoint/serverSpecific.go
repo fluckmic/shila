@@ -275,6 +275,8 @@ func (s *Server) serveEgress() {
 			// has observed the issue as well and will sooner or later remove the closed (or faulty) connection.
 		} else {
 			// Currently there is no backbone connection available to send the packet, put packet into holding area.
+			log.Verbose.Print(s.msg(fmt.Sprint("Put packet with flow {",p.Flow.NetFlow.Key(),"} in holding area. Having {", len(s.backboneConnections),"} backbone connections.")))
+
 			s.holdingArea = append(s.holdingArea, p)
 		}
 	}
