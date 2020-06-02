@@ -117,13 +117,12 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
+	var err error
+
 	// Fetch the network address from the client side as well as the path taken.
 	srcAddr 	:= backboneConnection.RemoteAddr().(*net.TCPAddr)
 	trueDstAddr := backboneConnection.LocalAddr().(*net.TCPAddr)
-	path, err	:= network.PathGenerator{}.New("")
-	if err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
+	path, _		:= network.PathGenerator{}.New("")
 
 	trueNetFlow := shila.NetFlow{
 		Src:  srcAddr,
@@ -131,7 +130,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		Dst:  trueDstAddr,
 	}
 
-	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted."))
+	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted backbone connection."))
 
 	var srcAddrs [] shila.NetworkAddress
 	srcAddrs = append(srcAddrs, srcAddr)
@@ -141,7 +140,10 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	decoder := gob.NewDecoder(reader)
 	var receivedFlow shila.IPFlow
 	if err := decoder.Decode(&receivedFlow); err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
+		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch IP flow.").Error()))
+		backboneConnection.Close()
+		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
+		return
 	}
 
 	// Determine the network address of this network endpoint depending on the functionality
@@ -150,9 +152,11 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		// It is the responsibility of the contacting server endpoint to determine the correct network source address
 		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
 		if err != nil {
-			s.closeBackboneConnection(backboneConnection, err); return
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate traffic network destination.").Error()))
+			backboneConnection.Close()
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
+			return
 		}
-
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 
 		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
@@ -160,12 +164,18 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		decoder := gob.NewDecoder(reader)
 		var dstAddrContacting net.TCPAddr
 		if err := decoder.Decode(&dstAddrContacting); err != nil {
-			s.closeBackboneConnection(backboneConnection, err); return
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch contact network source.").Error()))
+			backboneConnection.Close()
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
+			return
 		}
 		srcAddrs = append(srcAddrs, &dstAddrContacting)
 
 	} else {
-		s.closeBackboneConnection(backboneConnection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
+		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, fmt.Sprint("Invalid endpoint label {", s.Label(), "}.")).Error()))
+		backboneConnection.Close()
+		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
+		return
 	}
 
 	connection := networkConnection{
@@ -187,8 +197,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	s.lock.Lock()
 	for _, key := range keys {
 		if _, ok := s.backboneConnections[key]; ok {
-			s.lock.Unlock()
-			s.closeBackboneConnection(backboneConnection, err); return
+			log.Error.Panic("Implement me.") // TODO.
+			return
 		} else {
 			s.backboneConnections[key] = connection
 		}
@@ -206,11 +216,6 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	s.lock.Unlock()
 
 	return
-}
-
-func (s *Server) closeBackboneConnection(connection *net.TCPConn, err error) {
-	connection.Close()
-	log.Error.Print("Closed backbone connection in Server {", s.Label(), ",", s.Key(), "}. - ", err.Error())
 }
 
 func (s *Server) serveIngress(connection networkConnection) {
