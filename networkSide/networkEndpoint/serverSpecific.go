@@ -290,8 +290,8 @@ func (s *Server) serveEgress() {
 			// Currently there is no backbone connection available to send the packet.
 			// It's TTL value is decreased and it is put into the holding area.
 			s.holdingArea = append(s.holdingArea, p)
-			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for " +
-				"backbone connection key {", key, "} into holding area.")
+			// log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for " +
+			// "backbone connection key {", key, "} into holding area.")
 		}
 	}
 }

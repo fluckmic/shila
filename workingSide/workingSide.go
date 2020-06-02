@@ -115,7 +115,7 @@ func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
 
 func (m *Manager) handleNetworkServerIssue(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
 
-	log.Error.Print("Server endpoint issue in {", server.Key(), "}.")
+	log.Error.Print("Server endpoint issue in {", server.Key(), "}. - ", issue.Error.Error())
 
 	if server.Label() == shila.TrafficNetworkEndpoint {
 		// If the endpoint is a traffic endpoint, then it was created by a connection, i.e. we find one..
@@ -126,7 +126,7 @@ func (m *Manager) handleNetworkServerIssue(server shila.NetworkServerEndpoint, i
 
 func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
 
-	log.Error.Print("Client endpoint issue in {", client.Label(), "}.")
+	log.Error.Print("Client endpoint issue in {", client.Label(), "} - ", issue.Error.Error())
 
 	// If there is an error in a network client endpoint we just close the associated connection.
 	// Since client endpoints are just created through connections, there should always be an associated one.
