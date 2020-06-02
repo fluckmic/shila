@@ -30,7 +30,6 @@ type NetworkClientEndpoint interface {
 type NetworkServerEndpoint interface {
 	Endpoint
 	SetupAndRun() 	error
-	Flow()			Flow
 }
 
 type NetworkAddress interface {

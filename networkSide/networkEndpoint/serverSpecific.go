@@ -211,22 +211,15 @@ func (s* Server) closeBackboneConnectionWithErrorMsg(conn *net.TCPConn, flow shi
 
 func (s *Server) serveIngress(connection networkConnection) {
 
-	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
-
-	// Representing net flow of server: src <- dst
-
-	// The destination of the incoming packets is the representing source of the server.
-	// The source of the incoming packets is the representing destination of the server.
 	go s.packetize(connection.RepresentingFlow, ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
-		// If the incoming connection suffers from an error, we close it and return.
-		// The server instance is still able to receive backboneConnections as long as it is not
-		// shut down by the manager of the network side.
+		// If the incoming connection suffers from an error, we close it and return. The server instance is still able
+		// to receive backboneConnections as long as it is not shut down by the manager of the network side.
 		if err != nil {
 			close(ingressRaw) // Stop the packetizing.
 			return
@@ -246,11 +239,8 @@ func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 				// All good, ingress raw closed.
 				return
 			}
-			s.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: 	s,
-				Flow:		flow,		// Publisher flow!
-				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
-			}
+			err := shila.PrependError(shila.ParsingError(err.Error()), "Issue in raw data packetizer.")
+			s.endpointIssues <- shila.EndpointIssuePub{	Issuer: s, Flow: flow, Error: err }
 			return
 		}
 	}
@@ -264,11 +254,9 @@ func (s *Server) resending() {
 				p.TTL--
 				s.egress <- p
 			} else {
-				s.endpointIssues <- shila.EndpointIssuePub{
-					Publisher: s,
-					Flow:      p.Flow,
-					Error:     shila.ThirdPartyError("Unable to write data."),
-				}
+				// Server network endpoint is not able to send out the given packet.
+				err := shila.NetworkEndpointTimeout("Unable to send packet.")
+				s.endpointIssues <- shila.EndpointIssuePub { Issuer: s,	Flow: p.Flow, Error: err }
 			}
 		}
 	}
@@ -276,32 +264,20 @@ func (s *Server) resending() {
 
 func (s *Server) serveEgress() {
 	for p := range s.egress {
-		// Retrieve key to get the correct connection
-		len := len(s.backboneConnections)
-		_ = len
-		key := p.Flow.NetFlow.DstAndPathKey()
+		key := p.Flow.NetFlow.DstAndPathKey()				// Retrieve key to get the correct connection
 		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con.Backbone)
 			_, err := writer.Write(p.Payload)
 			if err != nil && s.state.Not(shila.Running) {
-				// Server turned down anyway.
-				return
+				return										// Server turned down anyway.
 			}
-			// If just the connection was closed, then we ignore the error and drop the packet.
-			// The ingress handler has observed the issue as well and will sooner or later remove
-			// the closed (or faulty) connection.
+			// If just the connection was closed, then we ignore the error and drop the packet. The ingress handler
+			// has observed the issue as well and will sooner or later remove the closed (or faulty) connection.
 		} else {
-			// Currently there is no backbone connection available to send the packet.
-			// It's TTL value is decreased and it is put into the holding area.
+			// Currently there is no backbone connection available to send the packet, put packet into holding area.
 			s.holdingArea = append(s.holdingArea, p)
-			// log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} directs packet for " +
-			// "backbone connection key {", key, "} into holding area.")
 		}
 	}
-}
-
-func (s *Server) Flow() shila.Flow {
-	return s.flow
 }
 
 func (s *Server) msg(str string) string {
@@ -309,6 +285,5 @@ func (s *Server) msg(str string) string {
 }
 
 func (s *Server) msgFlowRelated(flow shila.NetFlow, str string) string {
-	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(),
-		" <- ", flow.Dst.String(),"}: ", str)
+	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(), " <- ", flow.Dst.String(),"}: ", str)
 }

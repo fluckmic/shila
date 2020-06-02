@@ -123,9 +123,9 @@ func (c *Client) serveIngress() {
 
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
 			c.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: 	c,
-				Flow:		c.connection.RepresentingFlow,
-				Error:    	shila.ThirdPartyError("Unable to read data."),
+				Issuer: c,
+				Flow:   c.connection.RepresentingFlow,
+				Error:  shila.ThirdPartyError("Unable to read data."),
 			}
 			return
 		}
@@ -150,9 +150,9 @@ func (c *Client) serveEgress() {
 
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
 			c.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: 	c,
-				Flow:		c.connection.RepresentingFlow,
-				Error:     	shila.ThirdPartyError("Unable to write data."),
+				Issuer: c,
+				Flow:   c.connection.RepresentingFlow,
+				Error:  shila.ThirdPartyError("Unable to write data."),
 			}
 			return
 		}
@@ -175,9 +175,9 @@ func (c *Client) packetize(ingressRaw chan byte) {
 				return
 			}
 			c.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: 	c,
-				Flow: 		c.connection.RepresentingFlow,
-				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
+				Issuer: c,
+				Flow:   c.connection.RepresentingFlow,
+				Error:  shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
 		}

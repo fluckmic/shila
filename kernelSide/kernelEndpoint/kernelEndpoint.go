@@ -169,8 +169,8 @@ func (d *Device) serveIngress() {
 				return
 			}
 			d.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: d,
-				Error:     shila.ThirdPartyError("Unable to read data."),
+				Issuer: d,
+				Error:  shila.ThirdPartyError("Unable to read data."),
 			}
 			return
 		}
@@ -190,8 +190,8 @@ func (d *Device) serveEgress() {
 				return
 			}
 			d.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: d,
-				Error:     shila.ThirdPartyError("Unable to write data."),
+				Issuer: d,
+				Error:  shila.ThirdPartyError("Unable to write data."),
 			}
 			return
 		}
@@ -214,8 +214,8 @@ func (d *Device) packetize(ingressRaw chan byte) {
 				return
 			}
 			d.endpointIssues <- shila.EndpointIssuePub{
-				Publisher: d,
-				Error:     shila.PrependError(err, "Error in raw data packetizer."),
+				Issuer: d,
+				Error:  shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
 		}

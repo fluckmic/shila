@@ -86,14 +86,14 @@ func (m *Manager) issueWorker() {
 	for issue := range m.endpointIssues {
 
 		// Handle issues from the kernel endpoint
-		if issue.Publisher.Label() == shila.KernelEndpoint {
+		if issue.Issuer.Label() == shila.KernelEndpoint {
 			m.handleKernelEndpointIssue(issue)
 			return
 		}
 
-		var ep interface{} = issue.Publisher
+		var ep interface{} = issue.Issuer
 		if server, ok := ep.(*networkEndpoint.Server); ok {
-			m.handleNetworkServerIssue(server, issue)
+			m.handleServerNetworkEndpointIssues(server, issue)
 			return
 		}
 
@@ -104,24 +104,44 @@ func (m *Manager) issueWorker() {
 
 		// Should really not happen..
 		log.Error.Panic(fmt.Sprint("Unknown endpoint point label {",
-			issue.Publisher.Label(), "} in issue worker."))
+			issue.Issuer.Label(), "} in issue worker."))
 	}
 }
 
 func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
-	log.Error.Print("Kernel endpoint issue in {", issue.Publisher.Key(), "}.")
+	log.Error.Print("Unhandled kernel endpoint issue in {", issue.Issuer.Key(), "}.")
 	shutdown.Fatal(issue.Error)
 }
 
-func (m *Manager) handleNetworkServerIssue(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
+func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
 
-	log.Error.Print("Server endpoint issue in {", server.Key(), "}. - ", issue.Error.Error())
+	if server.Label() == shila.ContactingNetworkEndpoint {
+		var err interface{} = issue.Error
+		if _, ok := err.(*shila.ParsingError); ok {
+			panic("Implement me.") // TODO.
+			// Try to reestablish the contacting server network endpoint?
+		}
+		if _, ok := err.(*shila.NetworkEndpointTimeout); ok {
+			panic("Implement me.") // TODO.
+		}
+	}
 
 	if server.Label() == shila.TrafficNetworkEndpoint {
-		// If the endpoint is a traffic endpoint, then it was created by a connection, i.e. we find one..
-		con := m.connections.Retrieve(issue.Flow)
-		con.Close(issue.Error)
+		var err interface{} = issue.Error
+		if _, ok := err.(*shila.ParsingError); ok {
+			con := m.connections.Retrieve(issue.Flow)
+			con.Close(issue.Error)
+			return
+		}
+		if _, ok := err.(*shila.NetworkEndpointTimeout); ok {
+			con := m.connections.Retrieve(issue.Flow)
+			con.Close(issue.Error)
+			return
+		}
 	}
+
+	log.Error.Print("Unhandled server network endpoint issue in in {", server.Key(), "}.")
+	shutdown.Fatal(issue.Error)
 }
 
 func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
@@ -133,3 +153,4 @@ func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, i
 	con := m.connections.Retrieve(issue.Flow)
 	con.Close(issue.Error)
 }
+
