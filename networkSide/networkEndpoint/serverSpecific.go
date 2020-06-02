@@ -128,39 +128,6 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
 
-	/*
-	lenBuffer := make([]byte, 8)
-	if _, err := io.ReadFull(reader, lenBuffer); err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
-	len := binary.BigEndian.Uint64(lenBuffer)
-	buffer := make([]byte, len)
-	if _, err := io.ReadFull(reader, buffer); err != nil {
-		s.closeBackboneConnection(backboneConnection, err);	return
-	}
-
-	var receivedFlow shila.Flow
-	decoder := gob.NewDecoder(bytes.NewReader(buffer))
-	if err := decoder.Decode(&receivedFlow); err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
-	*/
-
-		/*
-		// The very first thing we do for a accepted backbone connection is to see
-		// whether we can get the corresponding flow.
-		IPFlowString, err := bufio.NewReader(backboneConnection).ReadString('\n')
-		if  err != nil {
-			s.closeBackboneConnection(backboneConnection, err); return
-		}
-		IPFlow, err := shila.GetIPFlowFromString(strings.TrimSuffix(IPFlowString, "\n"))
-		if err != nil {
-			s.closeBackboneConnection(backboneConnection, err); return
-		}
-		 */
-	// If we aren't able to get the flow, for whatever reason, we just throw away the backbone connection request.
-	// The server remains ready to receive incoming requests.
-
 	// Fetch the network address from the client side as well as the path taken.
 	dstAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
 	if err != nil {

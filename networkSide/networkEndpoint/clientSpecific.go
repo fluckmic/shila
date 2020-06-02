@@ -56,61 +56,25 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 	c.connection.Backbone = backboneConnection
 
+	// Send the IP flow to the server
 	writer := io.Writer(c.connection.Backbone)
 	encoder := gob.NewEncoder(writer)
 	if err := encoder.Encode(c.connection.Identifier.IPFlow); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit IP flow.")
 	}
-	if err := encoder.Encode(c.connection.Identifier.NetFlow.Src.String()); err != nil {
-		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
-	}
-
-	/*
-	gob.Register(network.Address{})
-	gob.Register(network.Path{})
-
-	var buffer bytes.Buffer
-	encoder := gob.NewEncoder(&buffer)
-	if err := encoder.Encode(c.connection.Identifier.NetFlow); err != nil {
-		return shila.NetFlow{}, shila.PrependError(err, "Failed to encode flow.")
-	}
-
-	var receivedFlow shila.NetFlow
-	decoder := gob.NewDecoder(&buffer)
-	if err := decoder.Decode(&receivedFlow); err != nil {
-		return shila.NetFlow{}, err
-	}
-
-
-
-
-
-	lenBuffer := make([]byte, 8)
-	binary.BigEndian.PutUint64(lenBuffer, uint64(buffer.Len()))
-	if _, err = c.connection.Backbone.Write(lenBuffer); err != nil {
-		err = shila.ThirdPartyError(err.Error())
-	}
-	if _, err = c.connection.Backbone.Write(buffer.Bytes()); err != nil {
-		err = shila.ThirdPartyError(err.Error())
-	}
-	*/
-	/*
-	// As a very first message, client sends the IP flow to the server
-	if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.IPFlow.String()))); err != nil {
-		return shila.NetFlow{}, shila.TolerableError(err.Error())
-	}
 
 	if c.Label() == shila.TrafficNetworkEndpoint {
-
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-		if _, err := c.connection.Backbone.Write([]byte(fmt.Sprintln(c.connection.Identifier.NetFlow.Src.String()))); err != nil {
-			return shila.NetFlow{}, shila.TolerableError(err.Error())
+		srcAddr := c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)
+		if err := encoder.Encode(srcAddr); err != nil {
+			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
 	}
-
-	*/
+	if err := encoder.Encode(c.connection.Identifier.NetFlow.Src.String()); err != nil {
+		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
+	}
 
 	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
 
