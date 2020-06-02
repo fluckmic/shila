@@ -43,6 +43,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		Port: c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr).Port,
 		Zone: c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr).Zone,
 	}
+	_ = srcAddrContacting
 
 	// Establish a connection to the server endpoint
 	dst := c.connection.RepresentingFlow.NetFlow.Dst.(*net.TCPAddr)
