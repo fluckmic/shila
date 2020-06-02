@@ -38,7 +38,11 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 
 	// Backup the src network address of the corresponding contacting endpoint (in case of a traffic network endpoint)
-	srcAddrContacting := c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr)
+	srcAddrContacting := net.TCPAddr{
+		IP:   c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr).IP,
+		Port: c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr).Port,
+		Zone: c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr).Zone,
+	}
 
 	// Establish a connection to the server endpoint
 	dst := c.connection.RepresentingFlow.NetFlow.Dst.(*net.TCPAddr)
@@ -64,7 +68,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 	ctrlMsg := controlMessage{
 		IPFlow:   c.connection.RepresentingFlow.IPFlow,
-		ContAddr: *srcAddrContacting,
+		ContAddr: srcAddrContacting,
 	}
 	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(ctrlMsg); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit control message.")
