@@ -60,7 +60,7 @@ func (s *Server) SetupAndRun() error {
 	s.listener = listener
 	go s.serveIncomingConnections()
 
-	log.Verbose.Print(s.message(s.flow.NetFlow,"Started listening."))
+	log.Verbose.Print(s.msg("Started listening."))
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -131,7 +131,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		Dst:  trueDstAddr,
 	}
 
-	log.Verbose.Print(s.message(trueNetFlow, "Accepted."))
+	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted."))
 
 	var srcAddrs [] shila.NetworkAddress
 	srcAddrs = append(srcAddrs, srcAddr)
@@ -301,7 +301,11 @@ func (s *Server) Flow() shila.Flow {
 	return s.flow
 }
 
-func (s *Server) message(flow shila.NetFlow, str string) string {
-	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(),
-		" <- ", flow.Dst.String(),"}: ", str)
+func (s *Server) msg(str string) string {
+	return fmt.Sprint("Server {", s.Label(), " - ", s.flow.NetFlow.Src, " <- *}: ", str)
+}
+
+func (s *Server) msgFlowRelated(flow shila.NetFlow, str string) string {
+	return fmt.Sprint("Server {", s.Label(), " - ", flow.Dst.String(),
+		" <- ", flow.Src.String(),"}: ", str)
 }
