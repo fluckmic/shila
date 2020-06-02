@@ -18,13 +18,20 @@ type IPFlow struct {
 	Dst net.TCPAddr
 }
 
+func (ipf IPFlow) Swap() IPFlow {
+	return IPFlow{
+		Src: ipf.Dst,
+		Dst: ipf.Src,
+	}
+}
+
 type NetFlow struct {
 	Src  NetworkAddress
 	Path NetworkPath
 	Dst  NetworkAddress
 }
 
-func (nf NetFlow) Swapped() NetFlow {
+func (nf NetFlow) Swap() NetFlow {
 	return NetFlow{
 		Src:  nf.Dst,
 		Path: nf.Path,

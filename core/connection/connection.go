@@ -216,7 +216,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 	}
 	conn.channels.Contacting = channels
 
-	// The contacting network connection id contains as src the local network endpoint which
+	// The contacting network flow contains as src the local network endpoint which
 	// was used by the network to established the contacting connection. Once a traffic connection
 	// is established, we send this information to the corresponding server side.
 	conn.flow.NetFlow.Src = contactingNetFlow.Src
@@ -249,12 +249,12 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet) error {
 
 	// Get the kernel endpoint from the kernel side manager
-	dstKey := p.Flow.IPFlow.DstIPKey()
-	if channels, ok := conn.kernelSide.GetTrafficChannels(dstKey); ok {
+	packetDstKey := p.Flow.IPFlow.DstIPKey()
+	if channels, ok := conn.kernelSide.GetTrafficChannels(packetDstKey); ok {
 		conn.channels.KernelEndpoint = channels
 	} else {
 		conn.state.set(closed)
-		return shila.CriticalError(fmt.Sprint("No kernel endpoint for {", dstKey, "}.")) // TODO: TO THINK.
+		return shila.CriticalError(fmt.Sprint("No kernel endpoint for {", packetDstKey, "}.")) // TODO: TO THINK.
 	}
 
 	// Send packet to kernel endpoint
@@ -263,7 +263,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 
 	// If the packet is received through the contacting endpoint (server), then it's network connection id
 	// is already set. This is the responsibility of the corresponding network server implementation.
-	conn.flow.NetFlow = p.Flow.NetFlow
+	conn.flow.NetFlow = p.Flow.NetFlow.Swap()
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !

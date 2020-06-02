@@ -130,8 +130,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	// Receive the control message
 	type controlMessage struct {
-		IPFlow 	 				shila.IPFlow
-		dstAddrContactEndpoint 	net.TCPAddr
+		IPFlow                 shila.IPFlow
+		srcAddrContactEndpoint net.TCPAddr
 	}
 	var ctrlMsg controlMessage
 	if err := gob.NewDecoder(io.Reader(backboneConnection)).Decode(&ctrlMsg); err != nil {
@@ -142,14 +142,14 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	// Create the representing flow
-	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow, NetFlow: trueNetFlow }
+	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow.Swap(), NetFlow: trueNetFlow }
 
 	// If the endpoint is a contacting endpoint, then the representing flow is different from the true one.
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// It is the responsibility of the contact server endpoint to calculate the
 		// source address of the corresponding traffic server endpoint.
 		ip   := trueNetFlow.Src.(*net.TCPAddr).IP.String()
-		port := strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)
+		port := strconv.Itoa(representingFlow.IPFlow.Src.Port)
 		srcAddrTrafficEndpoint, err := network.AddressGenerator{}.New(net.JoinHostPort(ip, port))
 		if err != nil {
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate source address of traffic server endpoint.").Error()))
@@ -166,7 +166,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// We need also to be able to send messages to the contact client network endpoints.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		// For the moment we can use the same path for this key as for the representing flow.
-		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.dstAddrContactEndpoint, representingFlow.NetFlow.Path))
+		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.srcAddrContactEndpoint, representingFlow.NetFlow.Path))
 	}
 
 	// Create the connection wrapper
@@ -233,7 +233,7 @@ func (s *Server) serveIngress(connection networkConnection) {
 func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow, flow.NetFlow.Swapped(), rawData)
+				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow.Swap(), flow.NetFlow.Swap(), rawData)
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.
@@ -241,7 +241,7 @@ func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 			}
 			s.endpointIssues <- shila.EndpointIssuePub{
 				Publisher: 	s,
-				Flow:		flow,
+				Flow:		flow,		// Publisher flow!
 				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
