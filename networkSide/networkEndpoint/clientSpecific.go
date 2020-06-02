@@ -67,7 +67,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-		srcAddr := c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)
+		srcAddr := c.connection.Identifier.NetFlow.Src.String()
 		if err := encoder.Encode(srcAddr); err != nil {
 			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
