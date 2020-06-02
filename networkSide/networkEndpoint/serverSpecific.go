@@ -129,10 +129,6 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted backbone connection."))
 
 	// Receive the control message
-	type controlMessage struct {
-		IPFlow                 shila.IPFlow
-		srcAddrContactEndpoint net.TCPAddr
-	}
 	var ctrlMsg controlMessage
 	if err := gob.NewDecoder(io.Reader(backboneConnection)).Decode(&ctrlMsg); err != nil {
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch control message.").Error()))
@@ -140,6 +136,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
 		return
 	}
+
+	log.Verbose.Print("Control msg:", ctrlMsg)
 
 	// Create the representing flow
 	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow.Swap(), NetFlow: trueNetFlow }
@@ -166,7 +164,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// We need also to be able to send messages to the contact client network endpoints.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		// For the moment we can use the same path for this key as for the representing flow.
-		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.srcAddrContactEndpoint, representingFlow.NetFlow.Path))
+		//keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.srcAddrContactEndpoint, representingFlow.NetFlow.Path))
 	}
 
 	// Create the connection wrapper

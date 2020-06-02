@@ -11,3 +11,8 @@ type networkConnection struct {
 	RepresentingFlow shila.Flow
 	Backbone         *net.TCPConn
 }
+
+type controlMessage struct {
+	IPFlow                 shila.IPFlow
+	srcAddrContactEndpoint string
+}

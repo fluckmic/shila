@@ -61,14 +61,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	log.Verbose.Print(c.message("Established connection."))
 
-	// Send the control msg to the server
-	type controlMessage struct {
-		IPFlow                 shila.IPFlow
-		srcAddrContactEndpoint net.TCPAddr
-	}
 	ctrlMsg := controlMessage{
 		IPFlow:   				c.connection.RepresentingFlow.IPFlow,
-		srcAddrContactEndpoint: srcAddrContacting,
+		srcAddrContactEndpoint: "srcAddrContacting",
 	}
 	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(ctrlMsg); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit control message.")
