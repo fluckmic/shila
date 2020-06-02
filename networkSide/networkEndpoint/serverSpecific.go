@@ -156,7 +156,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		reader := io.Reader(backboneConnection)
 		decoder := gob.NewDecoder(reader)
 		var dstAddrContactingString string
-		if err := decoder.Decode(dstAddrContactingString); err != nil {
+		if err := decoder.Decode(&dstAddrContactingString); err != nil {
 			s.closeBackboneConnection(backboneConnection, err); return
 		}
 		dstAddrContacting, err := network.AddressGenerator{}.New(dstAddrContactingString)
