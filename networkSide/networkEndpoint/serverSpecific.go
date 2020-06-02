@@ -155,12 +155,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
 		reader := io.Reader(backboneConnection)
 		decoder := gob.NewDecoder(reader)
-		var dstAddrContactingString string
-		if err := decoder.Decode(&dstAddrContactingString); err != nil {
-			s.closeBackboneConnection(backboneConnection, err); return
-		}
-		dstAddrContacting, err := network.AddressGenerator{}.New(dstAddrContactingString)
-		if err != nil {
+		var dstAddrContacting *net.TCPAddr
+		if err := decoder.Decode(dstAddrContacting); err != nil {
 			s.closeBackboneConnection(backboneConnection, err); return
 		}
 		dstAddrs = append(dstAddrs, dstAddrContacting)
