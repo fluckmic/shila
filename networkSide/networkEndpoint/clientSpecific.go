@@ -72,10 +72,6 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
 	}
-	if err := encoder.Encode(c.connection.Identifier.NetFlow.Src.String()); err != nil {
-		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
-	}
-
 	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
 
 	// Create the channels
