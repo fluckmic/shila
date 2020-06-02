@@ -135,11 +135,13 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	var srcAddrs [] shila.NetworkAddress
 	srcAddrs = append(srcAddrs, srcAddr)
 
-	// The client sends as very first message its corresponding IP flow.
-	decoder := gob.NewDecoder(io.Reader(backboneConnection))
-	var receivedFlow shila.IPFlow
-	if err := decoder.Decode(&receivedFlow); err != nil {
-		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch IP flow.").Error()))
+	type controlMessage struct {
+		IPFlow 	 shila.IPFlow
+		ContAddr net.TCPAddr
+	}
+	var ctrlMsg controlMessage
+	if err := gob.NewDecoder(io.Reader(backboneConnection)).Decode(&ctrlMsg); err != nil {
+		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch control message.").Error()))
 		backboneConnection.Close()
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
 		return
@@ -149,7 +151,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	var dstAddr shila.NetworkAddress
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// It is the responsibility of the contacting server endpoint to determine the correct network source address
-		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
+		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)))
 		if err != nil {
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate destination address of traffic server endpoint.").Error()))
 			backboneConnection.Close()
@@ -158,15 +160,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		}
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 
-		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
-		var dstAddrContacting net.TCPAddr
-		if err := decoder.Decode(&dstAddrContacting); err != nil {
-			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch source address of corresponding contact client endpoint.").Error()))
-			backboneConnection.Close()
-			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
-			return
-		}
-		srcAddrs = append(srcAddrs, &dstAddrContacting)
+		srcAddrs = append(srcAddrs, &ctrlMsg.ContAddr)
 
 	} else {
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, fmt.Sprint("Invalid endpoint label {", s.Label(), "}.")).Error()))
@@ -176,7 +170,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	}
 
 	connection := networkConnection{
-		Identifier: shila.Flow{IPFlow: receivedFlow, NetFlow: shila.NetFlow{
+		Identifier: shila.Flow{IPFlow: ctrlMsg.IPFlow, NetFlow: shila.NetFlow{
 			Src:  dstAddr,
 			Path: path,
 			Dst:  srcAddrs[0],

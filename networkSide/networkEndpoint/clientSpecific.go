@@ -62,19 +62,17 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	log.Verbose.Print(c.message("Established connection."))
 
-	// Send the IP flow to the server
-	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(c.connection.Identifier.IPFlow); err != nil {
-		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit IP flow.")
+	// Send the control msg to the server
+	type controlMessage struct {
+		IPFlow 	 shila.IPFlow
+		ContAddr net.TCPAddr
 	}
-
-	if c.Label() == shila.TrafficNetworkEndpoint {
-		// Before setting the own src address, a traffic client sends the currently set src address to the server;
-		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
-		// is required to be able to do the mapping on the server side.
-		if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(srcAddrContacting); err != nil {
-			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit source address of corresponding contact client endpoint.")
-		}
-		log.Verbose.Print(c.message(fmt.Sprint("Sent source address {", srcAddrContacting, "} of corresponding contact client endpoint.")))
+	ctrlMsg := controlMessage{
+		IPFlow:   c.connection.Identifier.IPFlow,
+		ContAddr: *srcAddrContacting,
+	}
+	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(ctrlMsg); err != nil {
+		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit control message.")
 	}
 
 	// Create the channels
