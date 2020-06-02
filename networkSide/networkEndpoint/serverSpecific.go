@@ -118,7 +118,7 @@ func (s *Server) serveIncomingConnections(){
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	// Create the true net flow.
-	// src <- dst
+	// Server: src <- dst
 	path, _ := network.PathGenerator{}.New("")
 	trueNetFlow := shila.NetFlow{
 		Src:  backboneConnection.LocalAddr().(*net.TCPAddr),
@@ -148,7 +148,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	if s.Label() == shila.ContactingNetworkEndpoint {
 		// It is the responsibility of the contact server endpoint to calculate the
 		// source address of the corresponding traffic server endpoint.
-		ip   := trueNetFlow.Dst.(*net.TCPAddr).IP.String()
+		ip   := trueNetFlow.Src.(*net.TCPAddr).IP.String()
 		port := strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)
 		srcAddrTrafficEndpoint, err := network.AddressGenerator{}.New(net.JoinHostPort(ip, port))
 		if err != nil {
