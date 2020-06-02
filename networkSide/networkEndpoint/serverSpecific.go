@@ -137,7 +137,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		return
 	}
 
-	log.Verbose.Print("Control msg:", ctrlMsg)
+
 
 	// Create the representing flow
 	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow.Swap(), NetFlow: trueNetFlow }
@@ -164,7 +164,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// We need also to be able to send messages to the contact client network endpoints.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		// For the moment we can use the same path for this key as for the representing flow.
-		//keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.srcAddrContactEndpoint, representingFlow.NetFlow.Path))
+		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.SrcAddrContactEndpoint, representingFlow.NetFlow.Path))
 	}
 
 	// Create the connection wrapper

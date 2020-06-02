@@ -14,5 +14,5 @@ type networkConnection struct {
 
 type controlMessage struct {
 	IPFlow                 shila.IPFlow
-	srcAddrContactEndpoint string
+	SrcAddrContactEndpoint net.TCPAddr
 }
