@@ -270,6 +270,8 @@ func (s *Server) resending() {
 func (s *Server) serveEgress() {
 	for p := range s.egress {
 		// Retrieve key to get the correct connection
+		len := len(s.backboneConnections)
+		_ = len
 		key := p.Flow.NetFlow.DstAndPathKey()
 		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con.Backbone)
