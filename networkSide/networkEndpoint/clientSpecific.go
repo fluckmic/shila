@@ -85,18 +85,12 @@ func (c *Client) Key() shila.EndpointKey {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print(c.message("Got torn down."))
-
 	c.state.Set(shila.TornDown)
 
-	// Close the connection
-	// Stops the ingress processing
-	err := c.connection.Backbone.Close()
+	err := c.connection.Backbone.Close()	// Close the connection (stops the ingress processing)
+	close(c.ingress) 						// Close the ingress channel (Working side no longer processes this endpoint)
 
-	// Close the ingress channel
-	// Working side no longer processes this endpoint
-	close(c.ingress)
-
+	log.Verbose.Print(c.message("Got torn down."))
 	return err
 }
 
