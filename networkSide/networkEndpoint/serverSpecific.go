@@ -152,7 +152,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		// It is the responsibility of the contacting server endpoint to determine the correct network source address
 		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
 		if err != nil {
-			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate traffic network destination.").Error()))
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate destination address of traffic server endpoint.").Error()))
 			backboneConnection.Close()
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
 			return
@@ -160,11 +160,10 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 
 		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
-		reader := io.Reader(backboneConnection)
 		decoder := gob.NewDecoder(reader)
 		var dstAddrContacting net.TCPAddr
 		if err := decoder.Decode(&dstAddrContacting); err != nil {
-			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch contact network source.").Error()))
+			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch source address of corresponding contact client endpoint.").Error()))
 			backboneConnection.Close()
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
 			return
