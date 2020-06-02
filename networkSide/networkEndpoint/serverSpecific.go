@@ -199,7 +199,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// No longer necessary or possible to serve the ingress, remove the backboneConnection from the mapping.
 	s.lock.Lock()
 	for _, key := range keys {
-		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone backboneConnection {", key, "}.")
+		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone connection {", key, "}.")
 		delete(s.backboneConnections, key)
 	}
 	s.lock.Unlock()
