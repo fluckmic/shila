@@ -18,7 +18,7 @@ var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	backboneConnections map[shila.NetworkAddressAndPathKey]  networkConnection
+	backboneConnections map[shila.NetworkAddressAndPathKey]  *networkConnection
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
@@ -32,7 +32,7 @@ func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 								state: 			shila.NewEntityState(),
 								endpointIssues: endpointIssues,
 						},
-		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  networkConnection),
+		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  *networkConnection),
 		flow:             	 flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
@@ -161,13 +161,13 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	}
 
 	// Add the new backbone connection to the mapping, so that it can be found by the egress handler.
-	if err := s.insertBackboneConnection(keys, connection); err != nil {
+	if err := s.insertBackboneConnection(keys, &connection); err != nil {
 		s.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot insert backbone conn.")
 		return
 	}
 
 	// Start the ingress handler for the backbone connection.
-	s.serveIngress(connection)
+	s.serveIngress(&connection)
 
 	// No longer necessary or possible to serve the ingress, remove the backbone connection from the mapping.
 	s.lock.Lock()
@@ -179,7 +179,7 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	return
 }
 
-func (s* Server) insertBackboneConnection(keys []shila.NetworkAddressAndPathKey, conn networkConnection) error {
+func (s* Server) insertBackboneConnection(keys []shila.NetworkAddressAndPathKey, conn *networkConnection) error {
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -209,7 +209,7 @@ func (s* Server) closeBackboneConnectionWithErrorMsg(conn *net.TCPConn, flow shi
 	log.Error.Print(s.msgFlowRelated(flow, "Closed backbone connection."))
 }
 
-func (s *Server) serveIngress(connection networkConnection) {
+func (s *Server) serveIngress(connection *networkConnection) {
 
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
 	go s.packetize(connection.RepresentingFlow, ingressRaw)
