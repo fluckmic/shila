@@ -22,7 +22,7 @@ type Server struct{
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
-	holdingArea         []*shila.Packet
+	holdingArea         chan *shila.Packet
 }
 
 func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
@@ -35,7 +35,7 @@ func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  *networkConnection),
 		flow:             	 flow,
 		lock:                sync.Mutex{},
-		holdingArea:         make([]*shila.Packet, 0, Config.SizeHoldingArea),
+		holdingArea:         make(chan *shila.Packet, Config.SizeHoldingArea),
 	}
 }
 
@@ -275,9 +275,7 @@ func (s *Server) serveEgress() {
 			// has observed the issue as well and will sooner or later remove the closed (or faulty) connection.
 		} else {
 			// Currently there is no backbone connection available to send the packet, put packet into holding area.
-			log.Verbose.Print(s.msg(fmt.Sprint("Put packet with flow {",p.Flow.NetFlow.Key(),"} in holding area. Having {", len(s.backboneConnections),"} backbone connections.")))
-
-			s.holdingArea = append(s.holdingArea, p)
+			s.holdingArea <- p
 		}
 	}
 }
