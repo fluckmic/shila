@@ -60,7 +60,7 @@ func (s *Server) SetupAndRun() error {
 	s.listener = listener
 	go s.serveIncomingConnections()
 
-	log.Verbose.Print("Server {", s.Label(), "} started to listen for incoming backbone connections on {", s.Key(), "}.")
+	log.Verbose.Print(s.message("Started listening.", s.flow.NetFlow))
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -298,4 +298,9 @@ func (s *Server) serveEgress() {
 
 func (s *Server) Flow() shila.Flow {
 	return s.flow
+}
+
+func (s *Server) message(flow shila.NetFlow, str string) string {
+	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(),
+		" -> ", flow.Dst.String(),"}: ", str)
 }

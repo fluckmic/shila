@@ -42,6 +42,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		return shila.NetFlow{}, shila.CriticalError(fmt.Sprint("Entity in wrong state {", c.state, "}."))
 	}
 
+	// Backup the src network address of the corresponding contacting endpoint (in case of a traffic network endpoint)
+	srcAddrContacting := c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)
+
 	// Establish a connection to the server endpoint
 	dst := c.connection.Identifier.NetFlow.Dst.(*net.TCPAddr)
 	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
@@ -55,6 +58,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		return shila.NetFlow{}, err
 	}
 	c.connection.Backbone = backboneConnection
+	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
+
+	log.Verbose.Print(c.message("Established connection."))
 
 	// Send the IP flow to the server
 	writer := io.Writer(c.connection.Backbone)
@@ -67,13 +73,13 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
-		srcAddr := c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)
 		encoder := gob.NewEncoder(writer)
-		if err := encoder.Encode(srcAddr); err != nil {
+		if err := encoder.Encode(srcAddrContacting); err != nil {
 			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
+		log.Verbose.Print(c.message(fmt.Sprint("Sent contacting src network address {", srcAddrContacting, "}.")))
 	}
-	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
+
 
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
@@ -83,7 +89,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	go c.serveEgress()
 
 	c.state.Set(shila.Running)
-	log.Verbose.Print("Client {", c.Label(), "} successfully established connection to {", c.Key(), "}.")
+
 	return c.connection.Identifier.NetFlow, nil
 }
 
@@ -94,7 +100,7 @@ func (c *Client) Key() shila.EndpointKey {
 
 func (c *Client) TearDown() error {
 
-	log.Verbose.Print("Tear down client {", c.Label(), "} connecting to {", c.Key(), "}.")
+	log.Verbose.Print(c.message("Got torn down."))
 
 	c.state.Set(shila.TornDown)
 
@@ -201,4 +207,9 @@ func (c *Client) packetize(ingressRaw chan byte) {
 
 func (c *Client) Flow() shila.Flow {
 	return c.connection.Identifier
+}
+
+func (c *Client) message(s string) string {
+	return fmt.Sprint("Client {",c.Label(), " - ", c.connection.Identifier.NetFlow.Src.String()," -> ",
+		c.connection.Identifier.NetFlow.Dst.String(),"}: ", s)
 }
