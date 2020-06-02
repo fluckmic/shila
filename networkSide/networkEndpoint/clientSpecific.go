@@ -73,13 +73,14 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// Before setting the own src address, a traffic client sends the currently set src address to the server;
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
+		log.Verbose.Print(c.message(fmt.Sprint("About to send source address {", srcAddrContacting, "} of corresponding contact client endpoint.")))
 		encoder := gob.NewEncoder(writer)
 		if err := encoder.Encode(srcAddrContacting); err != nil {
-			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
+			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit source address of corresponding contact client endpoint.")
 		}
 		log.Verbose.Print(c.message(fmt.Sprint("Sent source address {", srcAddrContacting, "} of corresponding contact client endpoint.")))
 	}
-	
+
 	// Create the channels
 	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
 	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
