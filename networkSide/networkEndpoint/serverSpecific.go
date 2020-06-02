@@ -155,11 +155,11 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
 		reader := io.Reader(backboneConnection)
 		decoder := gob.NewDecoder(reader)
-		var dstAddrContacting net.TCPAddr
-		if err := decoder.Decode(&dstAddrContacting); err != nil {
+		var dstAddrContacting *net.TCPAddr
+		if err := decoder.Decode(dstAddrContacting); err != nil {
 			s.closeBackboneConnection(backboneConnection, err); return
 		}
-		dstAddrs = append(dstAddrs, &dstAddrContacting)
+		dstAddrs = append(dstAddrs, dstAddrContacting)
 
 	} else {
 		s.closeBackboneConnection(backboneConnection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
