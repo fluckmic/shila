@@ -68,7 +68,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		// which should be (or is.) the src address of the corresponding contacting client endpoint. This information
 		// is required to be able to do the mapping on the server side.
 		srcAddr := c.connection.Identifier.NetFlow.Src.String()
-		if err := encoder.Encode(&srcAddr); err != nil {
+		if err := encoder.Encode(srcAddr); err != nil {
 			return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit src network address.")
 		}
 	}
