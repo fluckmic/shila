@@ -60,7 +60,7 @@ func (s *Server) SetupAndRun() error {
 	s.listener = listener
 	go s.serveIncomingConnections()
 
-	log.Verbose.Print(s.message("Started listening.", s.flow.NetFlow))
+	log.Verbose.Print(s.message(s.flow.NetFlow,"Started listening."))
 
 	// Start to handle incoming packets
 	go s.serveEgress()
@@ -174,6 +174,12 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		Backbone:   backboneConnection,
 	}
 
+	log.Verbose.Print(s.message(connection.Identifier.NetFlow, "Accepted."))
+	for _, dstAddr := range dstAddrs {
+		msg := fmt.Sprint(connection.Identifier.NetFlow, "Handling traffic client {",dstAddr,"}.")
+		log.Verbose.Print(s.message(connection.Identifier.NetFlow, msg))
+	}
+
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
 	for _, dstAddr := range dstAddrs {
@@ -188,7 +194,6 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 			s.closeBackboneConnection(backboneConnection, err); return
 		} else {
 			s.backboneConnections[key] = connection
-			log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} started handling a new backbone backboneConnection {", key, "}.")
 		}
 	}
 	s.lock.Unlock()
@@ -199,7 +204,6 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	// No longer necessary or possible to serve the ingress, remove the backboneConnection from the mapping.
 	s.lock.Lock()
 	for _, key := range keys {
-		log.Verbose.Print("Server {", s.Label(), "} listening on {", s.Key(), "} removed backbone connection {", key, "}.")
 		delete(s.backboneConnections, key)
 	}
 	s.lock.Unlock()
@@ -302,5 +306,5 @@ func (s *Server) Flow() shila.Flow {
 
 func (s *Server) message(flow shila.NetFlow, str string) string {
 	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(),
-		" -> ", flow.Dst.String(),"}: ", str)
+		" <- ", flow.Dst.String(),"}: ", str)
 }

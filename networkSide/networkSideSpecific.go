@@ -35,7 +35,9 @@ func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.Ne
 func (specMng SpecificManager) LocalContactingNetFlow() shila.NetFlow {
 	src, _ := network.AddressGenerator{}.NewLocal(strconv.Itoa(Config.ContactingServerPort))
 	return shila.NetFlow{
-		Src: src,
+		Src: 	src,
+		Path: 	network.PathGenerator{}.NewEmpty(),
+		Dst: 	network.AddressGenerator{}.NewEmpty(),
 	}
 }
 
