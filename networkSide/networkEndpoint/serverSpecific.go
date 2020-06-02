@@ -136,10 +136,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	srcAddrs = append(srcAddrs, srcAddr)
 
 	// The client sends as very first message its corresponding IP flow.
-	reader := io.Reader(backboneConnection)
-	decoder := gob.NewDecoder(reader)
 	var receivedFlow shila.IPFlow
-	if err := decoder.Decode(&receivedFlow); err != nil {
+	if err := gob.NewDecoder(io.Reader(backboneConnection)).Decode(&receivedFlow); err != nil {
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch IP flow.").Error()))
 		backboneConnection.Close()
 		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
@@ -160,9 +158,8 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 	} else if s.Label() == shila.TrafficNetworkEndpoint {
 
 		// For the traffic server endpoint, the client sends the address of the corresponding contacting endpoint.
-		decoder := gob.NewDecoder(reader)
 		var dstAddrContacting net.TCPAddr
-		if err := decoder.Decode(&dstAddrContacting); err != nil {
+		if err := gob.NewDecoder(io.Reader(backboneConnection)).Decode(&dstAddrContacting); err != nil {
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Unable to fetch source address of corresponding contact client endpoint.").Error()))
 			backboneConnection.Close()
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
