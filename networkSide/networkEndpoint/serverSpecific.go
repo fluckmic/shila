@@ -117,24 +117,18 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
-	var err error
-
-	// Fetch the network address from the client side as well as the path taken.
-	srcAddr 	:= backboneConnection.RemoteAddr().(*net.TCPAddr)
-	trueDstAddr := backboneConnection.LocalAddr().(*net.TCPAddr)
-	path, _		:= network.PathGenerator{}.New("")
-
+	// Create the true net flow.
+	// Dst <- Src
+	path, _ := network.PathGenerator{}.New("")
 	trueNetFlow := shila.NetFlow{
-		Src:  srcAddr,
+		Src:  backboneConnection.RemoteAddr().(*net.TCPAddr),
 		Path: path,
-		Dst:  trueDstAddr,
+		Dst:  backboneConnection.LocalAddr().(*net.TCPAddr),
 	}
 
 	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted backbone connection."))
 
-	var srcAddrs [] shila.NetworkAddress
-	srcAddrs = append(srcAddrs, srcAddr)
-
+	// Receive the control message
 	type controlMessage struct {
 		IPFlow 	 shila.IPFlow
 		ContAddr net.TCPAddr
@@ -147,41 +141,40 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		return
 	}
 
-	// Determine the network address of this network endpoint depending on the functionality
-	var dstAddr shila.NetworkAddress
+	// Create the representing flow
+	representingFlow := shila.Flow{
+		IPFlow:  ctrlMsg.IPFlow,
+		NetFlow: trueNetFlow,
+	}
+
+	// If the endpoint is a contacting endpoint, then the representing flow is different from the true one.
 	if s.Label() == shila.ContactingNetworkEndpoint {
-		// It is the responsibility of the contacting server endpoint to determine the correct network source address
-		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)))
+		// It is the responsibility of the contacting server endpoint to determine the correct network source address.
+		dstAddr, err := network.AddressGenerator{}.New(net.JoinHostPort(trueNetFlow.Dst.(*net.TCPAddr).IP.String(), strconv.Itoa(ctrlMsg.IPFlow.Dst.Port)))
 		if err != nil {
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, "Cannot generate destination address of traffic server endpoint.").Error()))
 			backboneConnection.Close()
 			log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
 			return
 		}
-	} else if s.Label() == shila.TrafficNetworkEndpoint {
-
-		srcAddrs = append(srcAddrs, &ctrlMsg.ContAddr)
-
-	} else {
-		log.Error.Print(s.msgFlowRelated(trueNetFlow, shila.PrependError(err, fmt.Sprint("Invalid endpoint label {", s.Label(), "}.")).Error()))
-		backboneConnection.Close()
-		log.Error.Print(s.msgFlowRelated(trueNetFlow, "Closed backbone connection."))
-		return
-	}
-
-	connection := networkConnection{
-		Identifier: shila.Flow{IPFlow: ctrlMsg.IPFlow, NetFlow: shila.NetFlow{
-			Src:  dstAddr,
-			Path: path,
-			Dst:  srcAddrs[0],
-		}},
-		Backbone:   backboneConnection,
+		representingFlow.NetFlow.Dst = dstAddr
 	}
 
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
-	for _, dstAddr := range srcAddrs {
-		keys = append(keys, shila.GetNetworkAddressAndPathKey(dstAddr, path))
+	keys = append(keys, shila.GetNetworkAddressAndPathKey(representingFlow.NetFlow.Src, representingFlow.NetFlow.Path))
+	// We need also to be able to send messages to the contact client network endpoints.
+	if s.Label() == shila.TrafficNetworkEndpoint {
+		// For the moment, the path doesnt matter.
+		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.ContAddr, representingFlow.NetFlow.Path))
+	}
+
+	// Create the connection wrapper
+	connection := networkConnection{
+		Label:            s.label,
+		TrueNetFlow:      trueNetFlow,
+		RepresentingFlow: representingFlow,
+		Backbone:         backboneConnection,
 	}
 
 	// Add the new backboneConnection to the mapping, such that it can be found by the egress handler.
@@ -213,7 +206,7 @@ func (s *Server) serveIngress(connection networkConnection) {
 
 	// Prepare everything for the packetizer
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
-	go s.packetize(connection.Identifier, ingressRaw)
+	go s.packetize(connection.RepresentingFlow, ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)

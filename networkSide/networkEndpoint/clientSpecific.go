@@ -20,11 +20,6 @@ type Client struct {
 	connection networkConnection
 }
 
-type networkConnection struct {
-	Identifier shila.Flow
-	Backbone   *net.TCPConn
-}
-
 func NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 				Base{
@@ -32,7 +27,7 @@ func NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 								state: 			shila.NewEntityState(),
 								endpointIssues: endpointIssues,
 							},
-		connection:		    networkConnection{Identifier: flow},
+		connection:		    networkConnection{RepresentingFlow: flow},
 	}
 }
 
@@ -43,10 +38,10 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	}
 
 	// Backup the src network address of the corresponding contacting endpoint (in case of a traffic network endpoint)
-	srcAddrContacting := c.connection.Identifier.NetFlow.Src.(*net.TCPAddr)
+	srcAddrContacting := c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr)
 
 	// Establish a connection to the server endpoint
-	dst := c.connection.Identifier.NetFlow.Dst.(*net.TCPAddr)
+	dst := c.connection.RepresentingFlow.NetFlow.Dst.(*net.TCPAddr)
 	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
 		if c.Label() == shila.TrafficNetworkEndpoint {
@@ -58,7 +53,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		return shila.NetFlow{}, err
 	}
 	c.connection.Backbone = backboneConnection
-	c.connection.Identifier.NetFlow.Src = backboneConnection.LocalAddr()
+	c.connection.RepresentingFlow.NetFlow.Src = backboneConnection.LocalAddr()
 
 	log.Verbose.Print(c.message("Established connection."))
 
@@ -68,7 +63,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 		ContAddr net.TCPAddr
 	}
 	ctrlMsg := controlMessage{
-		IPFlow:   c.connection.Identifier.IPFlow,
+		IPFlow:   c.connection.RepresentingFlow.IPFlow,
 		ContAddr: *srcAddrContacting,
 	}
 	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(ctrlMsg); err != nil {
@@ -84,12 +79,12 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	c.state.Set(shila.Running)
 
-	return c.connection.Identifier.NetFlow, nil
+	return c.connection.RepresentingFlow.NetFlow, nil
 }
 
 func (c *Client) Key() shila.EndpointKey {
 	path, _ := network.PathGenerator{}.New("")
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.Identifier.NetFlow.Dst, path))
+	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.RepresentingFlow.NetFlow.Dst, path))
 }
 
 func (c *Client) TearDown() error {
@@ -139,7 +134,7 @@ func (c *Client) serveIngress() {
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
 			c.endpointIssues <- shila.EndpointIssuePub{
 				Publisher: 	c,
-				Flow:		c.connection.Identifier,
+				Flow:		c.connection.RepresentingFlow,
 				Error:    	shila.ThirdPartyError("Unable to read data."),
 			}
 			return
@@ -166,7 +161,7 @@ func (c *Client) serveEgress() {
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
 			c.endpointIssues <- shila.EndpointIssuePub{
 				Publisher: 	c,
-				Flow:		c.connection.Identifier,
+				Flow:		c.connection.RepresentingFlow,
 				Error:     	shila.ThirdPartyError("Unable to write data."),
 			}
 			return
@@ -191,7 +186,7 @@ func (c *Client) packetize(ingressRaw chan byte) {
 			}
 			c.endpointIssues <- shila.EndpointIssuePub{
 				Publisher: 	c,
-				Flow: 		c.connection.Identifier,
+				Flow: 		c.connection.RepresentingFlow,
 				Error:     	shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
@@ -200,10 +195,10 @@ func (c *Client) packetize(ingressRaw chan byte) {
 }
 
 func (c *Client) Flow() shila.Flow {
-	return c.connection.Identifier
+	return c.connection.RepresentingFlow
 }
 
 func (c *Client) message(s string) string {
-	return fmt.Sprint("Client {",c.Label(), " - ", c.connection.Identifier.NetFlow.Src.String()," -> ",
-		c.connection.Identifier.NetFlow.Dst.String(),"}: ", s)
+	return fmt.Sprint("Client {",c.Label(), " - ", c.connection.RepresentingFlow.NetFlow.Src.String()," -> ",
+		c.connection.RepresentingFlow.NetFlow.Dst.String(),"}: ", s)
 }
