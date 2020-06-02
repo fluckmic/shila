@@ -117,6 +117,25 @@ func (s *Server) serveIncomingConnections(){
 
 func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
+	// Fetch the network address from the client side as well as the path taken.
+	srcAddr 	:= backboneConnection.RemoteAddr().(*net.TCPAddr)
+	trueDstAddr := backboneConnection.LocalAddr().(*net.TCPAddr)
+	path, err	:= network.PathGenerator{}.New("")
+	if err != nil {
+		s.closeBackboneConnection(backboneConnection, err); return
+	}
+
+	trueNetFlow := shila.NetFlow{
+		Src:  srcAddr,
+		Path: path,
+		Dst:  trueDstAddr,
+	}
+
+	log.Verbose.Print(s.message(trueNetFlow, "Accepted."))
+
+	var srcAddrs [] shila.NetworkAddress
+	srcAddrs = append(srcAddrs, srcAddr)
+
 	// The client sends as very first message its corresponding IP flow.
 	reader := io.Reader(backboneConnection)
 	decoder := gob.NewDecoder(reader)
@@ -125,27 +144,11 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		s.closeBackboneConnection(backboneConnection, err); return
 	}
 
-	// Fetch the network address from the client side as well as the path taken.
-	// Destination address from the server point of view.
-	var dstAddrs [] shila.NetworkAddress
-	dstAddr, err := network.AddressGenerator{}.New(backboneConnection.RemoteAddr().String())
-	if err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
-	dstAddrs = append(dstAddrs, dstAddr)
-
-	path, err	:= network.PathGenerator{}.New("")
-	if err != nil {
-		s.closeBackboneConnection(backboneConnection, err); return
-	}
-
 	// Determine the network address of this network endpoint depending on the functionality
-	var srcAddr shila.NetworkAddress
+	var dstAddr shila.NetworkAddress
 	if s.Label() == shila.ContactingNetworkEndpoint {
-
 		// It is the responsibility of the contacting server endpoint to determine the correct network source address
-		localAddr 	 := backboneConnection.LocalAddr().(*net.TCPAddr)
-		srcAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(localAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
+		dstAddr, err  = network.AddressGenerator{}.New(net.JoinHostPort(trueDstAddr.IP.String(), strconv.Itoa(receivedFlow.Dst.Port)))
 		if err != nil {
 			s.closeBackboneConnection(backboneConnection, err); return
 		}
@@ -159,7 +162,7 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 		if err := decoder.Decode(&dstAddrContacting); err != nil {
 			s.closeBackboneConnection(backboneConnection, err); return
 		}
-		dstAddrs = append(dstAddrs, &dstAddrContacting)
+		srcAddrs = append(srcAddrs, &dstAddrContacting)
 
 	} else {
 		s.closeBackboneConnection(backboneConnection, shila.CriticalError(fmt.Sprint("Wrong server label."))); return
@@ -167,22 +170,16 @@ func (s *Server) handleBackboneConnection(backboneConnection *net.TCPConn) {
 
 	connection := networkConnection{
 		Identifier: shila.Flow{IPFlow: receivedFlow, NetFlow: shila.NetFlow{
-			Src:  srcAddr,
+			Src:  dstAddr,
 			Path: path,
-			Dst:  dstAddrs[0],
+			Dst:  srcAddrs[0],
 		}},
 		Backbone:   backboneConnection,
 	}
 
-	log.Verbose.Print(s.message(connection.Identifier.NetFlow, "Accepted."))
-	for _, dstAddr := range dstAddrs {
-		msg := fmt.Sprint(connection.Identifier.NetFlow, "Handling traffic client {",dstAddr,"}.")
-		log.Verbose.Print(s.message(connection.Identifier.NetFlow, msg))
-	}
-
 	// Generate the keys
 	var keys []shila.NetworkAddressAndPathKey
-	for _, dstAddr := range dstAddrs {
+	for _, dstAddr := range srcAddrs {
 		keys = append(keys, shila.GetNetworkAddressAndPathKey(dstAddr, path))
 	}
 
