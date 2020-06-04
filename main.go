@@ -12,6 +12,11 @@ import (
 	"shila/workingSide"
 )
 
+const (
+	SuccessCode = 0
+	ErrorCode   = 1
+)
+
 func main() {
 	os.Exit(realMain())
 }
@@ -40,7 +45,8 @@ func realMain() int {
 	// Create and setup the kernelSide side
 	kernelSide := kernelSide.New(trafficChannelPubs, endpointIssues)
 	if err = kernelSide.Setup(); err != nil {
-		log.Error.Fatalln("Unable to setup the kernel side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to setup kernel side.").Error())
+		return ErrorCode
 	}
 	log.Info.Println("Kernel side setup successfully.")
 	defer kernelSide.CleanUp()
@@ -48,7 +54,8 @@ func realMain() int {
 	// Create and setup the network side
 	networkSide := networkSide.New(trafficChannelPubs, endpointIssues)
 	if err = networkSide.Setup(); err != nil {
-		log.Error.Fatalln("Unable to setup the network side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to setup network side.").Error())
+		return ErrorCode
 	}
 	log.Info.Println("Network side setup successfully.")
 	defer networkSide.CleanUp()
@@ -62,7 +69,8 @@ func realMain() int {
 	// Create and setup the working side
 	workingSide := workingSide.New(connections, trafficChannelPubs, endpointIssues)
 	if err := workingSide.Setup(); err != nil {
-		log.Error.Fatalln("Unable to setup the working side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to setup working side.").Error())
+		return ErrorCode
 	}
 	log.Info.Println("Working side setup successfully.")
 	defer workingSide.CleanUp()
@@ -70,31 +78,29 @@ func realMain() int {
 	log.Info.Println("Setup done, starting machinery..")
 
 	if err = workingSide.Start(); err != nil {
-		log.Error.Fatalln("Unable to start the working side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to start working side.").Error())
+		return ErrorCode
 	}
-
 	if err = networkSide.Start(); err != nil {
-		log.Error.Fatalln("Unable to start the network side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to start network side.").Error())
+		return ErrorCode
 	}
-
 	if err = kernelSide.Start(); err != nil {
-		log.Error.Fatalln("Unable to start the kernelSide side - ", err.Error())
+		log.Error.Print(shila.PrependError(err, "Unable to start the kernel side.").Error())
+		return ErrorCode
 	}
 
 	log.Info.Println("Machinery up and running.")
 
 	returnCode := waitForTeardown()
-
-	// TODO: Clean everything up
-
 	return returnCode
 }
 
 func waitForTeardown() int {
 	select {
 	case <-shutdown.OrderlyChan():
-		return 0
+		return SuccessCode
 	case <-shutdown.FatalChan():
-		return 1
+		return ErrorCode
 	}
 }
