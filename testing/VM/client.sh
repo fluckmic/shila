@@ -32,5 +32,5 @@ do
 
   sleep 2
 done
-
+printf "Client %d done.\n" "$CLIENT_ID"
 exit 0

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 N_VMS=2            # Total number of vm's in this test
-N_CLIENTS=1        # Number of clients running on one vm
-N_CONNECTIONS=5    # Number of connections done per client
+N_CLIENTS=4        # Number of clients running on one vm
+N_CONNECTIONS=1    # Number of connections done per client
 
 # Load the host id
 HOST=$(uname -n)
@@ -49,15 +49,23 @@ PORTS=(2727 4411 6688 7321 8686)
 for PORT in "${PORTS[@]}"; do
   mkdir -p "$OUTPUT_PATH"/iperf/server/
   iperf -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
-  echo Started iperf server listening on port "$PORT"..
+  printf "Started iperf server listening on port %d.\n" "$PORT"
 done
-echo ""
 
 # Start the clients
+CLIENT_PIDS=()
 for (( CLIENT_ID=0; CLIENT_ID<"$N_CLIENTS"; CLIENT_ID++ ))
 do
   ./client.sh "$HOST_VM_ID" "$N_VMS" "$CLIENT_ID" "$N_CONNECTIONS" "$OUTPUT_PATH" &
+  CLIENT_PIDS+=($!)
 done
-echo Started the clients, waiting for them to finish..
+
+printf "\nStarted the clients, waiting for them to finish..\n\n"
+
+for CLIENT_PID in "${CLIENT_PIDS[@]}"; do
+  wait "$CLIENT_PID"
+done
+
+printf "\nDone.\n"
 
 exit 0
