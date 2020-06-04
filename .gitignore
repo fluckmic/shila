@@ -12,8 +12,7 @@ shila
 # Test binary, built with `go test -c`
 *.test
 
-testing/tests/2-host-test/output/
-testing/tests/2-host-tests/output/
+testing/VM/output/
 
 # GoLand folders
 .idea/
@@ -22,4 +21,4 @@ testing/tests/2-host-tests/output/
 log-*
 
 #
-routing.json
+routing*.json
