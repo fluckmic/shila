@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"shila/core/connection"
 	"shila/core/shila"
+	"shila/kernelSide/kernelEndpoint"
 	"shila/log"
 	"shila/networkSide/networkEndpoint"
 	"shila/shutdown"
@@ -45,8 +46,8 @@ func (m *Manager) CleanUp() { }
 
 func (m *Manager) trafficWorker() {
 	for trafficChannelPub := range m.trafficChannelPubs {
-		log.Verbose.Print("Working side {", m.label, "} received announcement for new traffic channel {",
-			trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.Label(), "}.")
+		//log.Verbose.Print("Working side {", m.label, "} received announcement for new traffic channel {",
+		//	trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.Label(), "}.")
 		go m.serveTrafficChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
 	}
 }
@@ -87,18 +88,14 @@ func (m *Manager) issueWorker() {
 	for issue := range m.endpointIssues {
 
 		// Handle issues from the kernel endpoint
-		if issue.Issuer.Label() == shila.KernelEndpoint {
+		var ep interface{} = issue.Issuer
+		if _, ok := ep.(*kernelEndpoint.Device); ok {
 			m.handleKernelEndpointIssue(issue)
 			return
-		}
-
-		var ep interface{} = issue.Issuer
-		if server, ok := ep.(*networkEndpoint.Server); ok {
+		} else if server, ok := ep.(*networkEndpoint.Server); ok {
 			m.handleServerNetworkEndpointIssues(server, issue)
 			return
-		}
-
-		if client, ok := ep.(*networkEndpoint.Client); ok {
+		} else if client, ok := ep.(*networkEndpoint.Client); ok {
 			m.handleNetworkClientIssue(client, issue)
 			return
 		}
@@ -141,7 +138,7 @@ func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEn
 		}
 	}
 
-	log.Error.Print("Unhandled server network endpoint issue in in {", server.Key(), "}.")
+	log.Error.Print("Unhandled server network endpoint issue in {", server.Key(), "}.")
 	shutdown.Fatal(issue.Error)
 }
 

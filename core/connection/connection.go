@@ -70,7 +70,8 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	// From where was the packet received?
 	var err error
 	switch p.Entrypoint.Label() {
-		case shila.KernelEndpoint: 				err = conn.processPacketFromKerep(p)
+		case shila.IngressKernelEndpoint:		err = conn.processPacketFromKerep(p)
+		case shila.EgressKernelEndpoint:	err = conn.processPacketFromKerep(p)
 		case shila.ContactingNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
 		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
