@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [[ $# -eq 0 ]]; then
-  N_CONNECTIONS=1   # Number of connections done per client
-  N_CLIENTS=1       # Number of clients running on one vm
-  N_VMS=1           # Total number of vm's in this test (1, 2 or 3)
+  N_CONNECTIONS=1         # Number of connections done per client
+  N_CLIENTS=1             # Number of clients running on one vm
+  N_VMS=1                 # Total number of vm's in this test (1, 2 or 3)
 elif [[ $# -eq 1 ]]; then
   N_CONNECTIONS=$1
   N_CLIENTS=1
@@ -19,7 +19,7 @@ else
 fi
 
 if [[ "$N_VMS" -lt 1 ]] || [[ "$N_VMS" -gt 3 ]]; then
-  printf "Cannot start test, wrong number of vms.\n"
+  printf "Cannot start test, wrong number of VMs.\n"
   exit 1
 fi
 
@@ -39,6 +39,7 @@ else
   exit 1
 fi
 
+printf "Start test..\n"
 printf "VM ID: %d, #VMs: %d, #Clients: %d, #Connections: %d\n\n" "$HOST_VM_ID" "$N_VMS" "$N_CLIENTS" "$N_CONNECTIONS"
 
 # Update the repo
@@ -79,7 +80,7 @@ pkill iperf
 
 for PORT in "${PORTS[@]}"; do
   mkdir -p "$OUTPUT_PATH"/iperf/server/
-  iperf3 -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
+  ip netns exec shila-ingress iperf3 -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
   printf "Started iperf server listening on port %d.\n" "$PORT"
 done
 
@@ -99,7 +100,7 @@ done
 
 printf "\nAll clients done.\nCreate report..\n"
 
-REPORT_OUTPUT_FILE=output/report-"$DATE".txt
+REPORT_OUTPUT_FILE=report-"$DATE".txt
 touch "$REPORT_OUTPUT_FILE"
 
 printf "\n++++ REPORT ++++\n" >  "$REPORT_OUTPUT_FILE"

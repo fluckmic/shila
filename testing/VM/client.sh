@@ -6,7 +6,7 @@ CLIENT_ID="$3"     # ID of the client
 N_CONNECTIONS="$4" # Number of connections per client
 OUTPUT_PATH="$5"   # Were to write the output data
 
-MAX_DURATION=20
+MAX_DURATION=5
 
 # Select the ports
 if [[ "$HOST_VM_ID" -eq 1 ]]; then
@@ -52,7 +52,7 @@ do
   DURATION=$(( RANDOM % MAX_DURATION + 1 ))
 
   printf "+ Connection to 10.7.0.9:%d:\n" "$PORT" >> "$CLIENT_OUTPUT_PATH"
-  #iperf3 -c 10.7.0.9 -p "$PORT" -t "$DURATION" >> "$CLIENT_OUTPUT_PATH" 2>> "$CLIENT_OUTPUT_PATH"
+  ip netns exec shila-egress iperf3 -c 10.7.0.9 -p "$PORT" -t "$DURATION" >> "$CLIENT_OUTPUT_PATH" 2>> "$CLIENT_OUTPUT_PATH"
 
   wait $!
 done

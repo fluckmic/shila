@@ -5,6 +5,7 @@ import (
 	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
+	"shila/log"
 	"shila/networkSide"
 	"sync"
 	"time"
@@ -54,6 +55,7 @@ func (m *Mapping) Retrieve(flow shila.Flow) *Connection {
 	if con, ok := m.connections[key]; ok {
 		return con
 	} else {
+		log.Verbose.Print("Retrieve a fresh connection with key {", key, "}.")
 		newCon := New(flow, m.kernelSide, m.networkSide, m.routing)
 		m.connections[key] = newCon
 		return newCon

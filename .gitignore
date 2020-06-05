@@ -13,6 +13,7 @@ shila
 *.test
 
 testing/VM/output/
+testing/VM/report*
 
 # GoLand folders
 .idea/
