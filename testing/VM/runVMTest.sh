@@ -25,13 +25,13 @@ echo "$HOST" \(id:"$HOST_VM_ID"\)
 echo "$N_CLIENTS" client\(s\) with "$N_CONNECTIONS" connections each
 echo ""
 
+# Update the repo
+git pull
+
 # Return if vm is not meant to be part of the test
 if [[ "$HOST_VM_ID" -gt "$N_VMS" ]]; then
   exit 0
 fi
-
-# Update the repo
-git pull
 
 # Path for the output
 DATE=$(date +%F-%H-%M-%S)
@@ -43,7 +43,7 @@ pkill shila
 cp routing$HOST_VM_ID.json ../../
 
 # Build the latest version
-( cd ../../ ; /usr/local/go/bin/go build)
+/usr/local/go/bin/go build ../../
 
 mkdir -p "$OUTPUT_PATH"/shila/
 ../.././shila > "$OUTPUT_PATH"/shila/shila.log 2> "$OUTPUT_PATH"/shila/shila.err &
