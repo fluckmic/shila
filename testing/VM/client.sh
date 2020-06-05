@@ -10,7 +10,11 @@ MAX_DURATION=20
 
 PORTS=(11111 11112 11113 11114 22221 22222 22223 22224 33331 33332 33333 33334)
 
-mkdir -p "$OUTPUT_PATH"/iperf/client/
+mkdir -p "$OUTPUT_PATH"/iperf/client/"$CLIENT_ID"
+CLIENT_OUTPUT_PATH="$OUTPUT_PATH"/iperf-client-"$CLIENT_ID".log
+
+printf "\n++++ CLIENT LOG ++++\n" >> "$CLIENT_OUTPUT_PATH"
+printf "(vm id: %d) (client id: %d) (connections: %d) (max duration: %d)\n\n" "$HOST_VM_ID" "$CLIENT_ID" "$N_CONNECTIONS" "$MAX_DURATION"  >> "$CLIENT_OUTPUT_PATH"
 
 for (( CONN=0; CONN<"$N_CONNECTIONS"; CONN++ ))
 do
@@ -26,11 +30,13 @@ do
     TARGET_VM_ID=$(( RANDOM % N_VMS + 1 ))
     done
 
-  iperf -c 10.7.0.9 -p "$PORT" -t "$DURATION" \
-    >> "$OUTPUT_PATH"/iperf/client/"$CLIENT_ID"-"$PORT".log \
-    2>> "$OUTPUT_PATH"/iperf/client/"$CLIENT_ID"-"$PORT".err &
+  printf "+ Connection to 10.7.0.9:%d:\n" "$PORT" >> "$CLIENT_OUTPUT_PATH"
+  #iperf3 -c 10.7.0.9 -p "$PORT" -t "$DURATION" >> "$CLIENT_OUTPUT_PATH" 2>> "$CLIENT_OUTPUT_PATH"
 
-  sleep 2
+  wait $!
 done
+
+echo "$CLIENT_LOG_HEADER4" >> "$CLIENT_OUTPUT_PATH"
+
 printf "Client %d done.\n" "$CLIENT_ID"
 exit 0

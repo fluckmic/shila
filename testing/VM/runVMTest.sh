@@ -1,8 +1,8 @@
 #!/bin/bash
 
-N_VMS=2            # Total number of vm's in this test
-N_CLIENTS=4        # Number of clients running on one vm
-N_CONNECTIONS=1    # Number of connections done per client
+N_VMS=2           # Total number of vm's in this test
+N_CLIENTS=3       # Number of clients running on one vm
+N_CONNECTIONS=4   # Number of connections done per client
 
 # Load the host id
 HOST=$(uname -n)
@@ -16,7 +16,7 @@ elif [[ "$HOST" == "mptcp-over-scion-vm-3" ]]; then
   HOST_VM_ID=3
   PORTS=(33331 33332 33333 33334)
 else
-  echo Cannot start test, unknown host "$HOST".
+  printf "Cannot start test, unknown host %d." "$HOST"
   exit 1
 fi
 
@@ -46,9 +46,12 @@ cp routing$HOST_VM_ID.json ../../
 /usr/local/go/bin/go build ../../
 
 mkdir -p "$OUTPUT_PATH"/shila/
-../.././shila > "$OUTPUT_PATH"/shila/shila.log 2> "$OUTPUT_PATH"/shila/shila.err &
-echo Started shila..
-echo ""
+
+touch "$OUTPUT_PATH"/shila/shila.log
+printf   "++++ SHILA LOG  ++++\n" >> "$OUTPUT_PATH"/shila/shila.log
+
+../.././shila >> "$OUTPUT_PATH"/shila/shila.log 2>> "$OUTPUT_PATH"/shila/shila.log &
+printf "Started shila..\n"
 
 # Start fresh with iperf
 pkill iperf
@@ -57,7 +60,7 @@ pkill iperf
 
 for PORT in "${PORTS[@]}"; do
   mkdir -p "$OUTPUT_PATH"/iperf/server/
-  iperf -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
+  iperf3 -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
   printf "Started iperf server listening on port %d.\n" "$PORT"
 done
 
@@ -69,12 +72,21 @@ do
   CLIENT_PIDS+=($!)
 done
 
-printf "\nStarted the clients, waiting for them to finish..\n\n"
+printf "\nStarted the clients, waiting for them to finish..\n"
 
 for CLIENT_PID in "${CLIENT_PIDS[@]}"; do
   wait "$CLIENT_PID"
 done
 
-printf "\nDone.\n"
+printf "\nAll clients done.\nCreate report..\n"
 
+touch report.txt
+for OUTPUT_FILE in $(find "$OUTPUT_PATH" -type f -name shila.*); do
+  cat "$OUTPUT_FILE" >> report.txt
+done
+for OUTPUT_FILE in $(find "$OUTPUT_PATH" -type f -name iperf-client-*); do
+  cat "$OUTPUT_FILE" >> report.txt
+done
+
+printf "Done.\n"
 exit 0
