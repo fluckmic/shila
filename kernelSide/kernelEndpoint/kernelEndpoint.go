@@ -20,6 +20,7 @@ type Device struct {
 	Name			string
 	Namespace		network.Namespace
 	IP				net.IP
+	label 			shila.EndpointLabel
 	endpointIssues 	shila.EndpointIssuePubChannel
 	channels   		Channels
 	vif        		vif.Device
@@ -31,12 +32,13 @@ type Channels struct {
 	egress     shila.PacketChannel
 }
 
-func New(number uint8, namespace network.Namespace, ip net.IP, endpointIssues shila.EndpointIssuePubChannel) Device {
+func New(number uint8, namespace network.Namespace, ip net.IP, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) Device {
 	return Device{
 		Number:			number,
 		Name:			fmt.Sprint(nameTunDevice, number),
 		Namespace:		namespace,
 		IP:				ip,
+		label:			label,
 		endpointIssues: endpointIssues,
 		state:			shila.NewEntityState(),
 	}
@@ -112,7 +114,7 @@ func (d *Device) TearDown() error {
 }
 
 func (d *Device) Label() shila.EndpointLabel {
-	return shila.KernelEndpoint
+	return d.label
 }
 
 func (d *Device) Key() shila.EndpointKey {

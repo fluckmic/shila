@@ -39,8 +39,15 @@ func realMain() int {
 	log.Info.Println("Setup started...")
 
 	// Create the channel used to announce new traffic channels and possible issues within endpoints.
-	trafficChannelPubs := make(shila.PacketChannelPubChannel)
-	endpointIssues := make(shila.EndpointIssuePubChannel)
+	trafficChannelPubs := shila.PacketChannelPubChannels{
+		Ingress: make(shila.PacketChannelPubChannel),
+		Egress:	 make(shila.PacketChannelPubChannel),
+	}
+
+	endpointIssues := shila.EndpointIssuePubChannels{
+		Ingress: make(shila.EndpointIssuePubChannel),
+		Egress:  make(shila.EndpointIssuePubChannel),
+	}
 
 	// Create and setup the kernelSide side
 	kernelSide := kernelSide.New(trafficChannelPubs, endpointIssues)
@@ -60,25 +67,33 @@ func realMain() int {
 	log.Info.Println("Network side setup successfully.")
 	defer networkSide.CleanUp()
 
-	// Create the mapping holding the network addresses
-	routing := netflow.NewRouter()
-
-	// Create the mapping holding the connections
-	connections := connection.NewMapping(kernelSide, networkSide, routing)
-
-	// Create and setup the working side
-	workingSide := workingSide.New(connections, trafficChannelPubs, endpointIssues)
-	if err := workingSide.Setup(); err != nil {
-		log.Error.Print(shila.PrependError(err, "Unable to setup working side.").Error())
+	// Setup the ingress working side
+	workingSideIngress := workingSide.New(connection.NewMapping(kernelSide, networkSide, netflow.NewRouter()),
+		trafficChannelPubs.Ingress, endpointIssues.Ingress, workingSide.Ingress)
+	if err := workingSideIngress.Setup(); err != nil {
+		log.Error.Print(shila.PrependError(err, "Unable to setup ingress working side.").Error())
 		return ErrorCode
 	}
-	log.Info.Println("Working side setup successfully.")
-	defer workingSide.CleanUp()
+	defer workingSideIngress.CleanUp()
+
+	// Setup the egress working side
+	workingSideEgress := workingSide.New(connection.NewMapping(kernelSide, networkSide, netflow.NewRouter()),
+		trafficChannelPubs.Egress, endpointIssues.Egress, workingSide.Egress)
+	if err := workingSideEgress.Setup(); err != nil {
+		log.Error.Print(shila.PrependError(err, "Unable to setup egress working side.").Error())
+		return ErrorCode
+	}
+	defer workingSideEgress.CleanUp()
+	log.Info.Println("Working sides setup successfully.")
 
 	log.Info.Println("Setup done, starting machinery..")
 
-	if err = workingSide.Start(); err != nil {
-		log.Error.Print(shila.PrependError(err, "Unable to start working side.").Error())
+	if err = workingSideIngress.Start(); err != nil {
+		log.Error.Print(shila.PrependError(err, "Unable to start ingress working side.").Error())
+		return ErrorCode
+	}
+	if err = workingSideEgress.Start(); err != nil {
+		log.Error.Print(shila.PrependError(err, "Unable to start egress working side.").Error())
 		return ErrorCode
 	}
 	if err = networkSide.Start(); err != nil {

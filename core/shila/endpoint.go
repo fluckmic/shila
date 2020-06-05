@@ -6,6 +6,8 @@ type EndpointLabel uint8
 const (
 	_                            = iota
 	KernelEndpoint EndpointLabel = iota
+	IngressKernelEndpoint
+	EgressKernelEndpoint
 	ContactingNetworkEndpoint
 	TrafficNetworkEndpoint
 )

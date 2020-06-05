@@ -10,6 +10,17 @@ type PacketChannelPub struct {
 	Channel   PacketChannel
 }
 
+type EndpointIssuePubChannels struct {
+	Ingress EndpointIssuePubChannel
+	Egress  EndpointIssuePubChannel
+}
+
+
+type PacketChannelPubChannels struct {
+	Ingress PacketChannelPubChannel
+	Egress 	PacketChannelPubChannel
+}
+
 type EndpointIssuePub struct {
 	Issuer Endpoint
 	Flow   Flow

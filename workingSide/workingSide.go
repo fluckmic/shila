@@ -11,14 +11,16 @@ import (
 )
 
 type Manager struct {
+	label 				Label
 	connections     	connection.Mapping
 	trafficChannelPubs 	shila.PacketChannelPubChannel
 	endpointIssues 	   	shila.EndpointIssuePubChannel
 }
 
 func New(connections connection.Mapping, trafficChannelPubs shila.PacketChannelPubChannel,
-	endpointIssues shila.EndpointIssuePubChannel) *Manager {
+	endpointIssues shila.EndpointIssuePubChannel, label Label) *Manager {
 	return &Manager{
+		label: 				label,
 		connections:     	connections,
 		trafficChannelPubs: trafficChannelPubs,
 		endpointIssues:    	endpointIssues,
@@ -43,7 +45,7 @@ func (m *Manager) CleanUp() { }
 
 func (m *Manager) trafficWorker() {
 	for trafficChannelPub := range m.trafficChannelPubs {
-		log.Verbose.Print("Working side received announcement for new traffic channel {",
+		log.Verbose.Print("Working side {", m.label, "} received announcement for new traffic channel {",
 			trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.Label(), "}.")
 		go m.serveTrafficChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
 	}
@@ -80,7 +82,6 @@ func (m *Manager) processTrafficChannel(p *shila.Packet) {
 	default:						return
 	}
 }
-
 
 func (m *Manager) issueWorker() {
 	for issue := range m.endpointIssues {
