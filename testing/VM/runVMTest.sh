@@ -8,10 +8,13 @@ N_CONNECTIONS=1    # Number of connections done per client
 HOST=$(uname -n)
 if   [[ "$HOST" == "mptcp-over-scion-vm-1" ]]; then
   HOST_VM_ID=1
+  PORTS=(11111 11112 11113 11114)
 elif [[ "$HOST" == "mptcp-over-scion-vm-2" ]]; then
   HOST_VM_ID=2
+  PORTS=(22221 22222 22223 22224)
 elif [[ "$HOST" == "mptcp-over-scion-vm-3" ]]; then
   HOST_VM_ID=3
+  PORTS=(33331 33332 33333 33334)
 else
   echo Cannot start test, unknown host "$HOST".
   exit 1
@@ -27,6 +30,9 @@ if [[ "$HOST_VM_ID" -gt "$N_VMS" ]]; then
   exit 0
 fi
 
+# Update the repo
+git pull
+
 # Path for the output
 DATE=$(date +%F-%H-%M-%S)
 OUTPUT_PATH=output/"$DATE"/vm$HOST_VM_ID
@@ -35,6 +41,9 @@ OUTPUT_PATH=output/"$DATE"/vm$HOST_VM_ID
 pkill shila
 # Copy the routing file such that it is found by shila
 cp routing$HOST_VM_ID.json ../../
+
+# Build the latest version
+( cd ../../ ; /usr/local/go/bin/go build)
 
 mkdir -p "$OUTPUT_PATH"/shila/
 ../.././shila > "$OUTPUT_PATH"/shila/shila.log 2> "$OUTPUT_PATH"/shila/shila.err &
@@ -45,7 +54,7 @@ echo ""
 pkill iperf
 
 # Start the server listening on the given ports
-PORTS=(2727 4411 6688 7321 8686)
+
 for PORT in "${PORTS[@]}"; do
   mkdir -p "$OUTPUT_PATH"/iperf/server/
   iperf -s -p "$PORT" > "$OUTPUT_PATH"/iperf/server/"$PORT".log 2> "$OUTPUT_PATH"/iperf/server/"$PORT".err &
