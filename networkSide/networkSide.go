@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"shila/core/shila"
 	"sync"
-	"time"
 )
 
 // This part of the network is independent of the backbone protocol chosen.
@@ -185,10 +184,6 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	}
 
 	trafficEndpoint := m.specificManager.NewClient(flow, shila.TrafficNetworkEndpoint, m.endpointIssues.Egress)
-
-	// Wait a certain amount of time to give the server endpoint time to establish itself
-	time.Sleep(Config.WaitingTimeTrafficConnEstablishment)
-
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
 		return

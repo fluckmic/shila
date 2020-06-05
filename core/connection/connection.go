@@ -228,6 +228,8 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// Try to connect to the address via path, a corresponding server should be there listening
 	go func() {
+		// Wait a certain amount of time to give the server endpoint time to establish itself
+		time.Sleep(Config.WaitingTimeTrafficConnEstablishment)
 		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
 			conn.Close(err)
 		} else {
