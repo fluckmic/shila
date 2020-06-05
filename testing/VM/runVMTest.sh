@@ -1,8 +1,27 @@
 #!/bin/bash
 
-N_VMS=2           # Total number of vm's in this test
-N_CLIENTS=3       # Number of clients running on one vm
-N_CONNECTIONS=4   # Number of connections done per client
+if [[ $# -eq 0 ]]; then
+  N_CONNECTIONS=1   # Number of connections done per client
+  N_CLIENTS=1       # Number of clients running on one vm
+  N_VMS=1           # Total number of vm's in this test (1, 2 or 3)
+elif [[ $# -eq 1 ]]; then
+  N_CONNECTIONS=$1
+  N_CLIENTS=1
+  N_VMS=1
+elif [[ $# -eq 2 ]]; then
+  N_CONNECTIONS=$1
+  N_CLIENTS=$2
+  N_VMS=1
+else
+  N_CONNECTIONS=$1
+  N_CLIENTS=$2
+  N_VMS=$3
+fi
+
+if [[ "$N_VMS" -lt 1 ]] || [[ "$N_VMS" -gt 3 ]]; then
+  printf "Cannot start test, wrong number of vms.\n"
+  exit 1
+fi
 
 # Load the host id
 HOST=$(uname -n)
@@ -16,14 +35,11 @@ elif [[ "$HOST" == "mptcp-over-scion-vm-3" ]]; then
   HOST_VM_ID=3
   PORTS=(33331 33332 33333 33334)
 else
-  printf "Cannot start test, unknown host %d." "$HOST"
+  printf "Cannot start test, unknown host %d.\n" "$HOST"
   exit 1
 fi
 
-echo ""
-echo "$HOST" \(id:"$HOST_VM_ID"\)
-echo "$N_CLIENTS" client\(s\) with "$N_CONNECTIONS" connections each
-echo ""
+printf "VM ID: %d, #VMs: %d, #Clients: %d, #Connections: %d\n\n" "$HOST_VM_ID" "$N_VMS" "$N_CLIENTS" "$N_CONNECTIONS"
 
 # Update the repo
 git pull
@@ -40,7 +56,7 @@ OUTPUT_PATH=output/"$DATE"/vm$HOST_VM_ID
 # Setup and run shila
 pkill shila
 # Copy the routing file such that it is found by shila
-cp routing$HOST_VM_ID.json ../../
+cp routing.json ../../
 
 # Build the latest version
 /usr/local/go/bin/go build ../../
@@ -51,6 +67,9 @@ touch "$OUTPUT_PATH"/shila/shila.log
 printf   "++++ SHILA LOG  ++++\n" >> "$OUTPUT_PATH"/shila/shila.log
 
 ../.././shila >> "$OUTPUT_PATH"/shila/shila.log 2>> "$OUTPUT_PATH"/shila/shila.log &
+
+sleep 5
+
 printf "Started shila..\n"
 
 # Start fresh with iperf
@@ -80,12 +99,17 @@ done
 
 printf "\nAll clients done.\nCreate report..\n"
 
-touch report.txt
+REPORT_OUTPUT_FILE=output/report-"$DATE".txt
+touch "$REPORT_OUTPUT_FILE"
+
+printf "\n++++ REPORT ++++\n" >  "$REPORT_OUTPUT_FILE"
+printf "VM ID: %d, #VMs: %d, #Clients: %d, #Connections: %d\n\n" "$HOST_VM_ID" "$N_VMS" "$N_CLIENTS" "$N_CONNECTIONS" >> "$REPORT_OUTPUT_FILE"
+
 for OUTPUT_FILE in $(find "$OUTPUT_PATH" -type f -name shila.*); do
-  cat "$OUTPUT_FILE" >> report.txt
+  cat "$OUTPUT_FILE" >> "$REPORT_OUTPUT_FILE"
 done
 for OUTPUT_FILE in $(find "$OUTPUT_PATH" -type f -name iperf-client-*); do
-  cat "$OUTPUT_FILE" >> report.txt
+  cat "$OUTPUT_FILE" >> "$REPORT_OUTPUT_FILE"
 done
 
 printf "Done.\n"
