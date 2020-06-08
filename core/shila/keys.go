@@ -87,8 +87,8 @@ func (ipf *IPFlow) DstIPKey() IPAddressKey {
 	return GetIPAddressKey(ipf.Dst.IP)
 }
 
-func (nf *NetFlow) DstAndPathKey() NetworkAddressAndPathKey {
-	return GetNetworkAddressAndPathKey(nf.Dst, nf.Path)
+func (nf *NetFlow) DstKey() NetworkAddressKey {
+	return GetNetworkAddressKey(nf.Dst)
 }
 
 func (p *Packet) Key() PacketKey {

@@ -18,12 +18,14 @@ var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
-	backboneConnections map[shila.NetworkAddressAndPathKey]  *networkConnection
+	backboneConnections MappingBackboneConnections
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
 	holdingArea         [] *shila.Packet
 }
+
+type MappingBackboneConnections map[shila.NetworkAddressKey]  *networkConnection
 
 func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
 	return &Server{
@@ -32,7 +34,7 @@ func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.
 								state: 			shila.NewEntityState(),
 								endpointIssues: endpointIssues,
 						},
-		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  *networkConnection),
+		backboneConnections: make(MappingBackboneConnections),
 		flow:             	 flow,
 		lock:                sync.Mutex{},
 		holdingArea:         make([] *shila.Packet, 0, Config.SizeHoldingArea),
@@ -144,12 +146,12 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	}
 
 	// Generate the keys
-	var keys []shila.NetworkAddressAndPathKey
-	keys = append(keys, shila.GetNetworkAddressAndPathKey(representingFlow.NetFlow.Dst, representingFlow.NetFlow.Path))
+	var keys []shila.NetworkAddressKey
+	keys = append(keys, shila.GetNetworkAddressKey(representingFlow.NetFlow.Dst))
 	// We need also to be able to send messages to the contact client network endpoint.
 	if s.Label() == shila.TrafficNetworkEndpoint {
 		// For the moment we can use the same path for this key as for the representing flow.
-		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.SrcAddrContactEndpoint, representingFlow.NetFlow.Path))
+		keys = append(keys, shila.GetNetworkAddressKey(&ctrlMsg.SrcAddrContactEndpoint))
 	}
 
 	// Create the connection wrapper
@@ -179,7 +181,7 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	return
 }
 
-func (s* Server) insertBackboneConnection(keys []shila.NetworkAddressAndPathKey, conn *networkConnection) error {
+func (s* Server) insertBackboneConnection(keys []shila.NetworkAddressKey, conn *networkConnection) error {
 
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -267,7 +269,7 @@ func (s *Server) resending() {
 
 func (s *Server) serveEgress() {
 	for p := range s.egress {
-		key := p.Flow.NetFlow.DstAndPathKey()				// Retrieve key to get the correct connection
+		key := p.Flow.NetFlow.DstKey() // Retrieve key to get the correct connection
 		if con, ok := s.backboneConnections[key]; ok {
 			writer := io.Writer(con.Backbone)
 			_, err := writer.Write(p.Payload)
