@@ -3,6 +3,8 @@ package network
 
 import (
 	"fmt"
+	"github.com/scionproto/scion/go/lib/addr"
+	"github.com/scionproto/scion/go/lib/snet"
 	"net"
 	"shila/core/shila"
 	"strconv"
@@ -11,40 +13,28 @@ import (
 // Generator functionalities are thought to be used outside of the
 // backbone protocol specific implementations (suffix "Specific").
 var _ shila.NetworkAddressGenerator = (*AddressGenerator)(nil)
-var _ shila.NetworkAddress 			= (*net.TCPAddr)(nil)
+var _ shila.NetworkAddress 			= (*snet.UDPAddr)(nil)
 
 type AddressGenerator struct {}
 
-// <ip>:<port>
 func (g AddressGenerator) New(address string) (shila.NetworkAddress, error) {
-	return newAddress(address)
-}
-// <ip>:<port>
-func newAddress(addr string) (shila.NetworkAddress, error) {
-	if host, port, err := net.SplitHostPort(addr); err != nil {
-		return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", addr, "}."))
-	} else {
-		IPv4 := net.ParseIP(host)
-		Port, err := strconv.Atoi(port)
-		if IPv4 == nil {
-			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", IPv4, "}."))
-		} else if err != nil {
-			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse port {", Port, "}."))
-		} else {
-			return &net.TCPAddr{IP: IPv4, Port: Port}, nil
-		}
-	}
+	return snet.ParseUDPAddr(address) 													// FIXME: returns a snet.UDPAddr
 }
 
-// <port>
-func (g AddressGenerator) NewLocal(port string) (shila.NetworkAddress, error) {
-		if Port, err := strconv.Atoi(port); err != nil {
-			return &net.TCPAddr{}, shila.ThirdPartyError(fmt.Sprint("Cannot parse IP {", port, "}."))
+func (g AddressGenerator) NewLocal(portStr string) (shila.NetworkAddress, error) {
+
+	if port, err := strconv.Atoi(portStr); err != nil {
+		return &snet.UDPAddr{}, shila.PrependError(shila.ParsingError(err.Error()), fmt.Sprint("Cannot parse port {", portStr, "}."))
 	} else {
-		return &net.TCPAddr{Port: Port}, nil
+		return &snet.UDPAddr{
+			IA:      addr.IA{},
+			Path:    nil,
+			NextHop: nil,
+			Host:    &net.UDPAddr{Port: port},
+		}, nil
 	}
 }
 
 func (g AddressGenerator) NewEmpty() shila.NetworkAddress {
-	return &net.TCPAddr{}
+	return &snet.UDPAddr{}
 }

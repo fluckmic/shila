@@ -17,7 +17,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/scionproto/scion/go/lib/snet"
 	"os"
+	"time"
 
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 )
@@ -30,50 +32,84 @@ func main() {
 	flag.Parse()
 
 	if (*port > 0) == (len(*remoteAddr) > 0) {
-		check(fmt.Errorf("Either specify -port for server or -remote for client"))
+		check(fmt.Errorf("Either specify -port for server or -remote for client."))
 	}
 
 	if *port > 0 {
 		err = runServer(uint16(*port))
 		check(err)
 	} else {
-		err = runClient(*remoteAddr)
+		go runClient(*remoteAddr, 10)
+		time.Sleep(time.Second)
+		go runClient(*remoteAddr, 10)
+
+		time.Sleep(time.Second * 15)
 		check(err)
 	}
 }
 
 func runServer(port uint16) error {
-	conn, err := appnet.ListenPort(port)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
+		conn, err := appnet.ListenPort(port)
+		if err != nil {
+			return err
+		}
+		handleConnection(conn)
+		conn.Close()
+		return nil
+}
 
+func handleConnection(conn *snet.Conn) {
 	buffer := make([]byte, 16*1024)
 	for {
 		n, from, err := conn.ReadFrom(buffer)
 		if err != nil {
-			return err
+			return
 		}
 		data := buffer[:n]
 		fmt.Printf("Received %s: %s\n", from, data)
+
+		_, err = conn.WriteTo([]byte("hello from the server."), from)
+		if err != nil {
+			return
+		}
+		// fmt.Printf("Done. Wrote %d bytes.\n", nBytes)
 	}
 }
 
-func runClient(address string) error {
+func runClient(address string, nSend int) error {
+
 	conn, err := appnet.Dial(address)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	nBytes, err := conn.Write([]byte("hello world"))
-	if err != nil {
-		return err
+	to := conn.RemoteAddr().(*snet.UDPAddr)
+	_ = to
+
+	for i := 0; i < nSend; i++ {
+
+		_, err = conn.Write([]byte("hello from the client."))
+		if err != nil {
+			return err
+		}
+		// fmt.Printf("Done. Wrote %d bytes.\n", nBytes)
+
+		buffer := make([]byte, 16*1024)
+		n, err := conn.Read(buffer)
+		if err != nil {
+			return err
+		}
+		data := buffer[:n]
+		from := conn.RemoteAddr()
+		fmt.Printf("Received %s: %s\n", from, data)
+
+		time.Sleep(time.Second * 2)
 	}
-	fmt.Printf("Done. Wrote %d bytes.\n", nBytes)
+
 	return nil
 }
+
 
 // Check just ensures the error is nil, or complains and quits
 func check(e error) {

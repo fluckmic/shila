@@ -4,10 +4,10 @@ import (
 	"shila/core/shila"
 )
 
-type Base struct {
-	label   		shila.EndpointLabel
-	ingress 		shila.PacketChannel
-	egress  		shila.PacketChannel
-	state   		shila.EntityState
-	endpointIssues 	shila.EndpointIssuePubChannel
+type NetworkEndpointBase struct {
+	role    shila.EndpointRole
+	ingress shila.PacketChannel
+	egress  shila.PacketChannel
+	state   shila.EntityState
+	issues  shila.EndpointIssuePubChannel
 }

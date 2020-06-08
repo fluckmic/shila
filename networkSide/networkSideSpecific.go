@@ -16,15 +16,15 @@ func NewSpecificManager() SpecificManager {
 	return SpecificManager{	}
 }
 
-func (specMng SpecificManager) NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+func (specMng SpecificManager) NewClient(flow shila.Flow, label shila.EndpointRole, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return networkEndpoint.NewClient(flow, label, endpointIssues)
 }
 
-func (specMng SpecificManager) NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
+func (specMng SpecificManager) NewServer(flow shila.Flow, label shila.EndpointRole, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
 	return networkEndpoint.NewServer(flow, label, endpointIssues)
 }
 
-func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.NetFlow {
+func (specMng SpecificManager) ContactRemoteAddr(flow shila.NetFlow) shila.NetFlow {
 	return shila.NetFlow{
 		Src:  flow.Src,
 		Path: specMng.getDefaultContactingPath(flow.Dst),
@@ -32,7 +32,7 @@ func (specMng SpecificManager) RemoteContactingFlow(flow shila.NetFlow) shila.Ne
 	}
 }
 
-func (specMng SpecificManager) LocalContactingNetFlow() shila.NetFlow {
+func (specMng SpecificManager) ContactLocalAddr() shila.NetFlow {
 	src, _ := network.AddressGenerator{}.NewLocal(strconv.Itoa(Config.ContactingServerPort))
 	return shila.NetFlow{
 		Src: 	src,

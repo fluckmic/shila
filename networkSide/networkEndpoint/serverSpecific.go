@@ -17,7 +17,7 @@ import (
 var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
-	Base
+	NetworkEndpointBase
 	backboneConnections map[shila.NetworkAddressAndPathKey]  *networkConnection
 	flow	            shila.Flow
 	listener            net.Listener
@@ -25,12 +25,14 @@ type Server struct{
 	holdingArea         [] *shila.Packet
 }
 
-func NewServer(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
+func NewServer(flow shila.Flow, role shila.EndpointRole, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
 	return &Server{
-		Base: 			Base{
-								label: 			label,
-								state: 			shila.NewEntityState(),
-								endpointIssues: endpointIssues,
+		NetworkEndpointBase: 			NetworkEndpointBase{
+								role:   	role,
+								ingress:	make(chan *shila.Packet, Config.SizeIngressBuffer),
+								egress:		make(chan *shila.Packet, Config.SizeEgressBuffer),
+								state:  	shila.NewEntityState(),
+								issues: 	endpointIssues,
 						},
 		backboneConnections: make(map[shila.NetworkAddressAndPathKey]  *networkConnection),
 		flow:             	 flow,
@@ -45,6 +47,20 @@ func (s *Server) SetupAndRun() error {
 		return shila.CriticalError(s.msg(fmt.Sprint("In wrong state {", s.state, "}.")))
 	}
 
+	// FIXME: Setup the listening connection.
+	var listenAddr *net.UDPAddr
+	_ = listenAddr
+	// The listen address or parts of it may be nil or unspecified, signifying to
+	// listen on a wildcard address.
+	// -> just port for contact server network endpoint
+	// -> port and ip for traffic server network endpoint
+	/*
+	conn, err := appnet.Listen(listenAddr)
+		if err != nil {
+			return err
+		}
+	*/
+
 	// Set up the listener
 	src := s.flow.NetFlow.Src.(*net.TCPAddr)
 	listener, err := net.ListenTCP(src.Network(), src)
@@ -52,10 +68,6 @@ func (s *Server) SetupAndRun() error {
 		return shila.ThirdPartyError(shila.PrependError(err, s.msg(fmt.Sprint("Unable to setup listener."))).Error())
 	}
 	s.listener = listener
-
-	// Create the channels
-	s.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
-	s.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	// Start listening for incoming backbone connections.
 	go s.serveIncomingConnections()
@@ -93,8 +105,8 @@ func (s *Server) TrafficChannels() shila.PacketChannels {
 	return shila.PacketChannels{Ingress: s.ingress, Egress: s.egress}
 }
 
-func (s *Server) Label() shila.EndpointLabel {
-	return s.label
+func (s *Server) Role() shila.EndpointRole {
+	return s.role
 }
 
 func (s *Server) Key() shila.EndpointKey {
@@ -134,7 +146,7 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow.Swap(), NetFlow: trueNetFlow }
 
 	// If endpoint is a contacting endpoint, then the representing flow is different from the true net flow:
-	if s.Label() == shila.ContactingNetworkEndpoint {
+	if s.Role() == shila.ContactingNetworkEndpoint {
 		srcAddrTrafficEndpoint, err := s.calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow)
 		if err != nil {
 			s.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot generate src address of traffic server network endpoint.")
@@ -147,14 +159,14 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	var keys []shila.NetworkAddressAndPathKey
 	keys = append(keys, shila.GetNetworkAddressAndPathKey(representingFlow.NetFlow.Dst, representingFlow.NetFlow.Path))
 	// We need also to be able to send messages to the contact client network endpoint.
-	if s.Label() == shila.TrafficNetworkEndpoint {
+	if s.Role() == shila.TrafficNetworkEndpoint {
 		// For the moment we can use the same path for this key as for the representing flow.
 		keys = append(keys, shila.GetNetworkAddressAndPathKey(&ctrlMsg.SrcAddrContactEndpoint, representingFlow.NetFlow.Path))
 	}
 
 	// Create the connection wrapper
 	connection := networkConnection{
-		Label:            s.label,
+		EndpointRole:     s.role,
 		TrueNetFlow:      trueNetFlow,
 		RepresentingFlow: representingFlow,
 		Backbone:         backConn,
@@ -240,7 +252,7 @@ func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 				return
 			}
 			err := shila.PrependError(shila.ParsingError(err.Error()), "Issue in raw data packetizer.")
-			s.endpointIssues <- shila.EndpointIssuePub{	Issuer: s, Flow: flow, Error: err }
+			s.issues <- shila.EndpointIssuePub{	Issuer: s, Flow: flow, Error: err }
 			return
 		}
 	}
@@ -257,7 +269,7 @@ func (s *Server) resending() {
 			} else {
 				// Server network endpoint is not able to send out the given packet.
 				err := shila.NetworkEndpointTimeout("Unable to send packet.")
-				s.endpointIssues <- shila.EndpointIssuePub { Issuer: s,	Flow: p.Flow, Error: err }
+				s.issues <- shila.EndpointIssuePub { Issuer: s,	Flow: p.Flow, Error: err }
 			}
 		}
 		s.holdingArea = s.holdingArea[:0]
@@ -286,9 +298,9 @@ func (s *Server) serveEgress() {
 }
 
 func (s *Server) msg(str string) string {
-	return fmt.Sprint("Server {", s.Label(), " - ", s.flow.NetFlow.Src, " <- *}: ", str)
+	return fmt.Sprint("Server {", s.Role(), " - ", s.flow.NetFlow.Src, " <- *}: ", str)
 }
 
 func (s *Server) msgFlowRelated(flow shila.NetFlow, str string) string {
-	return fmt.Sprint("Server {", s.Label(), " - ", flow.Src.String(), " <- ", flow.Dst.String(),"}: ", str)
+	return fmt.Sprint("Server {", s.Role(), " - ", flow.Src.String(), " <- ", flow.Dst.String(),"}: ", str)
 }

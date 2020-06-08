@@ -89,12 +89,12 @@ func (m *Manager) Start() error {
 	// Announce all the traffic channels to the working side
 	for _, kerep := range m.endpoints {
 		pub := shila.PacketChannelPub{Publisher: kerep, Channel: kerep.TrafficChannels().Ingress}
-		if 		  kerep.Label() == shila.EgressKernelEndpoint {
+		if 		  kerep.Role() == shila.EgressKernelEndpoint {
 			m.trafficChannelPubs.Egress <- pub
-		} else if kerep.Label() == shila.IngressKernelEndpoint {
+		} else if kerep.Role() == shila.IngressKernelEndpoint {
 			m.trafficChannelPubs.Ingress <- pub
 		} else {
-			return shila.CriticalError(fmt.Sprint("Invalid kernel endpoint label {", kerep.Label(), "},"))
+			return shila.CriticalError(fmt.Sprint("Invalid kernel endpoint label {", kerep.Role(), "},"))
 		}
 
 	}
