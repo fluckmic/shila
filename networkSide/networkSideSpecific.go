@@ -1,11 +1,11 @@
 package networkSide
 
 import (
+	"github.com/scionproto/scion/go/lib/snet"
 	"net"
 	"shila/core/shila"
 	"shila/networkSide/network"
 	"shila/networkSide/networkEndpoint"
-	"strconv"
 )
 
 var _ shila.SpecificNetworkSideManager = (*SpecificManager)(nil)
@@ -32,13 +32,8 @@ func (specMng SpecificManager) ContactRemoteAddr(flow shila.NetFlow) shila.NetFl
 	}
 }
 
-func (specMng SpecificManager) ContactLocalAddr() shila.NetFlow {
-	src, _ := network.AddressGenerator{}.NewLocal(strconv.Itoa(Config.ContactingServerPort))
-	return shila.NetFlow{
-		Src: 	src,
-		Path: 	network.PathGenerator{}.NewEmpty(),
-		Dst: 	network.AddressGenerator{}.NewEmpty(),
-	}
+func (specMng SpecificManager) ContactLocalAddr() shila.NetworkAddress {
+	return &snet.UDPAddr{Host: &net.UDPAddr{Port: Config.ContactingServerPort}}
 }
 
 func (specMng SpecificManager) generateRemoteContactingAddress(address shila.NetworkAddress) shila.NetworkAddress {

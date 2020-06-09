@@ -47,7 +47,7 @@ func (m *Manager) CleanUp() { }
 func (m *Manager) trafficWorker() {
 	for trafficChannelPub := range m.trafficChannelPubs {
 		//log.Verbose.Print("Working side {", m.label, "} received announcement for new traffic channel {",
-		//	trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.EndpointRole(), "}.")
+		//	trafficChannelPub.Publisher.Identifier(), ",", trafficChannelPub.Publisher.EndpointRole(), "}.")
 		go m.serveTrafficChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
 	}
 }
@@ -107,7 +107,7 @@ func (m *Manager) issueWorker() {
 }
 
 func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
-	log.Error.Print("Unhandled kernel endpoint issue in {", issue.Issuer.Key(), "}.")
+	log.Error.Print("Unhandled kernel endpoint issue in {", issue.Issuer.Identifier(), "}.")
 	shutdown.Fatal(issue.Error)
 }
 
@@ -138,7 +138,7 @@ func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEn
 		}
 	}
 
-	log.Error.Print("Unhandled server network endpoint issue in {", server.Key(), "}.")
+	log.Error.Print("Unhandled server network endpoint issue in {", server.Identifier(), "}.")
 	shutdown.Fatal(issue.Error)
 }
 

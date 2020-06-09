@@ -27,7 +27,7 @@ type EndpointKey   				string		//
 
 type PacketKey					string 		// (endpoint-key<>flow-key)
 
-// Key generator
+// Identifier generator
 func GetIPAddressKey(ip net.IP) IPAddressKey {
 	return IPAddressKey(fmt.Sprint(KeyPrefix,ip.String(), KeySuffix))
 }
@@ -92,5 +92,5 @@ func (nf *NetFlow) DstKey() NetworkAddressKey {
 }
 
 func (p *Packet) Key() PacketKey {
-	return PacketKey(fmt.Sprint(KeyPrefix, p.Entrypoint.Key(), KeyDelimiter, p.Flow.Key(), KeySuffix))
+	return PacketKey(fmt.Sprint(KeyPrefix, p.Entrypoint.Identifier(), KeyDelimiter, p.Flow.Key(), KeySuffix))
 }

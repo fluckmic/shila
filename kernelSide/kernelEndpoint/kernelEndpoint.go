@@ -117,8 +117,8 @@ func (d *Device) Role() shila.EndpointRole {
 	return d.label
 }
 
-func (d *Device) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetIPAddressKey(d.IP))
+func (d *Device) Identifier() shila.EndpointIdentifier {
+	return shila.EndpointIdentifier(shila.GetIPAddressKey(d.IP))
 }
 
 func (d *Device) TrafficChannels() shila.PacketChannels {
@@ -206,7 +206,7 @@ func (d *Device) packetize(ingressRaw chan byte) {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", d.Key(), "}. - ", err.Error())
+				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", d.Identifier(), "}. - ", err.Error())
 			} else {
 				d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
 			}
@@ -222,4 +222,8 @@ func (d *Device) packetize(ingressRaw chan byte) {
 			return
 		}
 	}
+}
+
+func (d *Device) Says(string) string {
+	panic("implement me.")
 }

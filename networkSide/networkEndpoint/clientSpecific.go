@@ -20,6 +20,10 @@ type Client struct {
 	connection networkConnection
 }
 
+func (c *Client) Says(s string) string {
+	panic("implement me")
+}
+
 func NewClient(flow shila.Flow, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
 		NetworkEndpointBase: NetworkEndpointBase{
@@ -60,7 +64,7 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	log.Verbose.Print(c.message("Established connection."))
 
-	// Send the control msg to the server
+	// Send the control Says to the server
 	ctrlMsg := controlMessage{
 		IPFlow:   				c.connection.RepresentingFlow.IPFlow,
 		SrcAddrContactEndpoint: srcAddrContacting,
@@ -77,9 +81,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	return c.connection.RepresentingFlow.NetFlow, nil
 }
 
-func (c *Client) Key() shila.EndpointKey {
+func (c *Client) Identifier() shila.EndpointIdentifier {
 	path, _ := network.PathGenerator{}.New("")
-	return shila.EndpointKey(shila.GetNetworkAddressAndPathKey(c.connection.RepresentingFlow.NetFlow.Dst, path))
+	return shila.EndpointIdentifier(shila.GetNetworkAddressAndPathKey(c.connection.RepresentingFlow.NetFlow.Dst, path))
 }
 
 func (c *Client) TearDown() error {
@@ -164,7 +168,7 @@ func (c *Client) packetize(ingressRaw chan byte) {
 			if ipFlow, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP lAddress from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net lAddress in packetizer of client {", c.Key(),	"}. - ", err.Error())
+				log.Error.Print("Unable to get IP net lAddress in packetizer of client {", c.Identifier(),	"}. - ", err.Error())
 			} else {
 				c.ingress <- shila.NewPacket(c, ipFlow, rawData)
 			}

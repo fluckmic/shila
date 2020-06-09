@@ -270,7 +270,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow); err != nil {
+	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow.NetFlow.Src, conn.flow.IPFlow.Key()); err != nil {
 		conn.state.set(closed)
 		return shila.PrependError(err, "Unable to establish server endpoint.")
 	} else {

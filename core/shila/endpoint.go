@@ -1,6 +1,7 @@
 //
 package shila
 
+type EndpointIdentifier string
 type EndpointRole uint8
 
 const (
@@ -25,7 +26,7 @@ func (el EndpointRole) String() string {
 type Endpoint interface {
 	TearDown() error
 	Role() 				EndpointRole
-	Key() 				EndpointKey
 	TrafficChannels() 	PacketChannels
+	Identifier() 		EndpointIdentifier
+	Says(string)		string
 }
-

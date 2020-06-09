@@ -4,7 +4,6 @@ package networkSide
 import (
 	"fmt"
 	"github.com/scionproto/scion/go/lib/snet"
-	"net"
 	"shila/core/shila"
 	"sync"
 )
@@ -12,24 +11,27 @@ import (
 // This part of the network is independent of the backbone protocol chosen.
 
 type Manager struct {
-	specificManager			  SpecificManager
-	contactingServer          shila.NetworkServerEndpoint
+	specificManager           SpecificManager
+	contactServer             shila.NetworkServerEndpoint
 	serverTrafficEndpoints    shila.MappingNetworkServerEndpoint
 	clientContactingEndpoints shila.MappingNetworkClientEndpoint
 	clientTrafficEndpoints    shila.MappingNetworkClientEndpoint
 	trafficChannelPubs        shila.PacketChannelPubChannels
-	endpointIssues 	   		  shila.EndpointIssuePubChannels
+	endpointIssues            shila.EndpointIssuePubChannels
 	lock                      sync.Mutex
 	state                     shila.EntityState
 }
 
 func New(trafficChannelPubs shila.PacketChannelPubChannels, endpointIssues shila.EndpointIssuePubChannels) *Manager {
 	return &Manager{
-		specificManager: 	NewSpecificManager(),
-		trafficChannelPubs: trafficChannelPubs,
-		endpointIssues: 	endpointIssues,
-		lock:        	 	sync.Mutex{},
-		state:       	 	shila.NewEntityState(),
+		specificManager: 			NewSpecificManager(),
+		trafficChannelPubs: 		trafficChannelPubs,
+		endpointIssues: 			endpointIssues,
+		serverTrafficEndpoints: 	make(shila.MappingNetworkServerEndpoint),
+		clientContactingEndpoints: 	make(shila.MappingNetworkClientEndpoint),
+		clientTrafficEndpoints:		make(shila.MappingNetworkClientEndpoint),
+		lock:        	 			sync.Mutex{},
+		state:       	 			shila.NewEntityState(),
 	}
 }
 
@@ -39,26 +41,10 @@ func (m *Manager) Setup() error {
 		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
-	// Create the contacting server
-	localContactingNetFlow := m.specificManager.ContactLocalAddr()
-	constructingFlow := shila.Flow{ NetFlow: localContactingNetFlow }
-	m.contactingServer 	   = m.specificManager.NewServer(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
-
-	// FIXME:
-	var contactLocalAddr *net.UDPAddr
-	_ = contactLocalAddr
-	/*
 	contactLocalAddr := m.specificManager.ContactLocalAddr()
-	m.contactServer  := m.specificManager.NewServer(contactLocalAddr, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
-	 */
-
-	// Create the mappings
-	m.serverTrafficEndpoints 		= make(shila.MappingNetworkServerEndpoint)
-	m.clientContactingEndpoints 	= make(shila.MappingNetworkClientEndpoint)
-	m.clientTrafficEndpoints 		= make(shila.MappingNetworkClientEndpoint)
+	m.contactServer   = m.specificManager.NewServer(contactLocalAddr, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
 
 	m.state.Set(shila.Initialized)
-
 	return nil
 }
 
@@ -68,16 +54,17 @@ func (m *Manager) Start() error {
 		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
 	}
 
-	if err := m.contactingServer.SetupAndRun(); err != nil {
+	if err := m.contactServer.SetupAndRun(); err != nil {
 		return shila.PrependError(err, "Unable to establish contacting server.")
 	}
 
 	// Announce the traffic channels to the working side
-	pub := shila.PacketChannelPub{Publisher: m.contactingServer, Channel: m.contactingServer.TrafficChannels().Ingress}
-	m.trafficChannelPubs.Ingress <- pub
+	m.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
+										Publisher: m.contactServer,
+										Channel: m.contactServer.TrafficChannels().Ingress,
+									}
 
 	m.state.Set(shila.Running)
-
 	return nil
 }
 
@@ -90,13 +77,13 @@ func (m *Manager) CleanUp() error {
 	err = m.tearDownAndRemoveClientTrafficEndpoints()
 	err = m.tearDownAndRemoveServerTrafficEndpoints()
 
-	err = m.contactingServer.TearDown()
-	m.contactingServer = nil
+	err = m.contactServer.TearDown()
+	m.contactServer = nil
 
 	return err
 }
 
-func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels shila.PacketChannels, error error) {
+func (m *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddress, IPFlowKey shila.IPFlowKey) (channels shila.PacketChannels, error error) {
 
 	channels 			= shila.PacketChannels{}
 	error    			= nil
@@ -108,17 +95,16 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 	m.lock.Lock()
 	defer m.lock.Unlock()
 
-	key     	 := shila.GetNetworkAddressKey(flow.NetFlow.Src)
+	key := shila.GetNetworkAddressKey(lAddress)
 	endpoint, ok := m.serverTrafficEndpoints[key]
-
 	if ok {
-		endpoint.Register(flow.IPFlow.Key())
+		endpoint.Register(IPFlowKey)
 		channels = endpoint.NetworkServerEndpoint.TrafficChannels()
 		return
 	}
 
 	// If there is no server endpoint listening, we first have to set one up.
-	newEndpoint := m.specificManager.NewServer(flow, shila.TrafficNetworkEndpoint, m.endpointIssues.Ingress)
+	newEndpoint := m.specificManager.NewServer(lAddress, shila.TrafficNetworkEndpoint, m.endpointIssues.Ingress)
 	if error = newEndpoint.SetupAndRun(); error != nil {
 		return
 	}
@@ -128,13 +114,14 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(flow shila.Flow) (channels s
 	m.serverTrafficEndpoints[key] = endpoint
 
 	// Register the new IP flow at the server endpoint
-	endpoint.Register(flow.IPFlow.Key())
+	endpoint.Register(IPFlowKey)
 
 	// Announce the new traffic channels to the working side
 	channels = endpoint.TrafficChannels()
-	pub := shila.PacketChannelPub{Publisher: newEndpoint, Channel: channels.Ingress}
-	m.trafficChannelPubs.Ingress <- pub
-
+	m.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
+										Publisher: newEndpoint,
+										Channel: channels.Ingress,
+									}
 	return
 }
 

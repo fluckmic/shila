@@ -7,7 +7,7 @@ package shila
 type SpecificNetworkSideManager interface {
 	NewClient(flow Flow, r EndpointRole, c EndpointIssuePubChannel) NetworkClientEndpoint
 	NewServer(lAddr NetworkAddress, r EndpointRole, i EndpointIssuePubChannel) NetworkServerEndpoint
-	ContactLocalAddr() 							NetFlow
+	ContactLocalAddr() 							NetworkAddress
 	ContactRemoteAddr(NetFlow) 					NetFlow
 }
 
