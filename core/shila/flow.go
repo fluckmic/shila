@@ -42,15 +42,15 @@ func (nf NetFlow) Swap() NetFlow {
 type FlowKind uint8
 const (
 	_                 = iota
-	Mainflow FlowKind = iota
-	Subflow
+	MainFlow FlowKind = iota
+	SubFlow
 	Unknown
 )
 
 func(fk FlowKind) String() string {
 	switch fk {
-	case Mainflow: 	return "MainFlow"
-	case Subflow:  	return "SubFlow"
+	case MainFlow: 	return "MainFlow"
+	case SubFlow:  	return "SubFlow"
 	case Unknown:   return "Unknown"
 	}
 	return "Unknown"

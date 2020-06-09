@@ -162,9 +162,9 @@ func (c *Client) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if ipFlow, err := shila.GetIPFlow(rawData); err != nil {
-				// We were not able to get the IP flow from the raw data, but there was no issue parsing
+				// We were not able to get the IP lAddress from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in packetizer of client {", c.Key(),	"}. - ", err.Error())
+				log.Error.Print("Unable to get IP net lAddress in packetizer of client {", c.Key(),	"}. - ", err.Error())
 			} else {
 				c.ingress <- shila.NewPacket(c, ipFlow, rawData)
 			}

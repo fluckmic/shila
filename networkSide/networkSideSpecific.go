@@ -20,8 +20,8 @@ func (specMng SpecificManager) NewClient(flow shila.Flow, label shila.EndpointRo
 	return networkEndpoint.NewClient(flow, label, endpointIssues)
 }
 
-func (specMng SpecificManager) NewServer(flow shila.Flow, label shila.EndpointRole, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
-	return networkEndpoint.NewServer(flow, label, endpointIssues)
+func (specMng SpecificManager) NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
+	return networkEndpoint.NewServer(lAddr, role, issues)
 }
 
 func (specMng SpecificManager) ContactRemoteAddr(flow shila.NetFlow) shila.NetFlow {

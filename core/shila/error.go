@@ -35,6 +35,12 @@ func (to NetworkEndpointTimeout) Error() string {
 	return string(to)
 }
 
+// Connection error in a network endpoint
+type NetworkConnectionError string
+func (nce NetworkConnectionError) Error() string {
+	return string(nce)
+}
+
 func PrependError(err error, msg string) error {
 	switch err := err.(type) {
 	case ThirdPartyError: 			return ThirdPartyError(fmt.Sprint(msg, " - ", err.Error()))

@@ -15,13 +15,15 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
-	"github.com/scionproto/scion/go/lib/snet"
-	"os"
-	"time"
-
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
+	"github.com/scionproto/scion/go/lib/snet"
+	"io"
+	"net"
+	"os"
+	"shila/core/shila"
 )
 
 func main() {
@@ -39,11 +41,7 @@ func main() {
 		err = runServer(uint16(*port))
 		check(err)
 	} else {
-		go runClient(*remoteAddr, 10)
-		time.Sleep(time.Second)
-		go runClient(*remoteAddr, 10)
-
-		time.Sleep(time.Second * 15)
+		runClient(*remoteAddr)
 		check(err)
 	}
 }
@@ -53,30 +51,28 @@ func runServer(port uint16) error {
 		if err != nil {
 			return err
 		}
-		handleConnection(conn)
+		err = handleConnection(conn)
 		conn.Close()
-		return nil
+		return err
 }
 
-func handleConnection(conn *snet.Conn) {
-	buffer := make([]byte, 16*1024)
-	for {
-		n, from, err := conn.ReadFrom(buffer)
-		if err != nil {
-			return
-		}
-		data := buffer[:n]
-		fmt.Printf("Received %s: %s\n", from, data)
+func handleConnection(conn *snet.Conn) error {
 
-		_, err = conn.WriteTo([]byte("hello from the server."), from)
+	pr, pw := io.Pipe()
+	go decoder(pr)
+
+	buffer := make([]byte, 32*1024)
+
+	for {
+		n, _, err := conn.ReadFrom(buffer)
 		if err != nil {
-			return
+			return err
 		}
-		// fmt.Printf("Done. Wrote %d bytes.\n", nBytes)
+		pw.Write(buffer[:n])
 	}
 }
 
-func runClient(address string, nSend int) error {
+func runClient(address string) error {
 
 	conn, err := appnet.Dial(address)
 	if err != nil {
@@ -87,24 +83,29 @@ func runClient(address string, nSend int) error {
 	to := conn.RemoteAddr().(*snet.UDPAddr)
 	_ = to
 
-	for i := 0; i < nSend; i++ {
-
-		_, err = conn.Write([]byte("hello from the client."))
-		if err != nil {
-			return err
-		}
-		// fmt.Printf("Done. Wrote %d bytes.\n", nBytes)
-
-		buffer := make([]byte, 16*1024)
-		n, err := conn.Read(buffer)
-		if err != nil {
-			return err
-		}
-		data := buffer[:n]
-		from := conn.RemoteAddr()
-		fmt.Printf("Received %s: %s\n", from, data)
-
-		time.Sleep(time.Second * 2)
+	// Send the control msg to the server
+	ctrlMsg := controlMessage{
+		IPFlow:   				shila.IPFlow{
+			Src: net.TCPAddr{
+				IP:   net.IPv4(1,2,3,4),
+				Port: 4141,
+				Zone: "",
+			},
+			Dst: net.TCPAddr{
+				IP:   net.IPv4(9,8,7,6),
+				Port: 2727,
+				Zone: "",
+			},
+		},
+		Contact: net.UDPAddr{
+			IP:   net.IPv4(7,4,7,4),
+			Port: 5000,
+			Zone: "",
+		},
+		Payload: []byte("I'm Payload."),
+	}
+	if err := gob.NewEncoder(io.Writer(conn)).Encode(ctrlMsg); err != nil {
+		return shila.PrependError(err, "Failed to transmit control message.")
 	}
 
 	return nil
@@ -116,5 +117,22 @@ func check(e error) {
 	if e != nil {
 		fmt.Fprintln(os.Stderr, "Fatal error. Exiting.", "err", e)
 		os.Exit(1)
+	}
+}
+
+type controlMessage struct {
+	IPFlow  shila.IPFlow
+	Contact net.UDPAddr
+	Payload []byte
+}
+
+func decoder(reader *io.PipeReader) {
+	for {
+		var ctrlMsg controlMessage
+		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
+			panic("Cannot fetch control message.")
+		} else {
+			fmt.Println("Received control message: ", ctrlMsg)
+		}
 	}
 }

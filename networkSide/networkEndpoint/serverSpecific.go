@@ -3,6 +3,8 @@ package networkEndpoint
 import (
 	"encoding/gob"
 	"fmt"
+	"github.com/netsec-ethz/scion-apps/pkg/appnet"
+	"github.com/scionproto/scion/go/lib/snet"
 	"io"
 	"net"
 	"shila/core/shila"
@@ -11,123 +13,101 @@ import (
 	"shila/networkSide/network"
 	"strconv"
 	"sync"
-	"time"
 )
 
 var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	NetworkEndpointBase
-	backboneConnections MappingBackboneConnections
-	flow	            shila.Flow
-	listener            net.Listener
+	backboneConnections BackboneConnections
+	lAddress            shila.NetworkAddress
+	lConnection			*snet.Conn
 	lock                sync.Mutex
 	holdingArea         [] *shila.Packet
 }
 
 type MappingBackboneConnections map[shila.NetworkAddressKey]  *networkConnection
 
-func NewServer(flow shila.Flow, role shila.EndpointRole, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
+func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
 	return &Server{
-		NetworkEndpointBase: 			NetworkEndpointBase{
-								role:   	role,
-								ingress:	make(chan *shila.Packet, Config.SizeIngressBuffer),
-								egress:		make(chan *shila.Packet, Config.SizeEgressBuffer),
-								state:  	shila.NewEntityState(),
-								issues: 	endpointIssues,
-						},
-		backboneConnections: make(MappingBackboneConnections),
-		flow:             	 flow,
-		lock:                sync.Mutex{},
-		holdingArea:         make([] *shila.Packet, 0, Config.SizeHoldingArea),
+		NetworkEndpointBase: 	NetworkEndpointBase{
+									role:    role,
+									ingress: make(chan *shila.Packet, Config.SizeIngressBuffer),
+									egress:  make(chan *shila.Packet, Config.SizeEgressBuffer),
+									state:   shila.NewEntityState(),
+									issues:  issues,
+								},
+		backboneConnections: 	NewBackboneConnections(),
+		lAddress:            	lAddr,
+		lock:                	sync.Mutex{},
+		holdingArea:         	make([] *shila.Packet, 0, Config.SizeHoldingArea),
 	}
 }
 
-func (s *Server) SetupAndRun() error {
+func (server *Server) SetupAndRun() (err error) {
 
-	if s.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(s.msg(fmt.Sprint("In wrong state {", s.state, "}.")))
+	if server.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(server.msg(fmt.Sprint("In wrong state {", server.state, "}.")))
 	}
 
-	// FIXME: Setup the listening connection.
-	var listenAddr *net.UDPAddr
-	_ = listenAddr
-	// The listen address or parts of it may be nil or unspecified, signifying to
-	// listen on a wildcard address.
-	// -> just port for contact server network endpoint
-	// -> port and ip for traffic server network endpoint
-	/*
-	conn, err := appnet.Listen(listenAddr)
-		if err != nil {
-			return err
-		}
-	*/
-
-	// Set up the listener
-	src := s.flow.NetFlow.Src.(*net.TCPAddr)
-	listener, err := net.ListenTCP(src.Network(), src)
+	// Connection to listen for incoming backbone connections.
+	server.lConnection, err = appnet.Listen(server.lAddress.(*snet.UDPAddr).Host)
 	if err != nil {
-		return shila.ThirdPartyError(shila.PrependError(err, s.msg(fmt.Sprint("Unable to setup listener."))).Error())
+		return shila.PrependError(shila.NetworkConnectionError(err.Error()), "Unable to setup listener.")
 	}
-	s.listener = listener
 
-	// Start listening for incoming backbone connections.
-	go s.serveIncomingConnections()
-	log.Verbose.Print(s.msg("Started listening."))
+	go server.serveIncomingConnections() 		// Start listening for incoming backbone connections.
+	go server.serveEgress()                  	// Start handling incoming packets.
+	go server.resendFunctionality()          	// Start the resendFunctionality functionality.
 
-	// Start to handle incoming packets
-	go s.serveEgress()
-
-	// Start the resending functionality
-	go s.resending()
-
-	s.state.Set(shila.Running)
-	return nil
+	server.state.Set(shila.Running)
+	log.Verbose.Print(server.msg("Setup and running."))
+	return
 }
 
-func (s *Server) TearDown() error {
+func (server *Server) TearDown() (err error) {
 
-	s.state.Set(shila.TornDown)
+	server.state.Set(shila.TornDown)
 
-	err := s.listener.Close()		// Close the listener, server no longer listens for incoming connections
+	err = server.lConnection.Close() 				// Close the listening connection. (Server no longer receives incoming connections.)
+	err = server.backboneConnections.tearDown()		// Properly terminate all existing backbone connections.
 
-	// Close all incoming connections
-	// Terminates all workers processing incoming an connection and the corresponding packetizer
-	for _, conn := range s.backboneConnections {
-		err = conn.Backbone.Close()
-	}
+	close(server.ingress) 							// Close the ingress channel (Working side no longer processes this endpoint)
 
-	close(s.ingress)	// Close the ingress channel (Working side no longer processes this endpoint)
-
-	log.Verbose.Print(s.msg("Got torn down."))
+	log.Verbose.Print(server.msg("Got torn down."))
 	return err
 }
 
-func (s *Server) TrafficChannels() shila.PacketChannels {
-	return shila.PacketChannels{Ingress: s.ingress, Egress: s.egress}
+func (server *Server) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: server.ingress, Egress: server.egress}
 }
 
-func (s *Server) Role() shila.EndpointRole {
-	return s.role
+func (server *Server) Role() shila.EndpointRole {
+	return server.role
 }
 
-func (s *Server) Key() shila.EndpointKey {
-	return shila.EndpointKey(shila.GetNetworkAddressKey(s.flow.NetFlow.Src))
+func (server *Server) Key() shila.EndpointKey {
+	return shila.EndpointKey(shila.GetNetworkAddressKey(server.lAddress))
 }
 
-func (s *Server) serveIncomingConnections(){
+func (server *Server) serveIncomingConnections(){
+	buffer := make([]byte, Config.SizeRawIngressStorage)
 	for {
-		if connection, err := s.listener.Accept(); err != nil {
+		n, from, err := server.lConnection.ReadFrom(buffer)
+		if err != nil {
+			if server.state.Not(shila.Running) {
+				panic("Handle me.") // TODO.
+			}
 			return
-		} else {
-			go s.handleBackboneConnection(connection.(*net.TCPConn))
 		}
+		srcKey := shila.GetNetworkAddressKey(from)
+		server.backboneConnections.retrieve(srcKey).writeIngress(buffer[:n])
 	}
 }
 
-func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
+func (server *Server) handleBackboneConnection(backConn *net.TCPConn) {
 
-	// Create the true net flow (Server: src <- dst)
+	// Create the true net lAddress (Server: src <- dst)
 	path, _ := network.PathGenerator{}.New("")
 	trueNetFlow := shila.NetFlow{
 		Src:  backConn.LocalAddr().(*net.TCPAddr),
@@ -135,23 +115,23 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 		Dst:  backConn.RemoteAddr().(*net.TCPAddr),
 	}
 
-	log.Verbose.Print(s.msgFlowRelated(trueNetFlow, "Accepted backbone connection."))
+	log.Verbose.Print(server.msgFlowRelated(trueNetFlow, "Accepted backbone connection."))
 
 	// Fetch the control message
 	var ctrlMsg controlMessage
 	if err := gob.NewDecoder(io.Reader(backConn)).Decode(&ctrlMsg); err != nil {
-		s.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot fetch control message.")
+		server.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot fetch control message.")
 		return
 	}
 
-	// Create the representing flow (Content of control message is correct relative to sender)
+	// Create the representing lAddress (Content of control message is correct relative to sender)
 	representingFlow := shila.Flow{ IPFlow: ctrlMsg.IPFlow.Swap(), NetFlow: trueNetFlow }
 
-	// If endpoint is a contacting endpoint, then the representing flow is different from the true net flow:
-	if s.Role() == shila.ContactingNetworkEndpoint {
-		srcAddrTrafficEndpoint, err := s.calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow)
+	// If endpoint is a contacting endpoint, then the representing lAddress is different from the true net lAddress:
+	if server.Role() == shila.ContactingNetworkEndpoint {
+		srcAddrTrafficEndpoint, err := server.calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow)
 		if err != nil {
-			s.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot generate src address of traffic server network endpoint.")
+			server.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot generate src address of traffic server network endpoint.")
 			return
 		}
 		representingFlow.NetFlow.Src = srcAddrTrafficEndpoint
@@ -161,55 +141,59 @@ func (s *Server) handleBackboneConnection(backConn *net.TCPConn) {
 	var keys []shila.NetworkAddressKey
 	keys = append(keys, shila.GetNetworkAddressKey(representingFlow.NetFlow.Dst))
 	// We need also to be able to send messages to the contact client network endpoint.
-	if s.Role() == shila.TrafficNetworkEndpoint {
-		// For the moment we can use the same path for this key as for the representing flow.
+	if server.Role() == shila.TrafficNetworkEndpoint {
+		// For the moment we can use the same path for this key as for the representing lAddress.
 		keys = append(keys, shila.GetNetworkAddressKey(&ctrlMsg.SrcAddrContactEndpoint))
 	}
 
 	// Create the connection wrapper
 	connection := networkConnection{
-		EndpointRole:     s.role,
+		EndpointRole:     server.role,
 		TrueNetFlow:      trueNetFlow,
 		RepresentingFlow: representingFlow,
 		Backbone:         backConn,
 	}
 
 	// Add the new backbone connection to the mapping, so that it can be found by the egress handler.
-	if err := s.insertBackboneConnection(keys, &connection); err != nil {
-		s.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot insert backbone conn.")
+	if err := server.insertBackboneConnection(keys, &connection); err != nil {
+		server.closeBackboneConnectionWithErrorMsg(backConn, trueNetFlow, err, "Cannot insert backbone conn.")
 		return
 	}
 
 	// Start the ingress handler for the backbone connection.
-	s.serveIngress(&connection)
+	server.serveIngress(&connection)
 
 	// No longer necessary or possible to serve the ingress, remove the backbone connection from the mapping.
-	s.lock.Lock()
+	/*
+	server.lock.Lock()
 	for _, key := range keys {
-		delete(s.backboneConnections, key)
+		delete(server.backboneConnections, key)
 	}
-	s.lock.Unlock()
-
+	server.lock.Unlock()
+	 */
 	return
 }
 
-func (s* Server) insertBackboneConnection(keys []shila.NetworkAddressKey, conn *networkConnection) error {
+func (server * Server) insertBackboneConnection(keys []shila.NetworkAddressKey, conn *networkConnection) error {
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	/*
+	server.lock.Lock()
+	defer server.lock.Unlock()
 
 	for _, key := range keys {
-		if _, ok := s.backboneConnections[key]; ok {
+		if _, ok := server.backboneConnections[key]; ok {
 			return shila.TolerableError(fmt.Sprint("Duplicate key {", key, "}."))
 		}
 	}
 	for _, key := range keys {
-		s.backboneConnections[key] = conn
+		server.backboneConnections[key] = conn
 	}
+	return nil
+	*/
 	return nil
 }
 
-func (s* Server) calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow shila.Flow) (shila.NetworkAddress, error) {
+func (server * Server) calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow shila.Flow) (shila.NetworkAddress, error) {
 	// It is the responsibility of the contact server endpoint to calculate the
 	// source address of the corresponding traffic server endpoint.
 	ip   := representingFlow.NetFlow.Src.(*net.TCPAddr).IP.String()
@@ -217,23 +201,23 @@ func (s* Server) calculateSrcAddrOfTrafficServerNetworkEndpoint(representingFlow
 	return network.AddressGenerator{}.New(net.JoinHostPort(ip, port))
 }
 
-func (s* Server) closeBackboneConnectionWithErrorMsg(conn *net.TCPConn, flow shila.NetFlow, err error, msg string) {
-	log.Error.Print(s.msgFlowRelated(flow, shila.PrependError(err, msg).Error()))
+func (server * Server) closeBackboneConnectionWithErrorMsg(conn *net.TCPConn, flow shila.NetFlow, err error, msg string) {
+	log.Error.Print(server.msgFlowRelated(flow, shila.PrependError(err, msg).Error()))
 	conn.Close()
-	log.Error.Print(s.msgFlowRelated(flow, "Closed backbone connection."))
+	log.Error.Print(server.msgFlowRelated(flow, "Closed backbone connection."))
 }
 
-func (s *Server) serveIngress(connection *networkConnection) {
+func (server *Server) serveIngress(connection *networkConnection) {
 
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
-	go s.packetize(connection.RepresentingFlow, ingressRaw)
+	go server.packetize(connection.RepresentingFlow, ingressRaw)
 
 	reader := io.Reader(connection.Backbone)
 	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
 		// If the incoming connection suffers from an error, we close it and return. The server instance is still able
-		// to receive backboneConnections as long as it is not shut down by the manager of the network side.
+		// to receive BackboneConnections as long as it is not shut down by the manager of the network side.
 		if err != nil {
 			close(ingressRaw) // Stop the packetizing.
 			return
@@ -244,65 +228,54 @@ func (s *Server) serveIngress(connection *networkConnection) {
 	}
 }
 
-func (s *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
+func (server *Server) packetize(flow shila.Flow, ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
-				s.ingress <- shila.NewPacketWithNetFlow(s, flow.IPFlow.Swap(), flow.NetFlow.Swap(), rawData)
+				server.ingress <- shila.NewPacketWithNetFlow(server, flow.IPFlow.Swap(), flow.NetFlow.Swap(), rawData)
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.
 				return
 			}
 			err := shila.PrependError(shila.ParsingError(err.Error()), "Issue in raw data packetizer.")
-			s.issues <- shila.EndpointIssuePub{	Issuer: s, Flow: flow, Error: err }
+			server.issues <- shila.EndpointIssuePub{	Issuer: server, Flow: flow, Error: err }
 			return
 		}
 	}
 }
 
-func (s *Server) resending() {
+func (server *Server) resendFunctionality() {
+	/*
 	for {
 		time.Sleep(Config.ServerResendInterval)
-		s.lock.Lock()
-		for _, p := range s.holdingArea {
+		server.lock.Lock()
+		for _, p := range server.holdingArea {
 			if p.TTL > 0 {
 				p.TTL--
-				s.egress <- p
+				server.egress <- p
 			} else {
 				// Server network endpoint is not able to send out the given packet.
 				err := shila.NetworkEndpointTimeout("Unable to send packet.")
-				s.issues <- shila.EndpointIssuePub { Issuer: s,	Flow: p.Flow, Error: err }
+				server.issues <- shila.EndpointIssuePub { Issuer: server,	Flow: p.Flow, Error: err }
 			}
 		}
-		s.holdingArea = s.holdingArea[:0]
-		s.lock.Unlock()
+		server.holdingArea = server.holdingArea[:0]
+		server.lock.Unlock()
+	}
+	*/
+}
+
+func (server *Server) serveEgress() {
+	for p := range server.egress {
+		dstKey := p.Flow.NetFlow.DstKey() // Retrieve key to get the correct backbone connection
+		server.backboneConnections.retrieve(dstKey).writeEgress(p.Payload)
 	}
 }
 
-func (s *Server) serveEgress() {
-	for p := range s.egress {
-		key := p.Flow.NetFlow.DstKey() // Retrieve key to get the correct connection
-		if con, ok := s.backboneConnections[key]; ok {
-			writer := io.Writer(con.Backbone)
-			_, err := writer.Write(p.Payload)
-			if err != nil && s.state.Not(shila.Running) {
-				return										// Server turned down anyway.
-			}
-			// If just the connection was closed, then we ignore the error and drop the packet. The ingress handler
-			// has observed the issue as well and will sooner or later remove the closed (or faulty) connection.
-		} else {
-			// Currently there is no backbone connection available to send the packet, put packet into holding area.
-			s.lock.Lock()
-			s.holdingArea = append(s.holdingArea, p)
-			s.lock.Unlock()
-		}
-	}
+func (server *Server) msg(str string) string {
+	return fmt.Sprint("Server {", server.Role(), " - ", server.lAddress, " <- *}: ", str)
 }
 
-func (s *Server) msg(str string) string {
-	return fmt.Sprint("Server {", s.Role(), " - ", s.flow.NetFlow.Src, " <- *}: ", str)
-}
-
-func (s *Server) msgFlowRelated(flow shila.NetFlow, str string) string {
-	return fmt.Sprint("Server {", s.Role(), " - ", flow.Src.String(), " <- ", flow.Dst.String(),"}: ", str)
+func (server *Server) msgFlowRelated(flow shila.NetFlow, str string) string {
+	return fmt.Sprint("Server {", server.Role(), " - ", flow.Src.String(), " <- ", flow.Dst.String(),"}: ", str)
 }
