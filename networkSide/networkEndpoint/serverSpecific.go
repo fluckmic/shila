@@ -18,7 +18,7 @@ var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	NetworkEndpointBase
-	backboneConnections map[shila.NetworkAddressAndPathKey]  *networkConnection
+	backboneConnections MappingBackboneConnections
 	flow	            shila.Flow
 	listener            net.Listener
 	lock                sync.Mutex
