@@ -69,13 +69,13 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 
 	// From where was the packet received?
 	var err error
-	switch p.Entrypoint.Label() {
+	switch p.Entrypoint.Role() {
 		case shila.IngressKernelEndpoint:		err = conn.processPacketFromKerep(p)
-		case shila.EgressKernelEndpoint:	err = conn.processPacketFromKerep(p)
+		case shila.EgressKernelEndpoint:		err = conn.processPacketFromKerep(p)
 		case shila.ContactingNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
 		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
-			err = shila.CriticalError(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Label(), "}."))
+			err = shila.CriticalError(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Role(), "}."))
 	}
 
 	if err != nil {

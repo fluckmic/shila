@@ -1,17 +1,17 @@
 //
 package shila
 
-type EndpointLabel uint8
+type EndpointRole uint8
 
 const (
-	_                            = iota
-	IngressKernelEndpoint EndpointLabel = iota
+	_                                  = iota
+	IngressKernelEndpoint EndpointRole = iota
 	EgressKernelEndpoint
 	ContactingNetworkEndpoint
 	TrafficNetworkEndpoint
 )
 
-func (el EndpointLabel) String() string {
+func (el EndpointRole) String() string {
 	switch el {
 		case ContactingNetworkEndpoint: return "ContactingNetworkEndpoint"
 		case TrafficNetworkEndpoint:	return "TrafficNetworkEndpoint"
@@ -24,7 +24,7 @@ func (el EndpointLabel) String() string {
 // Interface which each endpoint (kernel and network side) should implement.
 type Endpoint interface {
 	TearDown() error
-	Label() 			EndpointLabel
+	Role() 				EndpointRole
 	Key() 				EndpointKey
 	TrafficChannels() 	PacketChannels
 }

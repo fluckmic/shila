@@ -17,6 +17,8 @@ testing/VM/report*
 testing/SingleClient/output/
 testing/SingleClient/report*
 
+misc/scion/intro/intro
+
 # GoLand folders
 .idea/
 

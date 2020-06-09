@@ -3,6 +3,8 @@ package networkSide
 
 import (
 	"fmt"
+	"github.com/scionproto/scion/go/lib/snet"
+	"net"
 	"shila/core/shila"
 	"sync"
 )
@@ -38,9 +40,17 @@ func (m *Manager) Setup() error {
 	}
 
 	// Create the contacting server
-	localContactingNetFlow := m.specificManager.LocalContactingNetFlow()
+	localContactingNetFlow := m.specificManager.ContactLocalAddr()
 	constructingFlow := shila.Flow{ NetFlow: localContactingNetFlow }
 	m.contactingServer 	   = m.specificManager.NewServer(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
+
+	// FIXME:
+	var contactLocalAddr *net.UDPAddr
+	_ = contactLocalAddr
+	/*
+	contactLocalAddr := m.specificManager.ContactLocalAddr()
+	m.contactServer  := m.specificManager.NewServer(contactLocalAddr, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
+	 */
 
 	// Create the mappings
 	m.serverTrafficEndpoints 		= make(shila.MappingNetworkServerEndpoint)
@@ -147,7 +157,13 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	}
 
 	// Establish a new contacting client endpoint
-	constructingFlow.NetFlow  = m.specificManager.RemoteContactingFlow(flow.NetFlow)	// Does not contain src network address at this point.
+	// FIXME: ContactRemoteAddr could also specify the path taken to the contact server network endpoint.
+	var ContactRemoteAddr *snet.UDPAddr
+	_ = ContactRemoteAddr
+	// contactRemoteAddr = m.specificManager.ContactRemoteAddr()
+	constructingFlow.NetFlow  = m.specificManager.ContactRemoteAddr(flow.NetFlow) // Does not contain src network address at this point.
+
+	// contactEndpoint := m.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Egress)
 	contactingEndpoint 		 := m.specificManager.NewClient(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Egress)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 

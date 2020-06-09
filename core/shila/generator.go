@@ -5,10 +5,10 @@ package shila
 // implement as they are used by the manager of the network side.
 
 type SpecificNetworkSideManager interface {
-	NewClient(flow Flow, l EndpointLabel, c EndpointIssuePubChannel) NetworkClientEndpoint
-	NewServer(flow Flow, l EndpointLabel, c EndpointIssuePubChannel) NetworkServerEndpoint
-	LocalContactingNetFlow() 						NetFlow
-	RemoteContactingFlow(NetFlow) 					NetFlow
+	NewClient(flow Flow, r EndpointRole, c EndpointIssuePubChannel) NetworkClientEndpoint
+	NewServer(flow Flow, r EndpointRole, c EndpointIssuePubChannel) NetworkServerEndpoint
+	ContactLocalAddr() 								NetFlow
+	ContactRemoteAddr(NetFlow) 					NetFlow
 }
 
 type NetworkAddressGenerator interface {

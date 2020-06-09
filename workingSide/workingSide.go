@@ -47,7 +47,7 @@ func (m *Manager) CleanUp() { }
 func (m *Manager) trafficWorker() {
 	for trafficChannelPub := range m.trafficChannelPubs {
 		//log.Verbose.Print("Working side {", m.label, "} received announcement for new traffic channel {",
-		//	trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.Label(), "}.")
+		//	trafficChannelPub.Publisher.Key(), ",", trafficChannelPub.Publisher.EndpointRole(), "}.")
 		go m.serveTrafficChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
 	}
 }
@@ -102,7 +102,7 @@ func (m *Manager) issueWorker() {
 
 		// Should really not happen..
 		log.Error.Panic(fmt.Sprint("Unknown endpoint point label {",
-			issue.Issuer.Label(), "} in issue worker."))
+			issue.Issuer.Role(), "} in issue worker."))
 	}
 }
 
@@ -113,7 +113,7 @@ func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
 
 func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
 
-	if server.Label() == shila.ContactingNetworkEndpoint {
+	if server.Role() == shila.ContactingNetworkEndpoint {
 		var err interface{} = issue.Error
 		if _, ok := err.(*shila.ParsingError); ok {
 			panic("Implement me.") // TODO.
@@ -124,7 +124,7 @@ func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEn
 		}
 	}
 
-	if server.Label() == shila.TrafficNetworkEndpoint {
+	if server.Role() == shila.TrafficNetworkEndpoint {
 		var err interface{} = issue.Error
 		if _, ok := err.(*shila.ParsingError); ok {
 			con := m.connections.Retrieve(issue.Flow)
@@ -144,7 +144,7 @@ func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEn
 
 func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
 
-	log.Error.Print("Client endpoint issue in {", client.Label(), "} - ", issue.Error.Error())
+	log.Error.Print("Client endpoint issue in {", client.Role(), "} - ", issue.Error.Error())
 
 	// If there is an error in a network client endpoint we just close the associated connection.
 	// Since client endpoints are just created through connections, there should always be an associated one.

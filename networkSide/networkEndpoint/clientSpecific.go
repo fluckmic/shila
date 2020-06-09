@@ -16,16 +16,18 @@ import (
 var _ shila.NetworkClientEndpoint = (*Client)(nil)
 
 type Client struct {
-	Base
+	NetworkEndpointBase
 	connection networkConnection
 }
 
-func NewClient(flow shila.Flow, label shila.EndpointLabel, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+func NewClient(flow shila.Flow, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
-		Base: 				Base{
-								label: 			label,
-								state: 			shila.NewEntityState(),
-								endpointIssues: endpointIssues,
+		NetworkEndpointBase: NetworkEndpointBase{
+								role:    role,
+								ingress: make(chan *shila.Packet, Config.SizeIngressBuffer),
+								egress:  make(chan *shila.Packet, Config.SizeIngressBuffer),
+								state:   shila.NewEntityState(),
+								issues:  issues,
 							},
 		connection:		    networkConnection{RepresentingFlow: flow},
 	}
@@ -39,12 +41,13 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 
 	// Backup the src network address of the corresponding contacting endpoint (in case of a traffic network endpoint)
 	srcAddrContacting := *c.connection.RepresentingFlow.NetFlow.Src.(*net.TCPAddr)
+	// FIXME: Also contains the path taken?
 
 	// Establish a connection to the server endpoint
 	dst := c.connection.RepresentingFlow.NetFlow.Dst.(*net.TCPAddr)
 	backboneConnection, err := net.DialTCP(dst.Network(), nil, dst)
 	if err != nil {
-		if c.Label() == shila.TrafficNetworkEndpoint {
+		if c.Role() == shila.TrafficNetworkEndpoint {
 			err = shila.TolerableError(err.Error())
 		} else {
 			// For a contacting endpoint, the issue is most likely that there is no one listening..
@@ -65,10 +68,6 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	if err := gob.NewEncoder(io.Writer(c.connection.Backbone)).Encode(ctrlMsg); err != nil {
 		return shila.NetFlow{}, shila.PrependError(err, "Failed to transmit control message.")
 	}
-
-	// Create the channels
-	c.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
-	c.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	go c.serveIngress()
 	go c.serveEgress()
@@ -98,8 +97,8 @@ func (c *Client) TrafficChannels() shila.PacketChannels {
 	return shila.PacketChannels{Ingress: c.ingress, Egress: c.egress}
 }
 
-func (c *Client) Label() shila.EndpointLabel {
-	return c.label
+func (c *Client) Role() shila.EndpointRole {
+	return c.role
 }
 
 func (c *Client) serveIngress() {
@@ -122,7 +121,7 @@ func (c *Client) serveIngress() {
 			// TODO: https://github.com/fluckmic/shila/issues/14
 
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
-			c.endpointIssues <- shila.EndpointIssuePub{
+			c.issues <- shila.EndpointIssuePub{
 				Issuer: c,
 				Flow:   c.connection.RepresentingFlow,
 				Error:  shila.ThirdPartyError("Unable to read data."),
@@ -149,7 +148,7 @@ func (c *Client) serveEgress() {
 			// TODO: https://github.com/fluckmic/shila/issues/14
 
 			// For the moment; we just tear down the whole client if there is an issue with the backbone connection.
-			c.endpointIssues <- shila.EndpointIssuePub{
+			c.issues <- shila.EndpointIssuePub{
 				Issuer: c,
 				Flow:   c.connection.RepresentingFlow,
 				Error:  shila.ThirdPartyError("Unable to write data."),
@@ -174,7 +173,7 @@ func (c *Client) packetize(ingressRaw chan byte) {
 				// All good, ingress raw closed.
 				return
 			}
-			c.endpointIssues <- shila.EndpointIssuePub{
+			c.issues <- shila.EndpointIssuePub{
 				Issuer: c,
 				Flow:   c.connection.RepresentingFlow,
 				Error:  shila.PrependError(err, "Error in raw data packetizer."),
@@ -189,6 +188,6 @@ func (c *Client) Flow() shila.Flow {
 }
 
 func (c *Client) message(s string) string {
-	return fmt.Sprint("Client {",c.Label(), " - ", c.connection.RepresentingFlow.NetFlow.Src.String()," -> ",
+	return fmt.Sprint("Client {",c.Role(), " - ", c.connection.RepresentingFlow.NetFlow.Src.String()," -> ",
 		c.connection.RepresentingFlow.NetFlow.Dst.String(),"}: ", s)
 }
