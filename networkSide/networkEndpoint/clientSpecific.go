@@ -81,9 +81,9 @@ func (c *Client) SetupAndRun() (shila.NetFlow, error) {
 	return c.connection.RepresentingFlow.NetFlow, nil
 }
 
-func (c *Client) Identifier() shila.EndpointIdentifier {
+func (c *Client) Identifier() string {
 	path, _ := network.PathGenerator{}.New("")
-	return shila.EndpointIdentifier(shila.GetNetworkAddressAndPathKey(c.connection.RepresentingFlow.NetFlow.Dst, path))
+	return string(shila.GetNetworkAddressAndPathKey(c.connection.RepresentingFlow.NetFlow.Dst, path))
 }
 
 func (c *Client) TearDown() error {

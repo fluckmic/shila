@@ -7,6 +7,7 @@ import (
 	"shila/core/shila"
 	"shila/log"
 	"sync"
+	"time"
 )
 
 var _ shila.NetworkServerEndpoint = (*Server)(nil)
@@ -17,21 +18,21 @@ type Server struct{
 	lAddress            shila.NetworkAddress
 	lConnection			*snet.Conn
 	lock                sync.Mutex
-	holdingArea         [] *shila.Packet
+	holdingArea 		[] *shila.Packet
 }
 
 func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
 	return &Server{
 		NetworkEndpointBase: 	NetworkEndpointBase{
 									role:    role,
-									ingress: make(chan *shila.Packet, Config.SizeIngressBuffer),
-									egress:  make(chan *shila.Packet, Config.SizeEgressBuffer),
+									ingress: make(shila.PacketChannel, Config.SizeIngressBuffer),
+									egress:  make(shila.PacketChannel, Config.SizeEgressBuffer),
 									state:   shila.NewEntityState(),
 									issues:  issues,
 								},
 		lAddress:            	lAddr,
+		holdingArea:			make([] *shila.Packet, 0, Config.SizeHoldingArea),
 		lock:                	sync.Mutex{},
-		holdingArea:         	make([] *shila.Packet, 0, Config.SizeHoldingArea),
 	}
 }
 
@@ -50,8 +51,9 @@ func (server *Server) SetupAndRun() (err error) {
 		return shila.PrependError(shila.NetworkConnectionError(err.Error()), "Unable to setup listener.")
 	}
 
-	go server.serveIngress() // Start listening for incoming backbone connections.
-	go server.serveEgress()  // Start handling incoming packets.
+	go server.serveIngress() 			// Start listening for incoming backbone connections.
+	go server.serveEgress()  			// Start handling incoming packets.
+	go server.resendFunctionality() 	// Start the resending functionality
 
 	server.state.Set(shila.Running)
 	log.Verbose.Print(server.Says("Setup and running."))
@@ -65,7 +67,7 @@ func (server *Server) TearDown() (err error) {
 	err = server.lConnection.Close()            // Close the listening connection. (Server no longer receives incoming connections.)
 	err = server.backboneConnections.TearDown() // Properly terminate all existing backbone connections.
 
-	close(server.ingress) 							// Close the ingress channel (Working side no longer processes this endpoint)
+	close(server.ingress) 						// Close the ingress channel (Working side no longer processes this endpoint)
 
 	log.Verbose.Print(server.Says("Got torn down."))
 	return err
@@ -79,12 +81,12 @@ func (server *Server) Role() shila.EndpointRole {
 	return server.role
 }
 
-func (server *Server) Identifier() shila.EndpointIdentifier {
-	return shila.EndpointIdentifier(shila.GetNetworkAddressKey(server.lAddress))
+func (server *Server) Identifier() string {
+	return fmt.Sprint("{", server.Role(), " Server - ", server.lAddress, " <- *}")
 }
 
 func (server *Server) Says(str string) string {
-	return fmt.Sprint("Server {", server.Role(), " - ", server.lAddress, " <- *}: ", str)
+	return  fmt.Sprint(server.Identifier(), ": ", str)
 }
 
 func (server *Server) serveIngress(){
@@ -93,17 +95,52 @@ func (server *Server) serveIngress(){
 		n, from, err := server.lConnection.ReadFrom(buffer)
 		if err != nil {
 			if server.state.Not(shila.Running) {
-				panic("Handle me.") // TODO.
+				// TODO: Handle error. Definitely a problem to be considered by the server.
+				panic(fmt.Sprint("Handle error: ", err.Error()))
 			}
 			return
 		}
+
+		// Does not return any error. Problems in the pipeline are handled internally.
+		// In the worst case the input data is just dropped.
 		server.backboneConnections.WriteIngress(from, buffer[:n])
 	}
 }
 
 func (server *Server) serveEgress() {
 	for p := range server.egress {
-		to := p.Flow.NetFlow.Dst
-		server.backboneConnections.WriteEgress(to, p.Payload)
+		err := server.backboneConnections.WriteEgress(p)
+		if err != nil {
+			if server.state.Not(shila.Running) {
+				// TODO: Handle error. Definitely a problem to be considered by the server.
+				panic(fmt.Sprint("Handle error: ", err.Error()))
+			}
+			return
+		}
 	}
+}
+
+func (server *Server) resendFunctionality() {
+	for {
+		time.Sleep(Config.ServerResendInterval)
+		server.lock.Lock()
+		for _, p := range server.holdingArea {
+			if p.TTL > 0 {
+				p.TTL--
+				server.egress <- p
+			} else {
+				// Server network endpoint is "not able" to send out the given packet.
+				err := shila.NetworkEndpointTimeout("Unable to send packet.")
+				server.issues <- shila.EndpointIssuePub { Issuer: server, Flow: p.Flow, Error: err }
+			}
+		}
+		server.holdingArea = server.holdingArea[:0]
+		server.lock.Unlock()
+	}
+}
+
+func (server *Server) addToHoldingArea(packet *shila.Packet) {
+	server.lock.Lock()
+	defer server.lock.Unlock()
+	server.holdingArea = append(server.holdingArea, packet)
 }

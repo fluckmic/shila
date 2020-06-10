@@ -117,8 +117,8 @@ func (d *Device) Role() shila.EndpointRole {
 	return d.label
 }
 
-func (d *Device) Identifier() shila.EndpointIdentifier {
-	return shila.EndpointIdentifier(shila.GetIPAddressKey(d.IP))
+func (d *Device) Identifier() string {
+	return string(shila.GetIPAddressKey(d.IP))
 }
 
 func (d *Device) TrafficChannels() shila.PacketChannels {

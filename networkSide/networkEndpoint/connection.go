@@ -16,3 +16,7 @@ type controlMessage struct {
 	IPFlow                 shila.IPFlow
 	SrcAddrContactEndpoint net.TCPAddr
 }
+
+type payloadMessage struct {
+	Payload []byte
+}

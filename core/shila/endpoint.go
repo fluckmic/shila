@@ -1,7 +1,6 @@
 //
 package shila
 
-type EndpointIdentifier string
 type EndpointRole uint8
 
 const (
@@ -27,6 +26,6 @@ type Endpoint interface {
 	TearDown() error
 	Role() 				EndpointRole
 	TrafficChannels() 	PacketChannels
-	Identifier() 		EndpointIdentifier
+	Identifier() 		string
 	Says(string)		string
 }
