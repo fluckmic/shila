@@ -64,10 +64,11 @@ func handleConnection(conn *snet.Conn) error {
 	buffer := make([]byte, 32*1024)
 
 	for {
-		n, _, err := conn.ReadFrom(buffer)
+		n, from, err := conn.ReadFrom(buffer)
 		if err != nil {
 			return err
 		}
+		_ = from
 		pw.Write(buffer[:n])
 	}
 }
@@ -102,15 +103,23 @@ func runClient(address string) error {
 			Port: 5000,
 			Zone: "",
 		},
-		Payload: []byte("I'm Payload."),
 	}
 	if err := gob.NewEncoder(io.Writer(conn)).Encode(ctrlMsg); err != nil {
 		return shila.PrependError(err, "Failed to transmit control message.")
 	}
 
+	pyldMsg := payloadMessage{
+		Payload: []byte("X_X_X_X_X_X_X_X_X"),
+	}
+	if err := gob.NewEncoder(io.Writer(conn)).Encode(pyldMsg); err != nil {
+		return shila.PrependError(err, "Failed to transmit control message.")
+	}
+	if err := gob.NewEncoder(io.Writer(conn)).Encode(pyldMsg); err != nil {
+		return shila.PrependError(err, "Failed to transmit control message.")
+	}
+
 	return nil
 }
-
 
 // Check just ensures the error is nil, or complains and quits
 func check(e error) {
@@ -123,6 +132,9 @@ func check(e error) {
 type controlMessage struct {
 	IPFlow  shila.IPFlow
 	Contact net.UDPAddr
+}
+
+type payloadMessage struct {
 	Payload []byte
 }
 
@@ -134,5 +146,20 @@ func decoder(reader *io.PipeReader) {
 		} else {
 			fmt.Println("Received control message: ", ctrlMsg)
 		}
+
+		var pyldMsg payloadMessage
+		if err := gob.NewDecoder(reader).Decode(&pyldMsg); err != nil {
+			panic("Cannot fetch payload message.")
+		} else {
+			fmt.Println("Received payload message: ", pyldMsg)
+		}
+
+		var pyldMsg1 payloadMessage
+		if err := gob.NewDecoder(reader).Decode(&pyldMsg1); err != nil {
+			panic("Cannot fetch payload message.")
+		} else {
+			fmt.Println("Received payload message: ", pyldMsg)
+		}
+
 	}
 }

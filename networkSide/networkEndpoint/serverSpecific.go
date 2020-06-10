@@ -29,7 +29,6 @@ func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila
 									state:   shila.NewEntityState(),
 									issues:  issues,
 								},
-		backboneConnections: 	NewBackboneConnections(),
 		lAddress:            	lAddr,
 		lock:                	sync.Mutex{},
 		holdingArea:         	make([] *shila.Packet, 0, Config.SizeHoldingArea),
@@ -41,6 +40,9 @@ func (server *Server) SetupAndRun() (err error) {
 	if server.state.Not(shila.Uninitialized) {
 		return shila.CriticalError(server.Says(fmt.Sprint("In wrong state {", server.state, "}.")))
 	}
+
+	// Setup the backbone connections
+	server.backboneConnections = NewBackboneConnections(server)
 
 	// Connection to listen for incoming backbone connections.
 	server.lConnection, err = appnet.Listen(server.lAddress.(*snet.UDPAddr).Host)
@@ -60,8 +62,8 @@ func (server *Server) TearDown() (err error) {
 
 	server.state.Set(shila.TornDown)
 
-	err = server.lConnection.Close() 				// Close the listening connection. (Server no longer receives incoming connections.)
-	err = server.backboneConnections.tearDown()		// Properly terminate all existing backbone connections.
+	err = server.lConnection.Close()            // Close the listening connection. (Server no longer receives incoming connections.)
+	err = server.backboneConnections.TearDown() // Properly terminate all existing backbone connections.
 
 	close(server.ingress) 							// Close the ingress channel (Working side no longer processes this endpoint)
 
@@ -95,14 +97,13 @@ func (server *Server) serveIngress(){
 			}
 			return
 		}
-		srcKey := shila.GetNetworkAddressKey(from)
-		server.backboneConnections.retrieve(srcKey).writeIngress(buffer[:n])
+		server.backboneConnections.WriteIngress(from, buffer[:n])
 	}
 }
 
 func (server *Server) serveEgress() {
 	for p := range server.egress {
-		dstKey := p.Flow.NetFlow.DstKey() // Retrieve key to get the correct backbone connection
-		server.backboneConnections.retrieve(dstKey).writeEgress(p.Payload)
+		to := p.Flow.NetFlow.Dst
+		server.backboneConnections.WriteEgress(to, p.Payload)
 	}
 }
