@@ -72,7 +72,7 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	switch p.Entrypoint.Role() {
 		case shila.IngressKernelEndpoint:		err = conn.processPacketFromKerep(p)
 		case shila.EgressKernelEndpoint:		err = conn.processPacketFromKerep(p)
-		case shila.ContactingNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
+		case shila.ContactNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
 		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
 			err = shila.CriticalError(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Role(), "}."))

@@ -112,10 +112,10 @@ func runClient(address string) error {
 		Payload: []byte("X_X_X_X_X_X_X_X_X"),
 	}
 	if err := gob.NewEncoder(io.Writer(conn)).Encode(pyldMsg); err != nil {
-		return shila.PrependError(err, "Failed to transmit control message.")
+		return shila.PrependError(err, "Failed to transmit payload message.")
 	}
 	if err := gob.NewEncoder(io.Writer(conn)).Encode(pyldMsg); err != nil {
-		return shila.PrependError(err, "Failed to transmit control message.")
+		return shila.PrependError(err, "Failed to transmit payload message.")
 	}
 
 	return nil

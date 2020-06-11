@@ -3,7 +3,6 @@ package networkSide
 
 import (
 	"fmt"
-	"github.com/scionproto/scion/go/lib/snet"
 	"shila/core/shila"
 	"sync"
 )
@@ -42,7 +41,7 @@ func (m *Manager) Setup() error {
 	}
 
 	contactLocalAddr := m.specificManager.ContactLocalAddr()
-	m.contactServer   = m.specificManager.NewServer(contactLocalAddr, shila.ContactingNetworkEndpoint, m.endpointIssues.Ingress)
+	m.contactServer   = m.specificManager.NewServer(contactLocalAddr, shila.ContactNetworkEndpoint, m.endpointIssues.Ingress)
 
 	m.state.Set(shila.Initialized)
 	return nil
@@ -127,7 +126,6 @@ func (m *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddres
 
 func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contactingNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
 
-	constructingFlow 	:= shila.Flow{IPFlow: flow.IPFlow, Kind: flow.Kind}
 	contactingNetFlow  	= shila.NetFlow{}
 	channels 			= shila.PacketChannels{}
 	error    			= nil
@@ -144,14 +142,11 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	}
 
 	// Establish a new contacting client endpoint
-	// FIXME: ContactRemoteAddr could also specify the path taken to the contact server network endpoint.
-	var ContactRemoteAddr *snet.UDPAddr
-	_ = ContactRemoteAddr
-	// contactRemoteAddr = m.specificManager.ContactRemoteAddr()
-	constructingFlow.NetFlow  = m.specificManager.ContactRemoteAddr(flow.NetFlow) // Does not contain src network address at this point.
+	contactRemoteAddr := m.specificManager.ContactRemoteAddr(flow.NetFlow.Dst)
+	ipFlow 			  := flow.IPFlow
 
-	// contactEndpoint := m.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Egress)
-	contactingEndpoint 		 := m.specificManager.NewClient(constructingFlow, shila.ContactingNetworkEndpoint, m.endpointIssues.Egress)
+	// contactEndpoint := m.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactNetworkEndpoint, m.endpointIssues.Egress)
+	contactingEndpoint 		 := m.specificManager.NewContactClient(contactRemoteAddr, ipFlow, m.endpointIssues.Egress)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
@@ -186,7 +181,12 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
 	}
 
-	trafficEndpoint := m.specificManager.NewClient(flow, shila.TrafficNetworkEndpoint, m.endpointIssues.Egress)
+	lAddrContact := flow.NetFlow.Src
+	rAddr 		 := flow.NetFlow.Dst
+	ipFlow 		 := flow.IPFlow
+
+	trafficEndpoint := m.specificManager.NewTrafficClient(lAddrContact, rAddr, ipFlow, m.endpointIssues.Egress)
+
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
 		return

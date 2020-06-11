@@ -7,13 +7,13 @@ const (
 	_                                  = iota
 	IngressKernelEndpoint EndpointRole = iota
 	EgressKernelEndpoint
-	ContactingNetworkEndpoint
+	ContactNetworkEndpoint
 	TrafficNetworkEndpoint
 )
 
 func (el EndpointRole) String() string {
 	switch el {
-		case ContactingNetworkEndpoint: return "ContactingNetworkEndpoint"
+		case ContactNetworkEndpoint: 	return "ContactNetworkEndpoint"
 		case TrafficNetworkEndpoint:	return "TrafficNetworkEndpoint"
 		case IngressKernelEndpoint: 	return "IngressKernelEndpoint"
 		case EgressKernelEndpoint: 		return "EgressKernelEndpoint"

@@ -113,7 +113,7 @@ func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
 
 func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEndpoint, issue shila.EndpointIssuePub) {
 
-	if server.Role() == shila.ContactingNetworkEndpoint {
+	if server.Role() == shila.ContactNetworkEndpoint {
 		var err interface{} = issue.Error
 		if _, ok := err.(*shila.ParsingError); ok {
 			panic("Implement me.") // TODO.
@@ -143,8 +143,6 @@ func (m *Manager) handleServerNetworkEndpointIssues(server shila.NetworkServerEn
 }
 
 func (m *Manager) handleNetworkClientIssue(client shila.NetworkClientEndpoint, issue shila.EndpointIssuePub) {
-
-	log.Error.Print("Client endpoint issue in {", client.Role(), "} - ", issue.Error.Error())
 
 	// If there is an error in a network client endpoint we just close the associated connection.
 	// Since client endpoints are just created through connections, there should always be an associated one.
