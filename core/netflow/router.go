@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"shila/core/shila"
 	"shila/layer/mptcp"
-	"shila/log"
 )
 
 type Router struct {
@@ -27,10 +26,7 @@ func NewRouter() Router {
 	}
 
 	// See whether there is some routing from it which can be loaded
-	if err := router.fillWithEntriesFromDisk(); err != nil {
-		log.Info.Print("Unable to load routing entries from disk. - ", err.Error())
-	}
-
+	_ = router.fillWithEntriesFromDisk()
 	return router
 }
 
@@ -117,8 +113,16 @@ func (r *Router) getFromMPTCPEndpointToken(token mptcp.EndpointToken) (shila.Net
 func (r *Router) fillWithEntriesFromDisk() error {
 	routingEntries, err := loadRoutingEntriesFromDisk()
 	if err != nil {
-		return err
+		return PrependError(err, "Unable to load entries from disk.")
 	}
 	err = r.batchInsert(routingEntries)
 	return nil
+}
+
+func (r *Router) Says(str string) string {
+	return  fmt.Sprint(r.Identifier(), ": ", str)
+}
+
+func (r *Router) Identifier() string {
+	return fmt.Sprint("{Router}")
 }

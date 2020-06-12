@@ -23,7 +23,6 @@ func Init() {
 
 	Info.SetOutput(os.Stdout)
 	Info.SetPrefix("INFO: ")
-	Info.SetFlags(log.Lshortfile)
 
 	if !Config.PrintVerbose {
 		Verbose.SetOutput(ioutil.Discard)

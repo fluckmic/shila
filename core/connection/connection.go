@@ -3,6 +3,7 @@ package connection
 
 import (
 	"fmt"
+	"github.com/bclicn/color"
 	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
@@ -59,7 +60,7 @@ func (conn *Connection) Close(err error) {
 
 	conn.state.set(closed)
 
-	log.Info.Print("Closed connection {", conn.Key(), "}. - ", err.Error())
+	log.Info.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
@@ -167,7 +168,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print("Established new connection {", conn.Key(), "}.")
+							log.Info.Print(conn.Says(color.Green("Successfully established!")))
 
 							return nil
 
@@ -178,7 +179,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print("Established new connection {", conn.Key(), "}.")
+							log.Info.Print(conn.Says(color.Green("Successfully established!")))
 							return nil
 
 	case established: 		conn.touched 	= time.Now()
@@ -286,7 +287,14 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 func (conn *Connection) setState(state stateIdentifier) {
 	conn.state.set(state)
 	if conn.state.previous != conn.state.current {
-		log.Verbose.Print("Connection {", conn.Key(), "} changed state from {", conn.state.previous,
-			"} to {", conn.state.current, "}.")
+		log.Verbose.Println(conn.Says(fmt.Sprint("State change from ", conn.state.previous, " to ", conn.state.current, ".")))
 	}
+}
+
+func (conn *Connection) Identifier() string {
+	return fmt.Sprint(conn.flow.Kind, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+}
+
+func (conn *Connection) Says(str string) string {
+	return  fmt.Sprint(conn.Identifier(), ": ", str)
 }

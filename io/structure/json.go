@@ -2,7 +2,6 @@
 package structure
 
 import (
-	"fmt"
 	"net"
 	"shila/core/shila"
 	"shila/networkSide/network"
@@ -41,30 +40,22 @@ type NetworkPathEntryJSON struct {
 }
 
 type NetworkAddressAndPathJSON struct {
-	Address NetworkAddressJSON
+	Address string
 	Path    NetworkPathJSON
 }
-func (nfj NetworkAddressAndPathJSON) GetNetworkAddressAndPath() (shila.NetworkAddress, shila.NetworkPath, error) {
+func (json NetworkAddressAndPathJSON) GetNetworkAddressAndPath() (shila.NetworkAddress, shila.NetworkPath, error) {
 
-	address, err := nfj.Address.GetNetworkAddress()
+	address, err := network.AddressGenerator{}.New(json.Address)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	path, err := nfj.Path.GetPath()
+	path, err := json.Path.GetPath()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	return address, path, nil
-}
-
-type NetworkAddressJSON struct {
-	IP   string
-	Port string
-}
-func (naj NetworkAddressJSON) GetNetworkAddress() (shila.NetworkAddress, error) {
-	return network.AddressGenerator{}.New(fmt.Sprint(naj.IP, ":", naj.Port))
 }
 
 type RoutingEntryJSON struct {

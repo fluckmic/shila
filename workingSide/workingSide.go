@@ -107,7 +107,7 @@ func (m *Manager) issueWorker() {
 }
 
 func (m *Manager) handleKernelEndpointIssue(issue shila.EndpointIssuePub) {
-	log.Error.Print("Unhandled kernel endpoint issue in {", issue.Issuer.Identifier(), "}.")
+	log.Error.Print("Unhandled kernel endpoint issue in ", issue.Issuer.Identifier(), ".")
 	shutdown.Fatal(issue.Error)
 }
 

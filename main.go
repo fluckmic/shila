@@ -36,7 +36,7 @@ func realMain() int {
 	// Initialize termination functionality
 	shutdown.Init()
 
-	log.Info.Println("Setup started...")
+	log.Verbose.Println("Setup started...")
 
 	// Create the channel used to announce new traffic channels and possible issues within endpoints.
 	trafficChannelPubs := shila.PacketChannelPubChannels{
@@ -55,7 +55,7 @@ func realMain() int {
 		log.Error.Print(shila.PrependError(err, "Unable to setup kernel side.").Error())
 		return ErrorCode
 	}
-	log.Info.Println("Kernel side setup successfully.")
+	log.Verbose.Println("Kernel side setup successfully.")
 	defer kernelSide.CleanUp()
 
 	// Create and setup the network side
@@ -64,7 +64,7 @@ func realMain() int {
 		log.Error.Print(shila.PrependError(err, "Unable to setup network side.").Error())
 		return ErrorCode
 	}
-	log.Info.Println("Network side setup successfully.")
+	log.Verbose.Println("Network side setup successfully.")
 	defer networkSide.CleanUp()
 
 	// Setup the ingress working side
@@ -84,9 +84,9 @@ func realMain() int {
 		return ErrorCode
 	}
 	defer workingSideEgress.CleanUp()
-	log.Info.Println("Working sides setup successfully.")
+	log.Verbose.Println("Working sides setup successfully.")
 
-	log.Info.Println("Setup done, starting machinery..")
+	log.Verbose.Println("Setup done, starting machinery..")
 
 	if err = workingSideIngress.Start(); err != nil {
 		log.Error.Print(shila.PrependError(err, "Unable to start ingress working side.").Error())
@@ -105,7 +105,7 @@ func realMain() int {
 		return ErrorCode
 	}
 
-	log.Info.Println("Machinery up and running.")
+	log.Info.Println("Shila up and running.")
 
 	returnCode := waitForTeardown()
 	return returnCode

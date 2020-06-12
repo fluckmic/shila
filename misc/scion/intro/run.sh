@@ -19,7 +19,7 @@
 
 if [[ $1 == c ]]; then
     printf "Run as client.\n"
-    export SCION_DAEMON_ADDRESS=127.0.0.27:30255
+    export SCION_DAEMON_ADDRESS=127.0.0.19:30255
     go run intro.go -remote 1-ff00:0:111,[127.0.0.1]:2727
 fi
 

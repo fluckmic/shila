@@ -18,7 +18,7 @@ var _ shila.NetworkAddress 			= (*snet.UDPAddr)(nil)
 type AddressGenerator struct {}
 
 func (g AddressGenerator) New(address string) (shila.NetworkAddress, error) {
-	return snet.ParseUDPAddr(address) 													// FIXME: returns a snet.UDPAddr
+	return snet.ParseUDPAddr(address)
 }
 
 func (g AddressGenerator) NewLocal(portStr string) (shila.NetworkAddress, error) {

@@ -118,7 +118,7 @@ func (d *Device) Role() shila.EndpointRole {
 }
 
 func (d *Device) Identifier() string {
-	return string(shila.GetIPAddressKey(d.IP))
+	return fmt.Sprint(d.Role(), " (", d.Name,":", d.IP, ")")
 }
 
 func (d *Device) TrafficChannels() shila.PacketChannels {

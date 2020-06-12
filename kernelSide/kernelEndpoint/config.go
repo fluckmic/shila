@@ -23,7 +23,7 @@ func hardCodedConfig() config {
 		SizeIngressBuffer:     		10,
 		SizeEgressBuffer:      		10,
 		SizeRawIngressBuffer: 		500,
-		SizeRawIngressStorage: 		1500,
+		SizeRawIngressStorage: 		2500,
 		ReadSizeRawIngress:    		30,
 		WaitingTimeUntilEscalation:	time.Second * 5,
 	}

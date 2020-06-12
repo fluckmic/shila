@@ -10,6 +10,7 @@ import (
 	"net"
 	"shila/core/shila"
 	"shila/log"
+	"shila/networkSide/network"
 	"time"
 )
 
@@ -33,7 +34,7 @@ func NewContactClient(rAddr shila.NetworkAddress, ipFlow shila.IPFlow, issues sh
 										Issues:  issues,
 									},
 		ipFlow:						ipFlow,
-		netFlow: 					shila.NetFlow{Dst: rAddr},
+		netFlow: 					shila.NetFlow{Dst: rAddr, Path: network.PathGenerator{}.NewEmpty()},
 	}
 }
 
@@ -61,7 +62,7 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 		err = shila.PrependError(shila.NetworkConnectionError(err.Error()), "Unable to dial.")
 		return
 	}
-	client.netFlow.Src = client.rConn.LocalAddr().(*snet.UDPAddr)
+	client.netFlow.Src = client.rConn.LocalAddr().(*net.UDPAddr)
 	log.Verbose.Print(client.Says("Established connection."))
 
 	// Send the control message.
@@ -94,7 +95,7 @@ func (client *Client) Role() shila.EndpointRole {
 }
 
 func (client *Client) Identifier() string {
-	return fmt.Sprint("{", client.Role(), " Client - ", client.netFlow.Src, " -> ", client.netFlow.Dst, "}")
+	return fmt.Sprint("Client ", client.Role(), " (", client.netFlow.Src, " -> ", client.netFlow.Dst, ")")
 }
 
 func (client *Client) Says(str string) string {
@@ -111,6 +112,9 @@ func (client *Client) serveIngress() {
 		if err := gob.NewDecoder(client.rConn).Decode(&pyldMsg); err != nil {
 			go client.handleConnectionIssue(err)
 			return
+		}
+		if len(pyldMsg.Payload) == 0 {
+			log.Error.Println(client.Says("Received zero payload packet."))
 		}
 		client.Ingress <-  shila.NewPacket(client, client.ipFlow, pyldMsg.Payload)
 	}
@@ -138,11 +142,16 @@ func (client *Client) sendPayloadMessage(payload []byte) error {
 }
 
 func (client *Client) sendControlMessage() error {
+
 	// Craft the control message, encode and send it.
-	ctrlMsg := controlMessage{
-		IPFlow:          client.ipFlow,
-		LAddrContactEnd: *client.lAddrContactEnd.(*net.UDPAddr),
+	var ctrlMsg controlMessage
+	if client.Role() == shila.ContactNetworkEndpoint {
+		ctrlMsg = controlMessage{IPFlow: client.ipFlow}
 	}
+	if client.Role() == shila.TrafficNetworkEndpoint {
+		ctrlMsg = controlMessage{IPFlow: client.ipFlow, LAddrContactEnd: *client.lAddrContactEnd.(*net.UDPAddr)}
+	}
+
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(ctrlMsg); err != nil {
 		return shila.PrependError(err, "Cannot encode control message.")
 	}

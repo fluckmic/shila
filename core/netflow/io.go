@@ -3,6 +3,7 @@ package netflow
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"shila/core/shila"
 	"shila/io/structure"
@@ -33,12 +34,14 @@ func (r *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 
 		ipAddressPort, err := entry.Key.GetIPAddressPort()
 		if err != nil {
+			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
 		key := shila.GetIPAddressPortKey(ipAddressPort)
 
 		dst, path, err := entry.Flow.GetNetworkAddressAndPath()
 		if err != nil {
+			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
 
@@ -49,9 +52,11 @@ func (r *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 		}
 
 		if err := r.InsertFromIPAddressPortKey(key, flow); err != nil {
-			log.Verbose.Print("Inserted routing entry {", flow.Key(), "} with key {", key, "}.")
+			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
+
+		log.Verbose.Println(r.Says(fmt.Sprint("Inserted routing entry {", entry, "}.")))
 	}
 
 	return nil

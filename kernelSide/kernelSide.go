@@ -108,16 +108,12 @@ func (m *Manager) Start() error {
 
 func (m *Manager) CleanUp() error {
 
-	log.Info.Println("Mopping up the kernel side..")
 	m.state.Set(shila.TornDown)
 
 	err := m.tearDownKernelEndpoints()
 	m.clearKernelEndpoints()
 	err = m.clearAdditionalRouting()
 	err = m.removeNamespaces()
-
-	log.Info.Println("Kernel side mopped.")
-
 	return err
 }
 

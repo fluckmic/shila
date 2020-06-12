@@ -82,7 +82,7 @@ func (server *Server) Role() shila.EndpointRole {
 }
 
 func (server *Server) Identifier() string {
-	return fmt.Sprint("{", server.Role(), " Server - ", server.lAddress, " <- *}")
+	return fmt.Sprint("Server ", server.Role(), " (", server.lAddress, " <- *)")
 }
 
 func (server *Server) Says(str string) string {
@@ -90,6 +90,7 @@ func (server *Server) Says(str string) string {
 }
 
 func (server *Server) serveIngress(){
+
 	buffer := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		n, from, err := server.lConnection.ReadFrom(buffer)

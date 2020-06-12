@@ -1,6 +1,7 @@
 package networkEndpoint
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
 	"github.com/scionproto/scion/go/lib/snet"
@@ -27,6 +28,8 @@ func NewBackboneConnections(server *Server) ServerBackboneConnections {
 }
 
 func (conns *ServerBackboneConnections) retrieve(key shila.NetworkAddressKey) *ServerBackboneConnection {
+	conns.lock.Lock()
+	defer conns.lock.Unlock()
 	if conn, ok := conns.connections[key]; ok {
 		return conn
 	} else {
@@ -53,9 +56,6 @@ func (conns *ServerBackboneConnections) TearDown() error {
 
 func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddress, buff []byte) {
 
-	conns.lock.Lock()
-	defer conns.lock.Unlock()
-
 	conn := conns.retrieve(shila.GetNetworkAddressKey(rAddress))
 	if conn == nil {
 		// Connection not yet exists, we first have to create a new one and add it to the mapping.
@@ -69,14 +69,10 @@ func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddre
 	if err := conn.writeIngress(buff); err != nil {
 		log.Error.Println(conn.Says(err.Error()))
 	}
-
 	return
 }
 
 func (conns *ServerBackboneConnections) WriteEgress(packet *shila.Packet) error {
-
-	conns.lock.Lock()
-	defer conns.lock.Unlock()
 
 	// We try to send out the data if there exists a backbone connection.
 	if conn := conns.retrieve(shila.GetNetworkAddressKey(packet.Flow.NetFlow.Dst)); conn != nil {
@@ -118,7 +114,7 @@ func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneC
 	inReader, inWriter := io.Pipe()
 
 	conn := &ServerBackboneConnection{
-		keys:		 	make([] shila.NetworkAddressKey, 2) ,
+		keys:		 	make([] shila.NetworkAddressKey, 0, 2) ,
 		netFlows:	 	NetFlows{effective: netFlow, represented: netFlow},
 		server:			conns.server,
 		inReader:    	inReader,
@@ -136,6 +132,7 @@ func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneC
 								// timeout issue send back to the shila connection handler which closes the corresponding
 								// connection.
 
+	log.Verbose.Println(conn.Says("Created."))
 	return conn
 }
 
@@ -204,7 +201,10 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 	// If the backbone connect is part of a traffic serer network endpoint, then the connection
 	// has to be found by messages send along the corresponding contact backbone connection as well.
 	if conn.server.Role() == shila.TrafficNetworkEndpoint {
-		conn.keys = append(conn.keys, shila.GetNetworkAddressKey(&ctrlMsg.LAddrContactEnd))
+
+		lAddrContactEndFull 	:= conn.netFlows.effective.Dst.(*snet.UDPAddr).Copy()
+		lAddrContactEndFull.Host = &ctrlMsg.LAddrContactEnd
+		conn.keys = append(conn.keys, shila.GetNetworkAddressKey(lAddrContactEndFull))
 		conn.connections.add(conn.keys[1], conn)
 	}
 
@@ -217,6 +217,10 @@ func (conn *ServerBackboneConnection) processPayloadMessage() error {
 	var pyldMsg payloadMessage
 	if err := gob.NewDecoder(conn.inReader).Decode(&pyldMsg); err != nil {
 		err = shila.PrependError(shila.ParsingError("Failed to decode payload message."), err.Error())
+	}
+	if len(pyldMsg.Payload) == 0 {
+		// From time to to we get a zero payload packet...?
+		return nil
 	}
 
 	conn.server.Ingress <- shila.NewPacketWithNetFlow(conn.server,
@@ -238,14 +242,20 @@ func (conn *ServerBackboneConnection) writeIngress(buff []byte) (err error) {
 	return
 }
 
-func (conn *ServerBackboneConnection) writeEgress(buff []byte) (err error){
-	_, err = conn.server.lConnection.WriteTo(buff, conn.netFlows.effective.Dst.(*snet.UDPAddr))
+func (conn *ServerBackboneConnection) writeEgress(payload []byte) (err error){
+
+	var buffer bytes.Buffer
+	if err := gob.NewEncoder(&buffer).Encode(payloadMessage{ Payload: payload }); err != nil {
+		return shila.PrependError(err, "Cannot encode payload message.")
+	}
+
+	_, err = conn.server.lConnection.WriteTo(buffer.Bytes(), conn.netFlows.effective.Dst.(*snet.UDPAddr))
 	return
 }
 
 func (conn *ServerBackboneConnection) Identifier() string {
-	return fmt.Sprint("{ Backbone connection in ", conn.server.Role(), " Server - ", conn.server.lAddress, " <- ",
-		conn.netFlows.effective.Dst.String(), "}")
+	return fmt.Sprint("Backbone connection in Server", conn.server.Role(), " (", conn.server.lAddress, " <- ",
+		conn.netFlows.effective.Dst.String(), ")")
 }
 
 func (conn *ServerBackboneConnection) Says(str string) string {

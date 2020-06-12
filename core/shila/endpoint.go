@@ -13,10 +13,10 @@ const (
 
 func (el EndpointRole) String() string {
 	switch el {
-		case ContactNetworkEndpoint: 	return "ContactNetworkEndpoint"
-		case TrafficNetworkEndpoint:	return "TrafficNetworkEndpoint"
-		case IngressKernelEndpoint: 	return "IngressKernelEndpoint"
-		case EgressKernelEndpoint: 		return "EgressKernelEndpoint"
+		case ContactNetworkEndpoint: 	return "Contact Network Endpoint"
+		case TrafficNetworkEndpoint:	return "Traffic Network Endpoint"
+		case IngressKernelEndpoint: 	return "Ingress Kernel Endpoint"
+		case EgressKernelEndpoint: 		return "Egress Kernel Endpoint"
 	}
 	return "Unknown"
 }

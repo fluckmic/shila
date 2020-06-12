@@ -2,6 +2,7 @@
 package shila
 
 import (
+	"github.com/bclicn/color"
 	"net"
 	"shila/layer/tcpip"
 )
@@ -49,8 +50,8 @@ const (
 
 func(fk FlowKind) String() string {
 	switch fk {
-	case MainFlow: 	return "MainFlow"
-	case SubFlow:  	return "SubFlow"
+	case MainFlow: 	return color.LightBlue("MainFlow")
+	case SubFlow:  	return color.LightPurple("SubFlow")
 	case Unknown:   return "Unknown"
 	}
 	return "Unknown"
