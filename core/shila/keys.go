@@ -68,7 +68,7 @@ func (nf *NetFlow) Key() NetFlowKey {
 }
 
 func (fl *Flow) Key() FlowKey {
-	return FlowKey(fmt.Sprint(KeyPrefix, fl.IPFlow.Key(), KeyDelimiter, fl.NetFlow.Key(), KeyDelimiter, fl.Kind, KeySuffix))
+	return FlowKey(fmt.Sprint(KeyPrefix, fl.IPFlow.Key(), KeyDelimiter, fl.NetFlow.Key(), KeySuffix))
 }
 
 func (ipf *IPFlow) SrcKey() IPAddressPortKey {

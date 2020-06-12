@@ -12,16 +12,16 @@ type Router struct {
 }
 
 type mappings struct {
-	fromMPTCPToken map[mptcp.EndpointToken]		shila.NetFlow
-	fromIPPortKey  map[shila.IPAddressPortKey]	shila.NetFlow
+	fromMPTCPToken map[mptcp.EndpointToken]		*shila.NetFlow
+	fromIPPortKey  map[shila.IPAddressPortKey]	*shila.NetFlow
 }
 
 func NewRouter() Router {
 
 	router := Router{
 		flows: mappings{
-			fromMPTCPToken: make(map[mptcp.EndpointToken]shila.NetFlow),
-			fromIPPortKey:  make(map[shila.IPAddressPortKey]shila.NetFlow),
+			fromMPTCPToken: make(map[mptcp.EndpointToken] 		*shila.NetFlow),
+			fromIPPortKey:  make(map[shila.IPAddressPortKey]	*shila.NetFlow),
 		},
 	}
 
@@ -34,7 +34,7 @@ func (r *Router) InsertFromIPAddressPortKey(key shila.IPAddressPortKey, flow shi
 	if _, ok := r.flows.fromIPPortKey[key]; ok {
 		return shila.TolerableError("Entry already exists.")
 	} else {
-		r.flows.fromIPPortKey[key] = flow
+		r.flows.fromIPPortKey[key] = &flow
 		return nil
 	}
 }
@@ -48,7 +48,7 @@ func (r *Router) InsertFromSynAckMpCapable(p *shila.Packet, flow shila.NetFlow) 
 				if _, ok := r.flows.fromMPTCPToken[token]; ok {
 					return shila.TolerableError("Entry already exists.")
 				} else {
-					r.flows.fromMPTCPToken[token] = flow
+					r.flows.fromMPTCPToken[token] = &flow
 					return nil
 				}
 			}
@@ -62,13 +62,18 @@ func (r *Router) InsertFromSynAckMpCapable(p *shila.Packet, flow shila.NetFlow) 
 	}
 }
 
-func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
+func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowType, error) {
 
 	// If the packet contains a receiver token, then the new connection is a MPTCP subflow flow.
 	if token, ok, err := mptcp.GetReceiverToken(p.Payload); ok {
 		if err == nil {
-			if netFlow, ok := r.getFromMPTCPEndpointToken(token); ok {
-				return netFlow, shila.SubFlow, nil
+			netFlow, ok := r.getFromMPTCPEndpointToken(token)
+			if ok {
+				return shila.NetFlow{
+					Src:  netFlow.Src,
+					Path: netFlow.Path,
+					Dst:  netFlow.Dst,
+				}, shila.SubFlow, nil
 			} else {
 				return shila.NetFlow{}, shila.Unknown,
 				shila.TolerableError(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}."))
@@ -81,7 +86,11 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 	// For a MPTCP MainFlow flow the network flow can probably be extracted from the IP options
 	if netFlow, ok, err := r.getFromIPOptions(p.Payload); ok {
 		if err == nil {
-			return netFlow, shila.MainFlow, nil
+			return shila.NetFlow{
+				Src:  netFlow.Src,
+				Path: netFlow.Path,
+				Dst:  netFlow.Dst,
+			}, shila.MainFlow, nil
 		} else {
 			return shila.NetFlow{}, shila.Unknown, shila.PrependError(err, "Unable to get IP options.")
 		}
@@ -89,7 +98,11 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowKind, error) {
 
 	// For a MPTCP MainFlow flow the network flow is probably available in the router table
 	if netFlow, ok := r.getFromIPAddressPortKey(p.Flow.IPFlow.DstKey()); ok {
-		return netFlow, shila.MainFlow, nil
+		return shila.NetFlow{
+			Src:  netFlow.Src,
+			Path: netFlow.Path,
+			Dst:  netFlow.Dst,
+		}, shila.MainFlow, nil
 	}
 
 	return shila.NetFlow{}, shila.Unknown, shila.TolerableError("No routing information available.")
@@ -100,12 +113,12 @@ func (r *Router) getFromIPOptions(raw []byte) (shila.NetFlow, bool, error) {
 	return shila.NetFlow{}, false, nil
 }
 
-func (r *Router) getFromIPAddressPortKey(key shila.IPAddressPortKey) (shila.NetFlow, bool) {
+func (r *Router) getFromIPAddressPortKey(key shila.IPAddressPortKey) (*shila.NetFlow, bool) {
 	packetHeader, ok := r.flows.fromIPPortKey[key]
 	return packetHeader, ok
 }
 
-func (r *Router) getFromMPTCPEndpointToken(token mptcp.EndpointToken) (shila.NetFlow, bool) {
+func (r *Router) getFromMPTCPEndpointToken(token mptcp.EndpointToken) (*shila.NetFlow, bool) {
 	packetHeader, ok := r.flows.fromMPTCPToken[token]
 	return packetHeader, ok
 }

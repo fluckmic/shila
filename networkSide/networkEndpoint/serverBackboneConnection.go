@@ -96,6 +96,7 @@ type ServerBackboneConnection struct {
 	netFlows    	NetFlows
 	server			*Server
 	ipFlow      	shila.IPFlow
+	flowKind 		shila.FlowType
 	inReader    	*io.PipeReader
 	inWriter    	*io.PipeWriter
 	connections 	*ServerBackboneConnections
@@ -188,7 +189,8 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 	}()
 
 	// Set the ip flow
-	conn.ipFlow = ctrlMsg.IPFlow.Swap()
+	conn.ipFlow   = ctrlMsg.IPFlow.Swap()
+	conn.flowKind = ctrlMsg.FlowKind
 
 	// If the backbone connection is part of a contact server network endpoint, then the connection
 	// has to calculate the lAddress (w.r.t. the host) of the corresponding traffic endpoint.
@@ -223,10 +225,10 @@ func (conn *ServerBackboneConnection) processPayloadMessage() error {
 		return nil
 	}
 
-	conn.server.Ingress <- shila.NewPacketWithNetFlow(conn.server,
-													  conn.ipFlow.Swap(),
-													  conn.netFlows.represented.Swap(),
-													  pyldMsg.Payload)
+	conn.server.Ingress <- shila.NewPacketWithNetFlowAndKind(conn.server,
+													  		 conn.ipFlow.Swap(),
+													  		 conn.netFlows.represented.Swap(),
+													  		 pyldMsg.Payload)
 
 	return nil
 }

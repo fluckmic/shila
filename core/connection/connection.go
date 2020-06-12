@@ -16,6 +16,7 @@ import (
 
 type Connection struct {
 	flow        shila.Flow
+	kind        shila.FlowType
 	state       state
 	channels    channels
 	lock        sync.Mutex
@@ -73,7 +74,7 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	switch p.Entrypoint.Role() {
 		case shila.IngressKernelEndpoint:		err = conn.processPacketFromKerep(p)
 		case shila.EgressKernelEndpoint:		err = conn.processPacketFromKerep(p)
-		case shila.ContactNetworkEndpoint: 	err = conn.processPacketFromContactingEndpoint(p)
+		case shila.ContactNetworkEndpoint: 		err = conn.processPacketFromContactingEndpoint(p)
 		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
 			err = shila.CriticalError(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Role(), "}."))
@@ -205,7 +206,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// Get the network flow
 	var err error
-	conn.flow.NetFlow, conn.flow.Kind, err = conn.router.Route(p)
+	conn.flow.NetFlow, conn.kind, err = conn.router.Route(p)
 	if err != nil {
 		return shila.PrependError(err,"Unable to get network flow.")
 	}
@@ -292,7 +293,7 @@ func (conn *Connection) setState(state stateIdentifier) {
 }
 
 func (conn *Connection) Identifier() string {
-	return fmt.Sprint(conn.flow.Kind, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+	return fmt.Sprint(conn.kind, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
 }
 
 func (conn *Connection) Says(str string) string {

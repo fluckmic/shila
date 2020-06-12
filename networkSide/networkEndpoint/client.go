@@ -146,7 +146,7 @@ func (client *Client) sendControlMessage() error {
 	// Craft the control message, encode and send it.
 	var ctrlMsg controlMessage
 	if client.Role() == shila.ContactNetworkEndpoint {
-		ctrlMsg = controlMessage{IPFlow: client.ipFlow}
+		ctrlMsg = controlMessage{IPFlow: client.ipFlow }
 	}
 	if client.Role() == shila.TrafficNetworkEndpoint {
 		ctrlMsg = controlMessage{IPFlow: client.ipFlow, LAddrContactEnd: *client.lAddrContactEnd.(*net.UDPAddr)}

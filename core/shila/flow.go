@@ -10,7 +10,6 @@ import (
 type Flow struct {
 	IPFlow  IPFlow
 	NetFlow NetFlow
-	Kind 	FlowKind
 }
 
 // Has to be parsed for every packet
@@ -40,27 +39,26 @@ func (nf NetFlow) Swap() NetFlow {
 	}
 }
 
-type FlowKind uint8
-const (
-	_                 = iota
-	MainFlow FlowKind = iota
-	SubFlow
-	Unknown
-)
-
-func(fk FlowKind) String() string {
-	switch fk {
-	case MainFlow: 	return color.LightBlue("MainFlow")
-	case SubFlow:  	return color.LightPurple("SubFlow")
-	case Unknown:   return "Unknown"
-	}
-	return "Unknown"
-}
-
 func GetIPFlow(raw []byte) (IPFlow, error) {
 	if src, dst, err := tcpip.DecodeSrcAndDstTCPAddr(raw); err != nil {
 		return IPFlow{}, err
 	} else {
 		return IPFlow{Src: src, Dst: dst}, nil
 	}
+}
+
+type FlowType uint8
+const (
+	_                 = iota
+	MainFlow FlowType = iota
+	SubFlow
+	Unknown
+)
+
+func(k FlowType) String() string {
+	switch k {
+	case MainFlow: 	return color.LightBlue("MainFlow")
+	case SubFlow:  	return color.LightPurple("SubFlow")
+	}
+	return "Unknown"
 }

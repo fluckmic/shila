@@ -39,3 +39,4 @@ func (s *state) set(newState stateIdentifier) {
 func newState() state {
 	return state{previous: raw, current: raw}
 }
+
