@@ -25,8 +25,8 @@ func realMain() int {
 
 	defer log.Info.Println("Shutdown complete.")
 
-	// TODO: Return if not run as root. (https://github.com/fluckmic/shila/issues/4)
-	// TODO: Encourage user to run separate namespace for ingress and egress (https://github.com/fluckmic/shila/issues/5)
+	// TODO: Return if not run as root.
+	// TODO: Encourage user to run separate namespace for ingress and egress.
 
 	var err error
 
@@ -50,7 +50,7 @@ func realMain() int {
 	}
 
 	// Create and setup the kernelSide side
-	kernelSide := kernelSide.New(trafficChannelPubs, endpointIssues)
+	kernelSide := kernelSide.New(trafficChannelPubs)
 	if err = kernelSide.Setup(); err != nil {
 		log.Error.Print(shila.PrependError(err, "Unable to setup kernel side.").Error())
 		return ErrorCode

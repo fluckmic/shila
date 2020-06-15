@@ -79,7 +79,7 @@ func (d *Device) Allocate() error {
 
 	if fd < 0 {
 		var errorString = C.GoString(C.strerror(errno))
-		return shila.ThirdPartyError(errorString)
+		return shila.CriticalError(errorString)
 	}
 
 	d.file = os.NewFile(uintptr(fd), d.Name)

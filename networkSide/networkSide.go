@@ -7,8 +7,6 @@ import (
 	"sync"
 )
 
-// This part of the network is independent of the backbone protocol chosen.
-
 type Manager struct {
 	specificManager           SpecificManager
 	contactServer             shila.NetworkServerEndpoint
@@ -17,6 +15,7 @@ type Manager struct {
 	clientTrafficEndpoints    shila.MappingNetworkClientEndpoint
 	trafficChannelPubs        shila.PacketChannelPubChannels
 	endpointIssues            shila.EndpointIssuePubChannels
+	serverEndpointIssues	  shila.EndpointIssuePubChannel
 	lock                      sync.Mutex
 	state                     shila.EntityState
 }
@@ -26,6 +25,7 @@ func New(trafficChannelPubs shila.PacketChannelPubChannels, endpointIssues shila
 		specificManager: 			NewSpecificManager(),
 		trafficChannelPubs: 		trafficChannelPubs,
 		endpointIssues: 			endpointIssues,
+		serverEndpointIssues:		make(shila.EndpointIssuePubChannel),
 		serverTrafficEndpoints: 	make(shila.MappingNetworkServerEndpoint),
 		clientContactingEndpoints: 	make(shila.MappingNetworkClientEndpoint),
 		clientTrafficEndpoints:		make(shila.MappingNetworkClientEndpoint),
@@ -34,119 +34,127 @@ func New(trafficChannelPubs shila.PacketChannelPubChannels, endpointIssues shila
 	}
 }
 
-func (m *Manager) Setup() error {
+func (manager *Manager) Setup() error {
 
-	if m.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	contactLocalAddr := m.specificManager.ContactLocalAddr()
-	m.contactServer   = m.specificManager.NewServer(contactLocalAddr, shila.ContactNetworkEndpoint, m.endpointIssues.Ingress)
+	contactLocalAddr := manager.specificManager.ContactLocalAddr()
+	manager.contactServer   = manager.specificManager.NewServer(contactLocalAddr, shila.ContactNetworkEndpoint, manager.serverEndpointIssues)
 
-	m.state.Set(shila.Initialized)
+	manager.state.Set(shila.Initialized)
 	return nil
 }
 
-func (m *Manager) Start() error {
+func (manager *Manager) Start() error {
 
-	if m.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	if err := m.contactServer.SetupAndRun(); err != nil {
+	// Start the error worker.
+	go manager.errorHandler()
+
+	if err := manager.contactServer.SetupAndRun(); err != nil {
 		return shila.PrependError(err, "Unable to establish contacting server.")
 	}
 
 	// Announce the traffic channels to the working side
-	m.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
-										Publisher: m.contactServer,
-										Channel: m.contactServer.TrafficChannels().Ingress,
+	manager.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
+										Publisher: manager.contactServer,
+										Channel:   manager.contactServer.TrafficChannels().Ingress,
 									}
 
-	m.state.Set(shila.Running)
+	manager.state.Set(shila.Running)
 	return nil
 }
 
-func (m *Manager) CleanUp() error {
+func (manager *Manager) CleanUp() error {
 
-	m.state.Set(shila.TornDown)
+	manager.state.Set(shila.TornDown)
 	var err error = nil
 
-	err = m.tearDownAndRemoveClientContactingEndpoints()
-	err = m.tearDownAndRemoveClientTrafficEndpoints()
-	err = m.tearDownAndRemoveServerTrafficEndpoints()
+	err = manager.tearDownAndRemoveClientContactingEndpoints()
+	err = manager.tearDownAndRemoveClientTrafficEndpoints()
+	err = manager.tearDownAndRemoveServerTrafficEndpoints()
 
-	err = m.contactServer.TearDown()
-	m.contactServer = nil
+	err = manager.contactServer.TearDown()
+	manager.contactServer = nil
+
+	// As soon as all server network endpoints are torn down
+	// the channel is no longer needed. (Shuts down the issue worker.)
+	close(manager.serverEndpointIssues)
 
 	return err
 }
 
-func (m *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddress, IPFlowKey shila.IPFlowKey) (channels shila.PacketChannels, error error) {
+func (manager *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddress, flowKey shila.IPFlowKey) (channels shila.PacketChannels, error error) {
 
 	channels 			= shila.PacketChannels{}
 	error    			= nil
 
-	if m.state.Not(shila.Running) {
-		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+	if manager.state.Not(shila.Running) {
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}.")); return
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
-	key := shila.GetNetworkAddressKey(lAddress)
-	endpoint, ok := m.serverTrafficEndpoints[key]
+	endpointKey := shila.GetNetworkAddressKey(lAddress)
+	endpointWrapper, ok := manager.serverTrafficEndpoints[endpointKey]
 	if ok {
-		endpoint.Register(IPFlowKey)
-		channels = endpoint.NetworkServerEndpoint.TrafficChannels()
+		endpointWrapper.Register(flowKey)
+		channels = endpointWrapper.NetworkServerEndpoint.TrafficChannels()
 		return
 	}
 
-	// If there is no server endpoint listening, we first have to set one up.
-	newEndpoint := m.specificManager.NewServer(lAddress, shila.TrafficNetworkEndpoint, m.endpointIssues.Ingress)
+	// If there is no server endpointWrapper listening, we first have to set one up.
+	newEndpoint := manager.specificManager.NewServer(lAddress, shila.TrafficNetworkEndpoint, manager.serverEndpointIssues)
 	if error = newEndpoint.SetupAndRun(); error != nil {
 		return
 	}
 
-	// Add the endpoint to the mapping
-	endpoint = shila.NewNetworkServerEndpointIPFlowRegister(newEndpoint)
-	m.serverTrafficEndpoints[key] = endpoint
+	// Add the endpointWrapper to the mapping
+	endpointWrapper = shila.NewNetworkServerEndpointIPFlowRegister(newEndpoint)
+	manager.serverTrafficEndpoints[endpointKey] = endpointWrapper
 
-	// Register the new IP flow at the server endpoint
-	endpoint.Register(IPFlowKey)
+	// Register the new IP flow at the server endpointWrapper
+	endpointWrapper.Register(flowKey)
 
 	// Announce the new traffic channels to the working side
-	channels = endpoint.TrafficChannels()
-	m.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
+	channels = endpointWrapper.TrafficChannels()
+	manager.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
 										Publisher: newEndpoint,
 										Channel: channels.Ingress,
 									}
 	return
 }
 
-func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contactingNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
+func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contactingNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
 
 	contactingNetFlow  	= shila.NetFlow{}
 	channels 			= shila.PacketChannels{}
 	error    			= nil
 
-	if m.state.Not(shila.Running) {
-		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+	if manager.state.Not(shila.Running) {
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}.")); return
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
-	if _, ok := m.clientContactingEndpoints[flow.IPFlow.Key()]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
+	ipFlowKey := flow.IPFlow.Key()
+	if _, ok := manager.clientContactingEndpoints[ipFlowKey]; ok {
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", ipFlowKey, "} already exists.")); return
 	}
 
 	// Establish a new contacting client endpoint
-	contactRemoteAddr := m.specificManager.ContactRemoteAddr(flow.NetFlow.Dst)
+	contactRemoteAddr := manager.specificManager.ContactRemoteAddr(flow.NetFlow.Dst)
 	ipFlow 			  := flow.IPFlow
 
-	// contactEndpoint := m.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactNetworkEndpoint, m.endpointIssues.Egress)
-	contactingEndpoint 		 := m.specificManager.NewContactClient(contactRemoteAddr, ipFlow, m.endpointIssues.Egress)
+	// contactEndpoint := manager.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactNetworkEndpoint, manager.endpointIssues.Egress)
+	contactingEndpoint 		 := manager.specificManager.NewContactClient(contactRemoteAddr, ipFlow, manager.endpointIssues.Egress)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
@@ -154,38 +162,39 @@ func (m *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (contact
 	}
 
 	// Add it to the corresponding mapping
-	m.clientContactingEndpoints[flow.IPFlow.Key()] = contactingEndpoint
+	manager.clientContactingEndpoints[ipFlowKey] = contactingEndpoint
 
 	// Announce the new traffic channels to the working side
 	channels = contactingEndpoint.TrafficChannels()
 	pub := shila.PacketChannelPub{Publisher: contactingEndpoint, Channel: channels.Ingress}
-	m.trafficChannelPubs.Egress <- pub
+	manager.trafficChannelPubs.Egress <- pub
 
 	return
 }
 
-func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
+func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNetFlow shila.NetFlow, channels shila.PacketChannels, error error) {
 
 	trafficNetFlow  	= shila.NetFlow{}
 	channels 			= shila.PacketChannels{}
 	error    			= nil
 
-	if m.state.Not(shila.Running) {
-		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}.")); return
+	if manager.state.Not(shila.Running) {
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}.")); return
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
-	if _, ok := m.clientTrafficEndpoints[flow.IPFlow.Key()]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", flow.IPFlow.Key(), "} already exists.")); return
+	ipFlowKey := flow.IPFlow.Key()
+	if _, ok := manager.clientTrafficEndpoints[ipFlowKey]; ok {
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", ipFlowKey, "} already exists.")); return
 	}
 
 	lAddrContact := flow.NetFlow.Src
 	rAddr 		 := flow.NetFlow.Dst
 	ipFlow 		 := flow.IPFlow
 
-	trafficEndpoint := m.specificManager.NewTrafficClient(lAddrContact, rAddr, ipFlow, m.endpointIssues.Egress)
+	trafficEndpoint := manager.specificManager.NewTrafficClient(lAddrContact, rAddr, ipFlow, manager.endpointIssues.Egress)
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
@@ -193,12 +202,12 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	}
 
 	// Add it to the corresponding mapping
-	m.clientTrafficEndpoints[flow.IPFlow.Key()] = trafficEndpoint
+	manager.clientTrafficEndpoints[ipFlowKey] = trafficEndpoint
 
 	// Announce the new traffic channels to the working side
 	channels = trafficEndpoint.TrafficChannels()
 	pub := shila.PacketChannelPub{Publisher: trafficEndpoint, Channel: channels.Ingress}
-	m.trafficChannelPubs.Egress <- pub
+	manager.trafficChannelPubs.Egress <- pub
 
 	// Note:
 	// The removal of the corresponding client contacting endpoint is triggered by the connTr
@@ -208,21 +217,21 @@ func (m *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (trafficNet
 	return
 }
 
-func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
+func (manager *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 
-	if m.state.Not(shila.Running) {
-		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Running) {
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
 	key     := shila.GetNetworkAddressKey(flow.NetFlow.Src)
-	if ep, ok := m.serverTrafficEndpoints[key]; ok {
+	if ep, ok := manager.serverTrafficEndpoints[key]; ok {
 		ep.Unregister(flow.IPFlow.Key())
 		if ep.IsEmpty() {
 			err := ep.TearDown()
-			delete(m.serverTrafficEndpoints, key)
+			delete(manager.serverTrafficEndpoints, key)
 			return err
 		}
 	}
@@ -230,64 +239,64 @@ func (m *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 	return nil
 }
 
-func (m *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) error {
+func (manager *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) error {
 
-	if m.state.Not(shila.Running) {
-		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Running) {
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
-	if ep, ok := m.clientContactingEndpoints[ipFlow.Key()]; ok {
+	if ep, ok := manager.clientContactingEndpoints[ipFlow.Key()]; ok {
 		err := ep.TearDown()
-		delete(m.clientContactingEndpoints, ipFlow.Key())
+		delete(manager.clientContactingEndpoints, ipFlow.Key())
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) TeardownTrafficClientEndpoint(ipFlow shila.IPFlow) error {
+func (manager *Manager) TeardownTrafficClientEndpoint(ipFlow shila.IPFlow) error {
 
-	if m.state.Not(shila.Running) {
-		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Running) {
+		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	m.lock.Lock()
-	defer m.lock.Unlock()
+	manager.lock.Lock()
+	defer manager.lock.Unlock()
 
-	if ep, ok := m.clientTrafficEndpoints[ipFlow.Key()]; ok {
+	if ep, ok := manager.clientTrafficEndpoints[ipFlow.Key()]; ok {
 		err := ep.TearDown()
-		delete(m.clientTrafficEndpoints, ipFlow.Key())
+		delete(manager.clientTrafficEndpoints, ipFlow.Key())
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) tearDownAndRemoveServerTrafficEndpoints() error {
+func (manager *Manager) tearDownAndRemoveServerTrafficEndpoints() error {
 	var err error = nil
-	for key, ep := range m.serverTrafficEndpoints {
+	for key, ep := range manager.serverTrafficEndpoints {
 		err = ep.TearDown()
-		delete(m.serverTrafficEndpoints, key)
+		delete(manager.serverTrafficEndpoints, key)
 	}
 	return err
 }
 
-func (m *Manager) tearDownAndRemoveClientContactingEndpoints() error {
+func (manager *Manager) tearDownAndRemoveClientContactingEndpoints() error {
 	var err error = nil
-	for key, ep := range m.clientContactingEndpoints {
+	for key, ep := range manager.clientContactingEndpoints {
 		err = ep.TearDown()
-		delete(m.clientContactingEndpoints, key)
+		delete(manager.clientContactingEndpoints, key)
 	}
 	return err
 }
 
-func (m *Manager) tearDownAndRemoveClientTrafficEndpoints() error {
+func (manager *Manager) tearDownAndRemoveClientTrafficEndpoints() error {
 	var err error = nil
-	for key, ep := range m.clientTrafficEndpoints {
+	for key, ep := range manager.clientTrafficEndpoints {
 		err = ep.TearDown()
-		delete(m.clientTrafficEndpoints, key)
+		delete(manager.clientTrafficEndpoints, key)
 	}
 	return err
 }

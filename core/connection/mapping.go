@@ -39,7 +39,7 @@ func (m *Mapping) vacuum() {
 		m.lock.Lock()
 		for key, con := range m.connections {
 			if time.Since(con.touched) > (Config.MaxTimeUntouched) {
-				con.Close(shila.ThirdPartyError("Connection got dusty."))
+				con.Close(shila.TolerableError("Connection got dusty."))
 				delete(m.connections, key)
 			}
 		}
@@ -58,4 +58,13 @@ func (m *Mapping) Retrieve(flow shila.Flow) *Connection {
 		m.connections[key] = newCon
 		return newCon
 	}
+}
+
+func (m *Mapping) Close(key shila.IPFlowKey, err error) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if con, ok := m.connections[key]; ok {
+		con.Close(err)
+	}
+	// Cannot close a none existent connection.
 }

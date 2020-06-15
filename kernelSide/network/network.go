@@ -42,9 +42,9 @@ func execIpCmd(args ...string) error {
 	if err != nil {
 		// From the official documentation: "Any returned error will *usually be of type *ExitError."
 		if exitError, ok := err.(*exec.ExitError); ok {
-			return shila.ThirdPartyError(exitError.Stderr)
+			return shila.CriticalError(exitError.Stderr)
 		} else {
-			return shila.ThirdPartyError(err.Error())
+			return shila.CriticalError(err.Error())
 		}
 	}
 

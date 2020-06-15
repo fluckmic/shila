@@ -167,7 +167,7 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 
 func (conn *ServerBackboneConnection) retrieveControlMessage() (ctrlMsg controlMessage, err error) {
 	if err = gob.NewDecoder(conn.inReader).Decode(&ctrlMsg); err != nil {
-		err = shila.PrependError(shila.ParsingError("Failed to decode control message."), err.Error())
+		err = shila.PrependError(ParsingError("Failed to decode control message."), err.Error())
 	}
 	return
 }
@@ -178,7 +178,7 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 	// error. This error leads to a removal of the connection without terminating the whole shila.
 	defer func() error {
 		if err := recover(); err != nil {
-			parsingError := shila.ParsingError("Cannot process control message.")
+			parsingError := ParsingError("Cannot process control message.")
 			if err, ok := err.(error); ok {
 				return shila.PrependError(parsingError, err.Error())
 			} else {
@@ -218,7 +218,7 @@ func (conn *ServerBackboneConnection) processPayloadMessage() error {
 	// Fetch the next payload message
 	var pyldMsg payloadMessage
 	if err := gob.NewDecoder(conn.inReader).Decode(&pyldMsg); err != nil {
-		err = shila.PrependError(shila.ParsingError("Failed to decode payload message."), err.Error())
+		err = shila.PrependError(ParsingError("Failed to decode payload message."), err.Error())
 	}
 	if len(pyldMsg.Payload) == 0 {
 		// From time to to we get a zero payload packet...?
@@ -256,7 +256,7 @@ func (conn *ServerBackboneConnection) writeEgress(payload []byte) (err error){
 }
 
 func (conn *ServerBackboneConnection) Identifier() string {
-	return fmt.Sprint("Backbone connection in Server", conn.server.Role(), " (", conn.server.lAddress, " <- ",
+	return fmt.Sprint("Backbone connection in Server ", conn.server.Role(), " (", conn.server.lAddress, " <- ",
 		conn.netFlows.effective.Dst.String(), ")")
 }
 

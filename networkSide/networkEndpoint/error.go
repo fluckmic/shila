@@ -5,3 +5,9 @@ type ConnectionError string
 func (e ConnectionError) Error() string {
 	return string(e)
 }
+
+// Some issue with the parsing.
+type ParsingError string
+func (e ParsingError) Error() string {
+	return string(e)
+}

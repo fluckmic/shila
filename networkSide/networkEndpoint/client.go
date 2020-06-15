@@ -18,6 +18,7 @@ var _ shila.NetworkClientEndpoint = (*Client)(nil)
 
 type Client struct {
 	Base
+	key				shila.IPFlowKey
 	rConn			*snet.Conn
 	ipFlow 			shila.IPFlow
 	netFlow 		shila.NetFlow
@@ -59,7 +60,7 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 	// Establish a connection.
 	client.rConn, err = appnet.DialAddr(client.netFlow.Dst.(*snet.UDPAddr))
 	if err != nil {
-		err = shila.PrependError(shila.NetworkConnectionError(err.Error()), "Unable to dial.")
+		err = shila.PrependError(ConnectionError(err.Error()), "Unable to dial.")
 		return
 	}
 	client.netFlow.Src = client.rConn.LocalAddr().(*net.UDPAddr)
@@ -100,6 +101,10 @@ func (client *Client) Identifier() string {
 
 func (client *Client) Says(str string) string {
 	return  fmt.Sprint(client.Identifier(), ": ", str)
+}
+
+func (client *Client) Key() shila.IPFlowKey {
+	return client.key
 }
 
 func (client *Client) TrafficChannels() shila.PacketChannels {
@@ -163,17 +168,6 @@ func (client *Client) handleConnectionIssue(err error) {
 	time.Sleep(Config.WaitingTimeAfterConnectionIssue)
 	if client.State.Is(shila.Running) {
 		log.Error.Println(client.Says(fmt.Sprint("Publishes issue - ", err.Error())))
-		client.Issues <- client.createEndpointIssuePub(ConnectionError(err.Error()))
-	}
-}
-
-func (client *Client) createEndpointIssuePub(err error) shila.EndpointIssuePub {
-	return shila.EndpointIssuePub{
-		Issuer: client,
-		Flow:   shila.Flow{
-			IPFlow:  client.ipFlow,
-			NetFlow: client.netFlow,
-		},
-		Error:  err,
+		client.Issues <- shila.EndpointIssuePub{ Issuer: client, Key: client.Key(), Error: ConnectionError(err.Error()) }
 	}
 }

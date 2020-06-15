@@ -17,7 +17,7 @@ func (ipj IPAddressPortJSON) GetIPAddressPort() (net.TCPAddr, error) {
 	IPv4 := net.ParseIP(ipj.IP)
 	Port, err := strconv.Atoi(ipj.Port)
 	if IPv4 == nil {
-		return net.TCPAddr{}, shila.ThirdPartyError("Unable to parse port.")
+		return net.TCPAddr{}, ParsingError("Unable to parse port.")
 	} else if err != nil {
 		return net.TCPAddr{}, err
 	}
@@ -61,4 +61,10 @@ func (json NetworkAddressAndPathJSON) GetNetworkAddressAndPath() (shila.NetworkA
 type RoutingEntryJSON struct {
 	Key  IPAddressPortJSON
 	Flow NetworkAddressAndPathJSON
+}
+
+// Parsing issue.
+type ParsingError string
+func (e ParsingError) Error() string {
+	return string(e)
 }

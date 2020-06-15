@@ -15,6 +15,7 @@ import (
 )
 
 type Connection struct {
+	key			shila.IPFlowKey
 	flow        shila.Flow
 	kind        shila.FlowType
 	state       state
@@ -34,6 +35,7 @@ type channels struct {
 
 func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router netflow.Router) *Connection {
 	return &Connection{
+		key:         flow.IPFlow.Key(),
 		flow:        flow,
 		state:       newState(),
 		lock:        sync.Mutex{},
@@ -270,9 +272,11 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 	// is already set. This is the responsibility of the corresponding network server implementation.
 	conn.flow.NetFlow = p.Flow.NetFlow.Swap()
 
+	log.Verbose.Println(conn.Says(fmt.Sprint("Packet from Contact Endpoint: ", p.Flow.NetFlow)))
+
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow.NetFlow.Src, conn.flow.IPFlow.Key()); err != nil {
+	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow.NetFlow.Src, conn.key); err != nil {
 		conn.state.set(closed)
 		return shila.PrependError(err, "Unable to establish server endpoint.")
 	} else {
@@ -280,7 +284,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 	}
 
 	// set new state
-	conn.state.set(serverReady)
+	conn.setState(serverReady)
 
 	return nil
 }

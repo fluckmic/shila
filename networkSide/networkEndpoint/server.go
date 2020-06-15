@@ -14,6 +14,7 @@ var _ shila.NetworkServerEndpoint = (*Server)(nil)
 
 type Server struct{
 	Base
+	key					shila.NetworkAddressKey
 	backboneConnections ServerBackboneConnections
 	lAddress            shila.NetworkAddress
 	lConnection         *snet.Conn
@@ -30,6 +31,7 @@ func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila
 									State:   shila.NewEntityState(),
 									Issues:  issues,
 								},
+		key:			shila.GetNetworkAddressKey(lAddr),
 		lAddress:       lAddr,
 		holdingArea:	make([] *shila.Packet, 0, Config.SizeHoldingArea),
 		lock:           sync.Mutex{},
@@ -48,7 +50,7 @@ func (server *Server) SetupAndRun() (err error) {
 	// Connection to listen for incoming backbone connections.
 	server.lConnection, err = appnet.Listen(server.lAddress.(*snet.UDPAddr).Host)
 	if err != nil {
-		return shila.PrependError(shila.NetworkConnectionError(err.Error()), "Unable to setup listener.")
+		return shila.PrependError(ConnectionError(err.Error()), "Unable to setup listener.")
 	}
 
 	go server.serveIngress() 			// Start listening for incoming backbone connections.
@@ -89,6 +91,10 @@ func (server *Server) Says(str string) string {
 	return  fmt.Sprint(server.Identifier(), ": ", str)
 }
 
+func (server *Server) Key() shila.NetworkAddressKey {
+	return server.key
+}
+
 func (server *Server) serveIngress(){
 
 	buffer := make([]byte, Config.SizeRawIngressStorage)
@@ -107,6 +113,8 @@ func (server *Server) serveIngress(){
 
 func (server *Server) serveEgress() {
 	for p := range server.Egress {
+
+
 		err := server.backboneConnections.WriteEgress(p)
 		if err != nil {
 			go server.handleConnectionIssue(err)
@@ -125,8 +133,8 @@ func (server *Server) resendFunctionality() {
 				server.Egress <- p
 			} else {
 				// Server network endpoint is "not able" to send out the given packet.
-				err := shila.NetworkEndpointTimeout("Unable to send packet.")
-				server.Issues <- shila.EndpointIssuePub { Issuer: server, Flow: p.Flow, Error: err }
+				err := ConnectionError("Unable to send packet.")
+				server.Issues <- shila.EndpointIssuePub { Issuer: server, Key: p.Flow.IPFlow.Key(), Error: err } // TODO!
 			}
 		}
 		server.holdingArea = server.holdingArea[:0]
@@ -144,7 +152,7 @@ func (server *Server) handleConnectionIssue(err error) {
 	// Wait a little bit - maybe the server is going to die anyway.
 	time.Sleep(Config.WaitingTimeAfterConnectionIssue)
 	if server.State.Is(shila.Running) {
-		panic("Implement me.")
+		log.Error.Println(server.Says(fmt.Sprint("Publishes issue - ", err.Error())))
+		server.Issues <- shila.EndpointIssuePub{Issuer: server, Error: ConnectionError(err.Error())}
 	}
 }
-

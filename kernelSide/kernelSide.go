@@ -19,114 +19,118 @@ const tableNumberOfFirstEgressInterface = "2"
 type Manager struct {
 	endpoints          EndpointMapping
 	trafficChannelPubs shila.PacketChannelPubChannels
-	endpointIssues 	   shila.EndpointIssuePubChannels
+	endpointIssues 	   shila.EndpointIssuePubChannel
 	state              shila.EntityState
 }
 
 type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
 
-func New(trafficChannelPubs shila.PacketChannelPubChannels, endpointIssues shila.EndpointIssuePubChannels) *Manager {
+func New(trafficChannelPubs shila.PacketChannelPubChannels) *Manager {
 	return &Manager{
-		endpoints:          make(EndpointMapping),
 		trafficChannelPubs: trafficChannelPubs,
-		endpointIssues: 	endpointIssues,
+		endpoints:          make(EndpointMapping),
+		endpointIssues: 	make(shila.EndpointIssuePubChannel),
 		state:              shila.NewEntityState(),
 	}
 }
 
-func (m *Manager) Setup() error {
+func (manager *Manager) Setup() error {
 
-	if m.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
 	// Setup the namespaces
-	if err := m.setupNamespaces(); err != nil {
-		_ = m.removeNamespaces()
+	if err := manager.setupNamespaces(); err != nil {
+		_ = manager.removeNamespaces()
 		return shila.PrependError(err, "Unable to setup namespace.")
 	}
 
 	// Setup additional routing
-	if err := m.setupAdditionalRouting(); err != nil {
-		_ = m.clearAdditionalRouting()
-		_ = m.removeNamespaces()
+	if err := manager.setupAdditionalRouting(); err != nil {
+		_ = manager.clearAdditionalRouting()
+		_ = manager.removeNamespaces()
 		return shila.PrependError(err, "Unable to setup routing.")
 	}
 	// Create the kernel endpoints
-	if err := m.addKernelEndpoints(); err != nil {
-		m.clearKernelEndpoints()
-		_ = m.clearAdditionalRouting()
-		_ = m.removeNamespaces()
+	if err := manager.addKernelEndpoints(); err != nil {
+		manager.clearKernelEndpoints()
+		_ = manager.clearAdditionalRouting()
+		_ = manager.removeNamespaces()
 		return shila.PrependError(err, "Unable to add kernel endpoints.")
 	}
 
 	// Setup the kernel endpoints
-	if err := m.setupKernelEndpoints(); err != nil {
-		_ = m.tearDownKernelEndpoints()
-		m.clearKernelEndpoints()
-		_ = m.clearAdditionalRouting()
-		_ = m.removeNamespaces()
+	if err := manager.setupKernelEndpoints(); err != nil {
+		_ = manager.tearDownKernelEndpoints()
+		manager.clearKernelEndpoints()
+		_ = manager.clearAdditionalRouting()
+		_ = manager.removeNamespaces()
 		return shila.PrependError(err, "Unable to setup kernel endpoints.")
 	}
 
-	m.state.Set(shila.Initialized)
+	manager.state.Set(shila.Initialized)
 
 	return nil
 }
 
-func (m *Manager) Start() error {
+func (manager *Manager) Start() error {
 
-	if m.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", m.state, "}."))
+	if manager.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
 	}
 
-	log.Verbose.Println("Starting kernel side...")
+	// Start the error handler
+	go manager.errorHandler()
 
-	if err := m.startKernelEndpoints(); err != nil {
+	if err := manager.startKernelEndpoints(); err != nil {
 		return err
 	}
 
 	// Announce all the traffic channels to the working side
-	for _, kerep := range m.endpoints {
+	for _, kerep := range manager.endpoints {
 		pub := shila.PacketChannelPub{Publisher: kerep, Channel: kerep.TrafficChannels().Ingress}
 		if 		  kerep.Role() == shila.EgressKernelEndpoint {
-			m.trafficChannelPubs.Egress <- pub
+			manager.trafficChannelPubs.Egress <- pub
 		} else if kerep.Role() == shila.IngressKernelEndpoint {
-			m.trafficChannelPubs.Ingress <- pub
+			manager.trafficChannelPubs.Ingress <- pub
 		} else {
 			return shila.CriticalError(fmt.Sprint("Invalid kernel endpoint label {", kerep.Role(), "},"))
 		}
 
 	}
 
-	m.state.Set(shila.Running)
+	manager.state.Set(shila.Running)
 
 	log.Verbose.Println("Kernel side started.")
 
 	return nil
 }
 
-func (m *Manager) CleanUp() error {
+func (manager *Manager) CleanUp() error {
 
-	m.state.Set(shila.TornDown)
+	manager.state.Set(shila.TornDown)
 
-	err := m.tearDownKernelEndpoints()
-	m.clearKernelEndpoints()
-	err = m.clearAdditionalRouting()
-	err = m.removeNamespaces()
+	err := manager.tearDownKernelEndpoints()
+	manager.clearKernelEndpoints()
+	err = manager.clearAdditionalRouting()
+	err = manager.removeNamespaces()
+
+	close(manager.endpointIssues)
+
 	return err
 }
 
-func (m *Manager) GetTrafficChannels(key shila.IPAddressKey) (shila.PacketChannels, bool) {
-	if endpoint, ok := m.endpoints[key]; !ok {
+func (manager *Manager) GetTrafficChannels(key shila.IPAddressKey) (shila.PacketChannels, bool) {
+	if endpoint, ok := manager.endpoints[key]; !ok {
 		return shila.PacketChannels{}, false
 	} else {
 		return endpoint.TrafficChannels(), true
 	}
 }
 
-func (m *Manager) setupKernelEndpoints() error {
-	for _, kerep := range m.endpoints {
+func (manager *Manager) setupKernelEndpoints() error {
+	for _, kerep := range manager.endpoints {
 		if err := kerep.Setup(); err != nil {
 			return err
 		}
@@ -134,32 +138,32 @@ func (m *Manager) setupKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) startKernelEndpoints() error {
+func (manager *Manager) startKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.endpoints {
+	for _, kerep := range manager.endpoints {
 		if err = kerep.Start(); err != nil {
-			_ = m.tearDownKernelEndpoints()
+			_ = manager.tearDownKernelEndpoints()
 			return err
 		}
 	}
 	return err
 }
 
-func (m *Manager) tearDownKernelEndpoints() error {
+func (manager *Manager) tearDownKernelEndpoints() error {
 	var err error = nil
-	for _, kerep := range m.endpoints {
+	for _, kerep := range manager.endpoints {
 			_ = kerep.TearDown()
 	}
 	return err
 }
 
-func (m *Manager) clearKernelEndpoints() {
-	for k := range m.endpoints {
-		delete(m.endpoints, k)
+func (manager *Manager) clearKernelEndpoints() {
+	for k := range manager.endpoints {
+		delete(manager.endpoints, k)
 	}
 }
 
-func (m *Manager) setupNamespaces() error {
+func (manager *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
 	if Config.IngressNamespace.NonEmpty {
@@ -178,7 +182,7 @@ func (m *Manager) setupNamespaces() error {
 	return nil
 }
 
-func (m *Manager) removeNamespaces() error {
+func (manager *Manager) removeNamespaces() error {
 
 	var err error = nil
 
@@ -194,24 +198,24 @@ func (m *Manager) removeNamespaces() error {
 	return err
 }
 
-func (m *Manager) addKernelEndpoints() error {
+func (manager *Manager) addKernelEndpoints() error {
 
 	// Add the ingress kernel endpoint.
 	key := shila.GetIPAddressKey(Config.IngressIP)
-	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP, shila.IngressKernelEndpoint, m.endpointIssues.Ingress)
-	m.endpoints[key] = &kerep
+	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP, shila.IngressKernelEndpoint, manager.endpointIssues)
+	manager.endpoints[key] = &kerep
 
 	// Add the egress kernel endpoint(s).
 	numberOfEndpointsAdded := uint8(0)
 	for {
 		ip := getRandomIP()
 		key := shila.GetIPAddressKey(ip)
-		if _, ok := m.endpoints[key]; !ok {
+		if _, ok := manager.endpoints[key]; !ok {
 
 			number := numberOfEndpointsAdded + 2
-			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip, shila.EgressKernelEndpoint, m.endpointIssues.Egress)
+			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip, shila.EgressKernelEndpoint, manager.endpointIssues)
 
-			m.endpoints[key] = &kerep
+			manager.endpoints[key] = &kerep
 			numberOfEndpointsAdded++
 		}
 		if numberOfEndpointsAdded == Config.NumberOfEgressInterfaces {
@@ -222,14 +226,14 @@ func (m *Manager) addKernelEndpoints() error {
 	return nil
 }
 
-func (m *Manager) setupAdditionalRouting() error {
+func (manager *Manager) setupAdditionalRouting() error {
 
 	// Restrict the use of MPTCP to the virtual devices
 
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
 	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
-	// also want to participate. // TODO: https://github.com/fluckmic/shila/issues/16
+	// also want to participate. // TODO.
 
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
@@ -252,14 +256,14 @@ func (m *Manager) setupAdditionalRouting() error {
 	return nil
 }
 
-func (m *Manager) clearAdditionalRouting() error {
+func (manager *Manager) clearAdditionalRouting() error {
 
 	// Roll back the restriction of the use of MPTCP to the virtual devices.
 
 	// If the ingress and egress interfaces are isolated in its own and fresh namespace,
 	// then there is just the local interface which could also try to participate in MPTCP.
 	// However, if this is not the case, then there could possibly multiple interfaces which
-	// also want to participate. // TODO: https://github.com/fluckmic/shila/issues/16
+	// also want to participate. // TODO.
 
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}

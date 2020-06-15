@@ -44,135 +44,135 @@ func New(number uint8, namespace network.Namespace, ip net.IP, label shila.Endpo
 	}
 }
 
-func (d *Device) Setup() error {
+func (device *Device) Setup() error {
 
-	if d.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+	if device.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", device.state, "}."))
 	}
 
 	// Allocate the vif
-	d.vif = vif.New(d.Name, d.Namespace, network.Subnet(d.IP.String()))
+	device.vif = vif.New(device.Name, device.Namespace, network.Subnet(device.IP.String()))
 
 	// Setup the vif
-	if err := d.vif.Setup(); err != nil {
-		_ = d.vif.Teardown()
+	if err := device.vif.Setup(); err != nil {
+		_ = device.vif.Teardown()
 		return shila.PrependError(err, fmt.Sprint("Unable to start virtual interface."))
 	}
 
 	// Turn the vif up
-	if err := d.vif.TurnUp(); err != nil {
-		_ = d.vif.TurnDown()
-		_ = d.vif.Teardown()
+	if err := device.vif.TurnUp(); err != nil {
+		_ = device.vif.TurnDown()
+		_ = device.vif.Teardown()
 		return shila.PrependError(err, fmt.Sprint("Unable to start virtual interface."))
 	}
 
 	// Setup the routing
-	if err := d.setupRouting(); err != nil {
-		_ = d.removeRouting()
-		_ = d.vif.TurnDown()
-		_ = d.vif.Teardown()
+	if err := device.setupRouting(); err != nil {
+		_ = device.removeRouting()
+		_ = device.vif.TurnDown()
+		_ = device.vif.Teardown()
 		return shila.PrependError(err, fmt.Sprint("Unable to setup routing."))
 	}
 
 	// Allocate the buffers
 
-	d.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuffer)
-	d.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuffer)
+	device.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuffer)
+	device.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
-	d.state.Set(shila.Initialized)
+	device.state.Set(shila.Initialized)
 	return nil
 }
 
-func (d *Device) Start() error {
+func (device *Device) Start() error {
 
-	if d.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+	if device.state.Not(shila.Initialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", device.state, "}."))
 	}
 
-	go d.serveIngress()
-	go d.serveEgress()
+	go device.serveIngress()
+	go device.serveEgress()
 
-	d.state.Set(shila.Running)
+	device.state.Set(shila.Running)
 	return nil
 }
 
-func (d *Device) TearDown() error {
+func (device *Device) TearDown() error {
 
-	d.state.Set(shila.TornDown)
+	device.state.Set(shila.TornDown)
 
 	// Remove the routing table associated with the kernel endpoint
-	err := d.removeRouting()
+	err := device.removeRouting()
 
 	// Deallocate the corresponding instance of the interface
-	err = d.vif.TurnDown()
-	err = d.vif.Teardown()
+	err = device.vif.TurnDown()
+	err = device.vif.Teardown()
 
 	// Ingress channel: This kernel endpoint is the only sender, therefore can close it.
-	close(d.channels.ingress)
+	close(device.channels.ingress)
 
 	return err
 }
 
-func (d *Device) Role() shila.EndpointRole {
-	return d.label
+func (device *Device) Role() shila.EndpointRole {
+	return device.label
 }
 
-func (d *Device) Identifier() string {
-	return fmt.Sprint(d.Role(), " (", d.Name,":", d.IP, ")")
+func (device *Device) Identifier() string {
+	return fmt.Sprint(device.Role(), " (", device.Name,":", device.IP, ")")
 }
 
-func (d *Device) TrafficChannels() shila.PacketChannels {
-	return shila.PacketChannels{Ingress: d.channels.ingress, Egress: d.channels.egress}
+func (device *Device) TrafficChannels() shila.PacketChannels {
+	return shila.PacketChannels{Ingress: device.channels.ingress, Egress: device.channels.egress}
 }
 
-func (d *Device) setupRouting() error {
+func (device *Device) setupRouting() error {
 
 	// ip rule add from <dev ip> table <table id>
-	args := []string{"rule", "add", "from", d.IP.String(), "table", fmt.Sprint(d.Number)}
-	if err := network.Execute(d.Namespace, args...); err != nil {
+	args := []string{"rule", "add", "from", device.IP.String(), "table", fmt.Sprint(device.Number)}
+	if err := network.Execute(device.Namespace, args...); err != nil {
 		return err
 	}
 
 	// ip route add table <table id> default dev <dev name> scope link
-	args = []string{"route", "add", "table", fmt.Sprint(d.Number), "default", "dev", d.Name, "scope", "link"}
-	if err := network.Execute(d.Namespace, args...); err != nil {
+	args = []string{"route", "add", "table", fmt.Sprint(device.Number), "default", "dev", device.Name, "scope", "link"}
+	if err := network.Execute(device.Namespace, args...); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (d *Device) removeRouting() error {
+func (device *Device) removeRouting() error {
 
 	// ip rule del table <table id>
-	args := []string{"rule", "del", "table", fmt.Sprint(d.Number)}
-	err := network.Execute(d.Namespace, args...)
+	args := []string{"rule", "del", "table", fmt.Sprint(device.Number)}
+	err := network.Execute(device.Namespace, args...)
 
 	// ip route flush table <table id>
-	args = []string{"route", "flush", "table", fmt.Sprint(d.Number)}
-	err = network.Execute(d.Namespace, args...)
+	args = []string{"route", "flush", "table", fmt.Sprint(device.Number)}
+	err = network.Execute(device.Namespace, args...)
 
 	return err
 }
 
-func (d *Device) serveIngress() {
+func (device *Device) serveIngress() {
 
 	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
-	go d.packetize(ingressRaw)
+	go device.packetize(ingressRaw)
 
-	reader := io.Reader(&d.vif)
+	reader := io.Reader(&device.vif)
 	storage := make([]byte, Config.SizeRawIngressStorage)
 	for {
 		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
 		if err != nil {
 			time.Sleep(Config.WaitingTimeUntilEscalation)
-			if d.state.Not(shila.Running) {
+			if device.state.Not(shila.Running) {
 				close(ingressRaw)
 				return
 			}
-			d.endpointIssues <- shila.EndpointIssuePub{
-				Issuer: d,
-				Error:  shila.ThirdPartyError("Unable to read data."),
+			device.endpointIssues <- shila.EndpointIssuePub{
+				Issuer: device,
+				Error:  ConnectionError("Unable to read data."),
 			}
 			return
 		}
@@ -182,41 +182,41 @@ func (d *Device) serveIngress() {
 	}
 }
 
-func (d *Device) serveEgress() {
-	writer := io.Writer(&d.vif)
-	for p := range d.channels.egress {
+func (device *Device) serveEgress() {
+	writer := io.Writer(&device.vif)
+	for p := range device.channels.egress {
 		_, err := writer.Write(p.Payload)
 		if err != nil {
 			time.Sleep(Config.WaitingTimeUntilEscalation)
-			if d.state.Not(shila.Running) {
+			if device.state.Not(shila.Running) {
 				return
 			}
-			d.endpointIssues <- shila.EndpointIssuePub{
-				Issuer: d,
-				Error:  shila.ThirdPartyError("Unable to write data."),
+			device.endpointIssues <- shila.EndpointIssuePub{
+				Issuer: device,
+				Error:  ConnectionError("Unable to write data."),
 			}
 			return
 		}
 	}
 }
 
-func (d *Device) packetize(ingressRaw chan byte) {
+func (device *Device) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", d.Identifier(), "}. - ", err.Error())
+				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", device.Identifier(), "}. - ", err.Error())
 			} else {
-				d.channels.ingress <- shila.NewPacket(d, iPHeader, rawData)
+				device.channels.ingress <- shila.NewPacket(device, iPHeader, rawData)
 			}
 		} else {
 			if err == nil {
 				// All good, ingress raw closed.
 				return
 			}
-			d.endpointIssues <- shila.EndpointIssuePub{
-				Issuer: d,
+			device.endpointIssues <- shila.EndpointIssuePub{
+				Issuer: device,
 				Error:  shila.PrependError(err, "Error in raw data packetizer."),
 			}
 			return
@@ -224,6 +224,6 @@ func (d *Device) packetize(ingressRaw chan byte) {
 	}
 }
 
-func (d *Device) Says(string) string {
+func (device *Device) Says(string) string {
 	panic("implement me.")
 }
