@@ -2,6 +2,7 @@
 package connection
 
 import (
+	"shila/config"
 	"shila/core/netflow"
 	"shila/core/shila"
 	"shila/kernelSide"
@@ -35,10 +36,10 @@ func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager
 // is no more reference pointing to the connection.
 func (m *Mapping) vacuum() {
 	for {
-		time.Sleep(Config.VacuumInterval)
+		time.Sleep(time.Duration(config.Config.Connection.VacuumInterval) * time.Second)
 		m.lock.Lock()
 		for key, con := range m.connections {
-			if time.Since(con.touched) > (Config.MaxTimeUntouched) {
+			if time.Since(con.touched) > (time.Duration(config.Config.Connection.MaxTimeUntouched) * time.Second) {
 				con.Close(shila.TolerableError("Connection got dusty."))
 				delete(m.connections, key)
 			}

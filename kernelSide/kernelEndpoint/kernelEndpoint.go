@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"shila/config"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint/vif"
 	"shila/kernelSide/network"
@@ -76,8 +77,8 @@ func (device *Device) Setup() error {
 
 	// Allocate the buffers
 
-	device.channels.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
-	device.channels.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
+	device.channels.ingress = make(chan *shila.Packet, config.Config.KernelEndpoint.SizeIngressBuffer)
+	device.channels.egress  = make(chan *shila.Packet, config.Config.KernelEndpoint.SizeEgressBuffer)
 
 	device.state.Set(shila.Initialized)
 	return nil
@@ -157,15 +158,15 @@ func (device *Device) removeRouting() error {
 
 func (device *Device) serveIngress() {
 
-	ingressRaw := make(chan byte, Config.SizeRawIngressBuffer)
+	ingressRaw := make(chan byte, config.Config.KernelEndpoint.SizeRawIngressBuffer)
 	go device.packetize(ingressRaw)
 
 	reader := io.Reader(&device.vif)
-	storage := make([]byte, Config.SizeRawIngressStorage)
+	storage := make([]byte, config.Config.KernelEndpoint.SizeRawIngressStorage)
 	for {
-		nBytesRead, err := io.ReadAtLeast(reader, storage, Config.ReadSizeRawIngress)
+		nBytesRead, err := io.ReadAtLeast(reader, storage, config.Config.KernelEndpoint.ReadSizeRawIngress)
 		if err != nil {
-			time.Sleep(Config.WaitingTimeUntilEscalation)
+			time.Sleep(time.Duration(config.Config.KernelEndpoint.WaitingTimeUntilEscalation) * time.Second)
 			if device.state.Not(shila.Running) {
 				close(ingressRaw)
 				return
@@ -187,7 +188,7 @@ func (device *Device) serveEgress() {
 	for p := range device.channels.egress {
 		_, err := writer.Write(p.Payload)
 		if err != nil {
-			time.Sleep(Config.WaitingTimeUntilEscalation)
+			time.Sleep(time.Duration(config.Config.KernelEndpoint.WaitingTimeUntilEscalation) * time.Second)
 			if device.state.Not(shila.Running) {
 				return
 			}
@@ -202,7 +203,7 @@ func (device *Device) serveEgress() {
 
 func (device *Device) packetize(ingressRaw chan byte) {
 	for {
-		if rawData, err := tcpip.PacketizeRawData(ingressRaw, Config.SizeRawIngressStorage); rawData != nil {
+		if rawData, err := tcpip.PacketizeRawData(ingressRaw, config.Config.KernelEndpoint.SizeRawIngressStorage); rawData != nil {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..

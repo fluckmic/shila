@@ -3,6 +3,7 @@ package networkSide
 import (
 	"github.com/scionproto/scion/go/lib/snet"
 	"net"
+	"shila/config"
 	"shila/core/shila"
 	"shila/networkSide/networkEndpoint"
 )
@@ -30,10 +31,10 @@ func (specMng SpecificManager) NewServer(lAddr shila.NetworkAddress, role shila.
 
 func (specMng SpecificManager) ContactRemoteAddr(rAddressTraffic shila.NetworkAddress) shila.NetworkAddress {
 	rAddressContact := rAddressTraffic.(*snet.UDPAddr).Copy()
-	rAddressContact.Host.Port = Config.ContactingServerPort
+	rAddressContact.Host.Port = config.Config.NetworkSide.ContactingServerPort
 	return rAddressContact
 }
 
 func (specMng SpecificManager) ContactLocalAddr() shila.NetworkAddress {
-	return &snet.UDPAddr{Host: &net.UDPAddr{Port: Config.ContactingServerPort}}
+	return &snet.UDPAddr{Host: &net.UDPAddr{Port: config.Config.NetworkSide.ContactingServerPort}}
 }

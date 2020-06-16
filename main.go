@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	_ "shila/config"
 	"shila/core/connection"
 	"shila/core/netflow"
 	"shila/core/shila"
@@ -30,11 +31,8 @@ func realMain() int {
 
 	var err error
 
-	// Initialize logging functionality
-	log.Init()
-
-	// Initialize termination functionality
-	shutdown.Init()
+	log.Init()					// Initialize logging functionality
+	shutdown.Init()				// Initialize termination functionality
 
 	log.Verbose.Println("Setup started...")
 
@@ -119,3 +117,4 @@ func waitForTeardown() int {
 		return ErrorCode
 	}
 }
+

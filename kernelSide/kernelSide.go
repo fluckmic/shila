@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"shila/config"
 	"shila/core/shila"
 	"shila/kernelSide/kernelEndpoint"
 	"shila/kernelSide/network"
@@ -18,9 +19,12 @@ const tableNumberOfFirstEgressInterface = "2"
 
 type Manager struct {
 	endpoints          EndpointMapping
-	trafficChannelPubs shila.PacketChannelPubChannels
-	endpointIssues 	   shila.EndpointIssuePubChannel
-	state              shila.EntityState
+	trafficChannelPubs 	shila.PacketChannelPubChannels
+	endpointIssues 	   	shila.EndpointIssuePubChannel
+	state              	shila.EntityState
+	ingressNamespace	network.Namespace
+	egressNamespace		network.Namespace
+	ingressIP           net.IP
 }
 
 type EndpointMapping map[shila.IPAddressKey] *kernelEndpoint.Device
@@ -31,6 +35,9 @@ func New(trafficChannelPubs shila.PacketChannelPubChannels) *Manager {
 		endpoints:          make(EndpointMapping),
 		endpointIssues: 	make(shila.EndpointIssuePubChannel),
 		state:              shila.NewEntityState(),
+		ingressNamespace: 	network.NewNamespace(config.Config.KernelSide.IngressNamespace),
+		egressNamespace: 	network.NewNamespace(config.Config.KernelSide.EgressNamespace),
+		ingressIP: 			net.ParseIP(config.Config.KernelSide.IngressIP),
 	}
 }
 
@@ -166,15 +173,15 @@ func (manager *Manager) clearKernelEndpoints() {
 func (manager *Manager) setupNamespaces() error {
 
 	// Create ingress namespace
-	if Config.IngressNamespace.NonEmpty {
-		if err := network.AddNamespace(Config.IngressNamespace); err != nil {
+	if manager.ingressNamespace.NonEmpty {
+		if err := network.AddNamespace(manager.ingressNamespace); err != nil {
 			return err
 		}
 	}
 
 	// Create egress namespace
-	if Config.EgressNamespace.NonEmpty {
-		if err := network.AddNamespace(Config.EgressNamespace); err != nil {
+	if manager.egressNamespace.NonEmpty {
+		if err := network.AddNamespace(manager.egressNamespace); err != nil {
 			return err
 		}
 	}
@@ -187,12 +194,12 @@ func (manager *Manager) removeNamespaces() error {
 	var err error = nil
 
 	// Remove ingress namespace
-	if Config.IngressNamespace.NonEmpty {
-		err = network.DeleteNamespace(Config.IngressNamespace)
+	if manager.ingressNamespace.NonEmpty {
+		err = network.DeleteNamespace(manager.ingressNamespace)
 	}
 	// Remove egress namespace
-	if Config.EgressNamespace.NonEmpty {
-		err = network.DeleteNamespace(Config.EgressNamespace)
+	if manager.egressNamespace.NonEmpty {
+		err = network.DeleteNamespace(manager.egressNamespace)
 	}
 
 	return err
@@ -201,8 +208,8 @@ func (manager *Manager) removeNamespaces() error {
 func (manager *Manager) addKernelEndpoints() error {
 
 	// Add the ingress kernel endpoint.
-	key := shila.GetIPAddressKey(Config.IngressIP)
-	kerep := kernelEndpoint.New(1, Config.IngressNamespace, Config.IngressIP, shila.IngressKernelEndpoint, manager.endpointIssues)
+	key := shila.GetIPAddressKey(manager.ingressIP)
+	kerep := kernelEndpoint.New(1, manager.ingressNamespace, manager.ingressIP, shila.IngressKernelEndpoint, manager.endpointIssues)
 	manager.endpoints[key] = &kerep
 
 	// Add the egress kernel endpoint(s).
@@ -213,12 +220,12 @@ func (manager *Manager) addKernelEndpoints() error {
 		if _, ok := manager.endpoints[key]; !ok {
 
 			number := numberOfEndpointsAdded + 2
-			kerep := kernelEndpoint.New(number, Config.EgressNamespace, ip, shila.EgressKernelEndpoint, manager.endpointIssues)
+			kerep := kernelEndpoint.New(number, manager.egressNamespace, ip, shila.EgressKernelEndpoint, manager.endpointIssues)
 
 			manager.endpoints[key] = &kerep
 			numberOfEndpointsAdded++
 		}
-		if numberOfEndpointsAdded == Config.NumberOfEgressInterfaces {
+		if numberOfEndpointsAdded == uint8(config.Config.KernelSide.NumberOfEgressInterfaces) {
 			break
 		}
 	}
@@ -237,10 +244,10 @@ func (manager *Manager) setupAdditionalRouting() error {
 
 	// ip link set dev lo multipath off
 	args := []string{"link", "set", "dev", "lo", "multipath", "off"}
-	if err := network.Execute(Config.IngressNamespace, args...); err != nil {
+	if err := network.Execute(manager.ingressNamespace, args...); err != nil {
 		return err
 	}
-	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
+	if err := network.Execute(manager.egressNamespace, args...); err != nil {
 		return err
 	}
 
@@ -248,8 +255,8 @@ func (manager *Manager) setupAdditionalRouting() error {
 	// local interface, route them through one of the egress devices..
 
 	// ip rule add to <ip> iif lo table <id>
-	args = []string{"rule", "add", "to", Config.IngressIP.String(), "table", tableNumberOfFirstEgressInterface}
-	if err := network.Execute(Config.EgressNamespace, args...); err != nil {
+	args = []string{"rule", "add", "to", manager.ingressIP.String(), "table", tableNumberOfFirstEgressInterface}
+	if err := network.Execute(manager.egressNamespace, args...); err != nil {
 		return err
 	}
 
@@ -267,12 +274,12 @@ func (manager *Manager) clearAdditionalRouting() error {
 
 	// ip link set dev lo multipath on
 	args := []string{"link", "set", "dev", "lo", "multipath", "on"}
-	err := network.Execute(Config.IngressNamespace, args...)
-	err = network.Execute(Config.EgressNamespace, args...)
+	err := network.Execute(manager.ingressNamespace, args...)
+	err = network.Execute(manager.egressNamespace, args...)
 
 	// ip rule add to <ip> iif lo table <id>
-	args = []string{"rule", "delete", "to", Config.IngressIP.String(), "table", tableNumberOfFirstEgressInterface}
-	err = network.Execute(Config.EgressNamespace, args...)
+	args = []string{"rule", "delete", "to", manager.ingressIP.String(), "table", tableNumberOfFirstEgressInterface}
+	err = network.Execute(manager.egressNamespace, args...)
 
 	return err
 }

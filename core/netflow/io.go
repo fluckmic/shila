@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"shila/config"
 	"shila/core/shila"
 	"shila/io/structure"
 	"shila/log"
@@ -13,7 +14,7 @@ import (
 
 func loadRoutingEntriesFromDisk() ([]structure.RoutingEntryJSON, error) {
 
-	data, err := ioutil.ReadFile(Config.Path)
+	data, err := ioutil.ReadFile(config.Config.NetFlow.Path)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/scionproto/scion/go/lib/snet"
 	"io"
 	"net"
+	"shila/config"
 	"shila/core/shila"
 	"shila/log"
 	"shila/networkSide/network"
@@ -29,8 +30,8 @@ func NewContactClient(rAddr shila.NetworkAddress, ipFlow shila.IPFlow, issues sh
 	return &Client{
 		Base: 						Base{
 										Role:    shila.ContactNetworkEndpoint,
-										Ingress: make(chan *shila.Packet, Config.SizeIngressBuffer),
-										Egress:  make(chan *shila.Packet, Config.SizeIngressBuffer),
+										Ingress: make(chan *shila.Packet, config.Config.NetworkEndpoint.SizeIngressBuffer),
+										Egress:  make(chan *shila.Packet, config.Config.NetworkEndpoint.SizeIngressBuffer),
 										State:   shila.NewEntityState(),
 										Issues:  issues,
 									},
@@ -165,7 +166,7 @@ func (client *Client) sendControlMessage() error {
 
 func (client *Client) handleConnectionIssue(err error) {
 	// Wait a little bit - maybe the client is going to die anyway.
-	time.Sleep(Config.WaitingTimeAfterConnectionIssue)
+	time.Sleep(time.Second * time.Duration(config.Config.NetworkEndpoint.WaitingTimeAfterConnectionIssue))
 	if client.State.Is(shila.Running) {
 		log.Error.Println(client.Says(fmt.Sprint("Publishes issue - ", err.Error())))
 		client.Issues <- shila.EndpointIssuePub{ Issuer: client, Key: client.Key(), Error: ConnectionError(err.Error()) }

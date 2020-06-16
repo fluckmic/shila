@@ -109,7 +109,6 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowType, error) {
 }
 
 func (r *Router) getFromIPOptions(raw []byte) (shila.NetFlow, bool, error) {
-	// TODO: https://github.com/fluckmic/shila/issues/17
 	return shila.NetFlow{}, false, nil
 }
 

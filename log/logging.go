@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"shila/config"
 )
 
 var (
@@ -24,7 +25,7 @@ func Init() {
 	Info.SetOutput(os.Stdout)
 	Info.SetPrefix("INFO: ")
 
-	if !Config.PrintVerbose {
+	if !config.Config.Logging.PrintVerbose {
 		Verbose.SetOutput(ioutil.Discard)
 	} else {
 		Verbose.SetOutput(os.Stdout)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 	"github.com/scionproto/scion/go/lib/snet"
+	"shila/config"
 	"shila/core/shila"
 	"shila/log"
 	"sync"
@@ -26,14 +27,14 @@ func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila
 	return &Server{
 		Base: 			Base{
 									Role:    role,
-									Ingress: make(shila.PacketChannel, Config.SizeIngressBuffer),
-									Egress:  make(shila.PacketChannel, Config.SizeEgressBuffer),
+									Ingress: make(shila.PacketChannel, config.Config.NetworkEndpoint.SizeIngressBuffer),
+									Egress:  make(shila.PacketChannel, config.Config.NetworkEndpoint.SizeEgressBuffer),
 									State:   shila.NewEntityState(),
 									Issues:  issues,
 								},
 		key:			shila.GetNetworkAddressKey(lAddr),
 		lAddress:       lAddr,
-		holdingArea:	make([] *shila.Packet, 0, Config.SizeHoldingArea),
+		holdingArea:	make([] *shila.Packet, 0, config.Config.NetworkEndpoint.SizeHoldingArea),
 		lock:           sync.Mutex{},
 	}
 }
@@ -97,7 +98,7 @@ func (server *Server) Key() shila.NetworkAddressKey {
 
 func (server *Server) serveIngress(){
 
-	buffer := make([]byte, Config.SizeRawIngressStorage)
+	buffer := make([]byte, config.Config.NetworkEndpoint.SizeRawIngressStorage)
 	for {
 		n, from, err := server.lConnection.ReadFrom(buffer)
 		if err != nil {
@@ -125,7 +126,7 @@ func (server *Server) serveEgress() {
 
 func (server *Server) resendFunctionality() {
 	for {
-		time.Sleep(Config.ServerResendInterval)
+		time.Sleep(time.Duration(config.Config.NetworkEndpoint.ServerResendInterval) * time.Second)
 		server.lock.Lock()
 		for _, p := range server.holdingArea {
 			if p.TTL > 0 {
@@ -150,7 +151,7 @@ func (server *Server) addToHoldingArea(packet *shila.Packet) {
 
 func (server *Server) handleConnectionIssue(err error) {
 	// Wait a little bit - maybe the server is going to die anyway.
-	time.Sleep(Config.WaitingTimeAfterConnectionIssue)
+	time.Sleep(time.Duration(config.Config.NetworkEndpoint.WaitingTimeAfterConnectionIssue) * time.Second)
 	if server.State.Is(shila.Running) {
 		log.Error.Println(server.Says(fmt.Sprint("Publishes issue - ", err.Error())))
 		server.Issues <- shila.EndpointIssuePub{Issuer: server, Error: ConnectionError(err.Error())}

@@ -2,6 +2,7 @@ package workingSide
 
 import (
 	"github.com/bclicn/color"
+	"shila/config"
 	"shila/core/shila"
 	"shila/log"
 	"shila/shutdown"
@@ -9,7 +10,7 @@ import (
 
 func (manager *Manager) packetWorker() {
 	for trafficChannelPub := range manager.trafficChannelPubs {
-		go manager.servePacketChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
+		go manager.servePacketChannel(trafficChannelPub.Channel, config.Config.WorkingSide.NumberOfWorkerPerChannel)
 	}
 }
 
