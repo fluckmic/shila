@@ -79,7 +79,7 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 		case shila.ContactNetworkEndpoint: 		err = conn.processPacketFromContactingEndpoint(p)
 		case shila.TrafficNetworkEndpoint:		err = conn.processPacketFromTrafficEndpoint(p)
 		default:
-			err = shila.CriticalError(fmt.Sprint("Unknown entry point label {", p.Entrypoint.Role(), "}."))
+			err = shila.CriticalError(fmt.Sprint("Unknown entry point label ", p.Entrypoint.Role(), "."))
 	}
 
 	if err != nil {
@@ -121,7 +121,7 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 
 	case closed: 			return nil
 
-	default: 				return shila.CriticalError(fmt.Sprint("Unknown connection state."))
+	default: 				return shila.CriticalError("Unknown connection state.")
 
 	}
 }
@@ -133,7 +133,7 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 
 	case clientReady:		return shila.CriticalError("Both endpoints in client state.") // TODO: TO THINK.
 
-	case clientEstablished: return shila.CriticalError(fmt.Sprint("Invalid connection state {", conn.state.current, "}."))
+	case clientEstablished: return shila.CriticalError(fmt.Sprint("Invalid connection state ", conn.state.current, "."))
 
 	case serverReady:		conn.channels.KernelEndpoint.Egress <- p
 							return nil
@@ -147,7 +147,7 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 
 	case closed: 		 	return nil
 
-	default: 				return shila.CriticalError(fmt.Sprint("Unknown connection state."))
+	default: 				return shila.CriticalError("Unknown connection state.")
 
 	}
 }
@@ -155,16 +155,16 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error {
 	switch conn.state.current {
 
-	case raw:				return shila.CriticalError(fmt.Sprint("Invalid connection state {", conn.state.current, "}."))
+	case raw:				return shila.CriticalError(fmt.Sprint("Invalid connection state ", conn.state.current, "."))
 
 							// A packet from the traffic endpoint is just received if network connection is established
-	case clientReady:		return shila.CriticalError(fmt.Sprint("Invalid connection state {", conn.state.current, "}."))
+	case clientReady:		return shila.CriticalError(fmt.Sprint("Invalid connection state ", conn.state.current, "."))
 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
 							if err := conn.router.InsertFromSynAckMpCapable(p, conn.flow.NetFlow); err != nil {
-								return shila.PrependError(err, "Unable to update router.")
+								return shila.TolerableError(fmt.Sprint("Unable to update router.", err.Error()))
 							}
 
 							conn.touched = time.Now()
@@ -191,7 +191,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	case closed: 			return nil
 
-	default: 				return shila.CriticalError(fmt.Sprint("Unknown connection state."))
+	default: 				return shila.CriticalError("Unknown connection state.")
 	}
 }
 
@@ -203,21 +203,21 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		conn.channels.KernelEndpoint.Ingress = entryPoint.TrafficChannels().Ingress // ingress from kernel end point
 		conn.channels.KernelEndpoint.Egress  = entryPoint.TrafficChannels().Egress  // egress towards kernel end point
 	} else {
-		return shila.CriticalError(fmt.Sprint("Invalid entry point."))
+		return shila.CriticalError("Invalid entry point.")
 	}
 
 	// Get the network flow
 	var err error
 	conn.flow.NetFlow, conn.kind, err = conn.router.Route(p)
 	if err != nil {
-		return shila.PrependError(err,"Unable to get network flow.")
+		return shila.TolerableError(fmt.Sprint("Unable to get network flow.", err.Error()))
 	}
 	p.Flow.NetFlow = conn.flow.NetFlow
 
 	// Create the contacting connection
 	contactingNetFlow, channels, err := conn.networkSide.EstablishNewContactingClientEndpoint(conn.flow)
 	if err != nil {
-		return shila.PrependError(err, "Unable to establish contacting connection.")
+		return shila.TolerableError(fmt.Sprint( "Unable to establish contacting connection.", err.Error()))
 	}
 	conn.channels.Contacting = channels
 
@@ -261,7 +261,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 		conn.channels.KernelEndpoint = channels
 	} else {
 		conn.state.set(closed)
-		return shila.CriticalError(fmt.Sprint("No kernel endpoint for {", packetDstKey, "}.")) // TODO: TO THINK.
+		return shila.TolerableError(fmt.Sprint("Cant process packet. No kernel endpoint for ", packetDstKey, ".")) // TODO: TO THINK.
 	}
 
 	// Send packet to kernel endpoint
@@ -272,13 +272,11 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 	// is already set. This is the responsibility of the corresponding network server implementation.
 	conn.flow.NetFlow = p.Flow.NetFlow.Swap()
 
-	log.Verbose.Println(conn.Says(fmt.Sprint("Packet from Contact Endpoint: ", p.Flow.NetFlow)))
-
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
 	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow.NetFlow.Src, conn.key); err != nil {
 		conn.state.set(closed)
-		return shila.PrependError(err, "Unable to establish server endpoint.")
+		return shila.TolerableError(fmt.Sprint("Unable to establish server endpoint.", err.Error()))
 	} else {
 		conn.channels.NetworkEndpoint = channels
 	}

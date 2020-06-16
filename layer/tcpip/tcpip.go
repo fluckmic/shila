@@ -16,7 +16,6 @@ var hostByteOrder = binary.BigEndian
 type IPv4Option interface{}
 
 func DecodeIPv4POptions(ip layers.IPv4) (options []IPv4Option, err error) {
-	// TODO: https://github.com/fluckmic/shila/issues/17
 	options = []IPv4Option{}
 	return
 }
@@ -81,7 +80,7 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) ([]byte, error) 
 			// Ingress was closed in the meantime, return nil.
 			return nil, nil
 		} else {
-			return nil, layer.ParsingError(fmt.Sprint("Unknown IP version {", b >> 4, "}."))
+			return nil, layer.ParsingError(fmt.Sprint("Unknown IP version ", b >> 4, "."))
 		}
 	}
 }
@@ -89,14 +88,14 @@ func PacketizeRawData(ingressRaw chan byte, sizeReadBuffer int) ([]byte, error) 
 // <ip>:<port>
 func DecodeTCPAddrFromString(addr string) (net.TCPAddr, error) {
 	if host, port, err := net.SplitHostPort(addr); err != nil {
-		return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP {", addr, "}."))
+		return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP ", addr, "."))
 	} else {
 		IP := net.ParseIP(host)
 		Port, err := strconv.Atoi(port)
 		if IP == nil {
-			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP {", IP, "}."))
+			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse IP ", IP, "."))
 		} else if err != nil {
-			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse port {", Port, "}."))
+			return net.TCPAddr{}, layer.ParsingError(fmt.Sprint("Cannot parse port ", Port, "."))
 		} else {
 			return net.TCPAddr{IP: IP, Port: Port}, nil
 		}

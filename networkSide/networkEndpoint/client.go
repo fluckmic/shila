@@ -53,7 +53,7 @@ func NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkA
 func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 
 	if client.State.Not(shila.Uninitialized) {
-		err = shila.CriticalError(fmt.Sprint("Entity in wrong State {", client.State, "}."))
+		err = shila.CriticalError(fmt.Sprint("Entity in wrong State ", client.State, "."))
 		return
 	}
 

@@ -162,7 +162,7 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []Option, err error) {
 			case MultipathCapable:
 
 				if length != 12 && length != 20 {
-					err = layer.ParsingError(fmt.Sprint("Invalid length {", length, "} for {", MultipathCapable, "}."))
+					err = layer.ParsingError(fmt.Sprint("Invalid length ", length, " for ", MultipathCapable, "."))
 					return
 				}
 
@@ -235,7 +235,7 @@ func decodeMPTCPOptions(tcp layers.TCP) (options []Option, err error) {
 					opt = JoinOptionThirdACK{OptionBase: optBase, SenderHMAC: data[2:22]}
 
 				default:
-					err = layer.ParsingError(fmt.Sprint("Invalid length {", length, "} for {", JoinConnection, "}."))
+					err = layer.ParsingError(fmt.Sprint("Invalid length ", length, " for ", JoinConnection, "."))
 					return
 				}
 

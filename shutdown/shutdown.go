@@ -87,7 +87,7 @@ func Check() {
 // Fatal produces a shutdown error. This function never exits.
 func Fatal(err error) {
 
-	log.Error.Println("Fatal error. -", err.Error())
+	log.Error.Println("Fatal error.", err.Error())
 
 	// Grace period to gather more logs in case that
 	// the first shutdown error wasn't the most informative one.

@@ -47,7 +47,7 @@ func New(number uint8, namespace network.Namespace, ip net.IP, label shila.Endpo
 func (device *Device) Setup() error {
 
 	if device.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", device.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state ", device.state, "."))
 	}
 
 	// Allocate the vif
@@ -76,8 +76,8 @@ func (device *Device) Setup() error {
 
 	// Allocate the buffers
 
-	device.channels.ingress    = make(chan *shila.Packet, Config.SizeIngressBuffer)
-	device.channels.egress  	  = make(chan *shila.Packet, Config.SizeEgressBuffer)
+	device.channels.ingress = make(chan *shila.Packet, Config.SizeIngressBuffer)
+	device.channels.egress  = make(chan *shila.Packet, Config.SizeEgressBuffer)
 
 	device.state.Set(shila.Initialized)
 	return nil
@@ -86,7 +86,7 @@ func (device *Device) Setup() error {
 func (device *Device) Start() error {
 
 	if device.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", device.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state ", device.state, "."))
 	}
 
 	go device.serveIngress()
@@ -206,7 +206,7 @@ func (device *Device) packetize(ingressRaw chan byte) {
 			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
-				log.Error.Print("Unable to get IP net flow in packetizer of kernel endpoint {", device.Identifier(), "}. - ", err.Error())
+				log.Error.Print(device.Says(fmt.Sprint("Unable to get IP net flow in packetizer. ", err.Error())))
 			} else {
 				device.channels.ingress <- shila.NewPacket(device, iPHeader, rawData)
 			}
@@ -224,6 +224,6 @@ func (device *Device) packetize(ingressRaw chan byte) {
 	}
 }
 
-func (device *Device) Says(string) string {
-	panic("implement me.")
+func (device *Device) Says(str string) string {
+	return  fmt.Sprint(device.Identifier(), ": ", str)
 }

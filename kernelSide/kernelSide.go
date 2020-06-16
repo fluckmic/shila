@@ -37,7 +37,7 @@ func New(trafficChannelPubs shila.PacketChannelPubChannels) *Manager {
 func (manager *Manager) Setup() error {
 
 	if manager.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state ", manager.state, "."))
 	}
 
 	// Setup the namespaces
@@ -77,7 +77,7 @@ func (manager *Manager) Setup() error {
 func (manager *Manager) Start() error {
 
 	if manager.state.Not(shila.Initialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state ", manager.state, "."))
 	}
 
 	// Start the error handler
@@ -95,7 +95,7 @@ func (manager *Manager) Start() error {
 		} else if kerep.Role() == shila.IngressKernelEndpoint {
 			manager.trafficChannelPubs.Ingress <- pub
 		} else {
-			return shila.CriticalError(fmt.Sprint("Invalid kernel endpoint label {", kerep.Role(), "},"))
+			return shila.CriticalError(fmt.Sprint("Invalid kernel endpoint label ", kerep.Role(), "."))
 		}
 
 	}

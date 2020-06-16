@@ -17,8 +17,8 @@ func (ce CriticalError) Error() string {
 
 func PrependError(err error, msg string) error {
 	switch err := err.(type) {
-	case TolerableError:  			return TolerableError(fmt.Sprint(msg, " - ", err.Error()))
-	case CriticalError:				return CriticalError(fmt.Sprint(msg, " - ", err.Error()))
-	default:						return CriticalError(fmt.Sprint(msg, " - ", err.Error()))
+	case TolerableError:  			return TolerableError(fmt.Sprint(msg, err.Error()))
+	case CriticalError:				return CriticalError(fmt.Sprint(msg, err.Error()))
+	default:						return CriticalError(fmt.Sprint(msg, err.Error()))
 	}
 }

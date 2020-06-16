@@ -41,7 +41,7 @@ func NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila
 func (server *Server) SetupAndRun() (err error) {
 
 	if server.State.Not(shila.Uninitialized) {
-		return shila.CriticalError(server.Says(fmt.Sprint("In wrong State {", server.State, "}.")))
+		return shila.CriticalError(server.Says(fmt.Sprint("In wrong State ", server.State, ".")))
 	}
 
 	// Setup the backbone connections

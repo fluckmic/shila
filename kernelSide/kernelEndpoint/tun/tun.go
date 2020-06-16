@@ -65,14 +65,14 @@ func New(name string) Device {
 	}
 }
 
-func (d *Device) Allocate() error {
+func (device *Device) Allocate() error {
 
-	if d.state.Not(shila.Uninitialized) {
-		return shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+	if device.state.Not(shila.Uninitialized) {
+		return shila.CriticalError(fmt.Sprint("Entity in wrong state ", device.state, "."))
 	}
 
 	var errno C.int
-	var devName = C.CString(d.Name)
+	var devName = C.CString(device.Name)
 	var flags C.int = C.IFF_TUN | C.IFF_NO_PI
 	fd := int(C.allocateTun(devName, &errno, flags))
 	C.free(unsafe.Pointer(devName))
@@ -82,28 +82,36 @@ func (d *Device) Allocate() error {
 		return shila.CriticalError(errorString)
 	}
 
-	d.file = os.NewFile(uintptr(fd), d.Name)
-	d.state.Set(shila.Initialized)
+	device.file = os.NewFile(uintptr(fd), device.Name)
+	device.state.Set(shila.Initialized)
 	return nil
 }
 
-func (d *Device) Deallocate() error {
-	d.state.Set(shila.TornDown)
-	err := d.file.Close()
-	d.file = nil
+func (device *Device) Deallocate() error {
+	device.state.Set(shila.TornDown)
+	err := device.file.Close()
+	device.file = nil
 	return err
 }
 
-func (d *Device) Read(b []byte) (int, error) {
-	if d.state.Not(shila.Initialized) {
-		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+func (device *Device) Read(b []byte) (int, error) {
+	if device.state.Not(shila.Initialized) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state ", device.state, "."))
 	}
-	return d.file.Read(b)
+	return device.file.Read(b)
 }
 
-func (d *Device) Write(b []byte) (int, error) {
-	if d.state.Not(shila.Initialized) {
-		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state {", d.state, "}."))
+func (device *Device) Write(b []byte) (int, error) {
+	if device.state.Not(shila.Initialized) {
+		return -1, shila.CriticalError(fmt.Sprint("Entity in wrong state ", device.state, "."))
 	}
-	return d.file.Write(b)
+	return device.file.Write(b)
+}
+
+func (device *Device) Says(str string) string {
+	return  fmt.Sprint(device.Identifier(), ": ", str)
+}
+
+func (device *Device) Identifier() string {
+	return device.Name
 }

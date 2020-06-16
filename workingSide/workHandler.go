@@ -1,32 +1,34 @@
 package workingSide
 
 import (
+	"github.com/bclicn/color"
 	"shila/core/shila"
+	"shila/log"
 	"shila/shutdown"
 )
 
-func (m *Manager) packetWorker() {
-	for trafficChannelPub := range m.trafficChannelPubs {
-		go m.servePacketChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
+func (manager *Manager) packetWorker() {
+	for trafficChannelPub := range manager.trafficChannelPubs {
+		go manager.servePacketChannel(trafficChannelPub.Channel, Config.NumberOfWorkerPerChannel)
 	}
 }
 
-func (m *Manager) servePacketChannel(buffer shila.PacketChannel, numberOfWorker int) {
+func (manager *Manager) servePacketChannel(buffer shila.PacketChannel, numberOfWorker int) {
 	for id := 0; id < numberOfWorker; id++ {
-		go m.handlePacketChannel(buffer)
+		go manager.handlePacketChannel(buffer)
 	}
 }
 
-func (m *Manager) handlePacketChannel(buffer shila.PacketChannel) {
+func (manager *Manager) handlePacketChannel(buffer shila.PacketChannel) {
 	for p := range buffer {
-		m.processPacketChannel(p)
+		manager.processPacketChannel(p)
 	}
 }
 
-func (m *Manager) processPacketChannel(p *shila.Packet) {
+func (manager *Manager) processPacketChannel(p *shila.Packet) {
 
 	// Get the corresponding connection and processes the packet..
-	con := m.connections.Retrieve(p.Flow)
+	con := manager.connections.Retrieve(p.Flow)
 	err := con.ProcessPacket(p)
 
 	// Any error leads inevitably to the closing of the connection.
@@ -34,8 +36,12 @@ func (m *Manager) processPacketChannel(p *shila.Packet) {
 	// The closed connection is removed after a while; after its removal a packet is might
 	// abel to use the packet without any error.
 
+	if err, ok := err.(shila.TolerableError); ok {
+		log.Error.Print(shila.PrependError(err, color.Yellow("Tolerable error in packet processing.")))
+	}
+
 	if err, ok := err.(shila.CriticalError); ok {
-		shutdown.Fatal(shila.PrependError(err, "Critical error in packet processing."))
+		shutdown.Fatal(shila.PrependError(err,"Critical error in packet processing."))
 	}
 
 }

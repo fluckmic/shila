@@ -2,40 +2,69 @@
 package workingSide
 
 import (
+	"fmt"
 	"shila/core/connection"
 	"shila/core/shila"
 	"shila/shutdown"
 )
 
 type Manager struct {
-	label 				Label
-	connections     	connection.Mapping
-	trafficChannelPubs 	shila.PacketChannelPubChannel
-	endpointIssues 	   	shila.EndpointIssuePubChannel
+	workType           WorkType
+	connections        connection.Mapping
+	trafficChannelPubs shila.PacketChannelPubChannel
+	endpointIssues     shila.EndpointIssuePubChannel
 }
 
 func New(connections connection.Mapping, trafficChannelPubs shila.PacketChannelPubChannel,
-	endpointIssues shila.EndpointIssuePubChannel, label Label) *Manager {
+	endpointIssues shila.EndpointIssuePubChannel, workType WorkType) *Manager {
 	return &Manager{
-		label: 				label,
-		connections:     	connections,
+		workType:           workType,
+		connections:        connections,
 		trafficChannelPubs: trafficChannelPubs,
-		endpointIssues:    	endpointIssues,
+		endpointIssues:     endpointIssues,
 	}
 }
 
-func (m *Manager) Setup() error {
+func (manager *Manager) Setup() error {
 	return nil
 }
 
-func (m *Manager) Start() error {
+func (manager *Manager) Start() error {
 
 	shutdown.Check()
 
-	go m.packetWorker()
-	go m.issueHandler()
+	go manager.packetWorker()
+	go manager.issueHandler()
 
 	return nil
 }
 
-func (m *Manager) CleanUp() { }
+func (manager *Manager) CleanUp() { }
+
+func (manager *Manager) Says(str string) string {
+	return  fmt.Sprint(manager.Identifier(), ": ", str)
+}
+
+func (manager *Manager) Identifier() string {
+	return fmt.Sprint(manager.WorkType(), " Working Side")
+}
+
+func (manager *Manager) WorkType() WorkType {
+	return manager.workType
+}
+
+type WorkType uint8
+
+const (
+	_                = iota
+	Ingress WorkType = iota
+	Egress
+)
+
+func (wt WorkType) String() string {
+	switch wt {
+	case Ingress: 	return "Ingress"
+	case Egress: 	return "Egress"
+	}
+	return "Unknown"
+}

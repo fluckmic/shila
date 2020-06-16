@@ -24,7 +24,7 @@ func (g AddressGenerator) New(address string) (shila.NetworkAddress, error) {
 func (g AddressGenerator) NewLocal(portStr string) (shila.NetworkAddress, error) {
 
 	if port, err := strconv.Atoi(portStr); err != nil {
-		return &snet.UDPAddr{}, shila.PrependError(err, fmt.Sprint("Cannot parse port {", portStr, "}."))
+		return &snet.UDPAddr{}, shila.PrependError(err, fmt.Sprint("Cannot parse port ", portStr, "."))
 	} else {
 		return &snet.UDPAddr{
 			IA:      addr.IA{},
