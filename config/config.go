@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"shila/io/structure"
 )
@@ -26,6 +27,7 @@ func loadConfig() structure.ConfigJSON {
 
 	// Try to parse the config file.
 	if err := loadConfigFromDisk(configJSON, *configPath); err != nil {
+		fmt.Print(err)
 		return *configJSON
 	}
 

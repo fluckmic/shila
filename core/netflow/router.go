@@ -76,7 +76,7 @@ func (r *Router) Route(p *shila.Packet) (shila.NetFlow, shila.FlowType, error) {
 				}, shila.SubFlow, nil
 			} else {
 				return shila.NetFlow{}, shila.Unknown,
-				shila.TolerableError(fmt.Sprint("No network flow for MPTCP receiver token {", token, "}."))
+				shila.TolerableError(fmt.Sprint("No network flow for MPTCP receiver token ", token, "."))
 			}
 		} else {
 			return shila.NetFlow{}, shila.Unknown, shila.PrependError(err, "Unable to fetch MPTCP receiver token.")
@@ -136,5 +136,5 @@ func (r *Router) Says(str string) string {
 }
 
 func (r *Router) Identifier() string {
-	return fmt.Sprint("{Router}")
+	return fmt.Sprint("Router")
 }
