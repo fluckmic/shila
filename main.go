@@ -4,7 +4,7 @@ import (
 	"os"
 	_ "shila/config"
 	"shila/core/connection"
-	"shila/core/netflow"
+	"shila/core/router"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/log"
@@ -66,7 +66,7 @@ func realMain() int {
 	defer networkSide.CleanUp()
 
 	// Setup the ingress working side
-	workingSideIngress := workingSide.New(connection.NewMapping(kernelSide, networkSide, netflow.NewRouter()),
+	workingSideIngress := workingSide.New(connection.NewMapping(kernelSide, networkSide, router.New()),
 		trafficChannelPubs.Ingress, endpointIssues.Ingress, workingSide.Ingress)
 	if err := workingSideIngress.Setup(); err != nil {
 		log.Error.Print(shila.PrependError(err, "Unable to setup ingress working side.").Error())
@@ -75,7 +75,7 @@ func realMain() int {
 	defer workingSideIngress.CleanUp()
 
 	// Setup the egress working side
-	workingSideEgress := workingSide.New(connection.NewMapping(kernelSide, networkSide, netflow.NewRouter()),
+	workingSideEgress := workingSide.New(connection.NewMapping(kernelSide, networkSide, router.New()),
 		trafficChannelPubs.Egress, endpointIssues.Egress, workingSide.Egress)
 	if err := workingSideEgress.Setup(); err != nil {
 		log.Error.Print(shila.PrependError(err, "Unable to setup egress working side.").Error())

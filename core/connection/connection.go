@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/bclicn/color"
 	"shila/config"
-	"shila/core/netflow"
+	"shila/core/router"
 	"shila/core/shila"
 	"shila/kernelSide"
 	"shila/kernelSide/kernelEndpoint"
@@ -16,16 +16,17 @@ import (
 )
 
 type Connection struct {
-	key			shila.IPFlowKey
+	key         shila.IPFlowKey
 	flow        shila.Flow
-	kind        shila.FlowType
+	mainIpFlow  shila.IPFlow			// Holds the main ip flow in the case of a subflow connection
+	category    Category
 	state       state
 	channels    channels
 	lock        sync.Mutex
 	touched     time.Time
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
-	router      netflow.Router
+	router      router.Router
 }
 
 type channels struct {
@@ -34,7 +35,7 @@ type channels struct {
 	Contacting      shila.PacketChannels // End point for connection establishment
 }
 
-func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router netflow.Router) *Connection {
+func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router router.Router) *Connection {
 	return &Connection{
 		key:         flow.IPFlow.Key(),
 		flow:        flow,
@@ -164,7 +165,8 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 	case clientEstablished: // The very first packet received through the traffic endpoint holds the MPTCP endpoint key
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
-							if err := conn.router.InsertFromSynAckMpCapable(p, conn.flow.NetFlow); err != nil {
+							var err error
+							if err = conn.router.InsertEndpointTokenToIPFlow(p); err != nil {
 								return shila.TolerableError(fmt.Sprint("Unable to update router.", err.Error()))
 							}
 
@@ -172,7 +174,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print(conn.Says(color.Green("Successfully established!")))
+							log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlow.Key(), "!"))))
 
 							return nil
 
@@ -207,12 +209,14 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		return shila.CriticalError("Invalid entry point.")
 	}
 
-	// Get the network flow
-	var err error
-	conn.flow.NetFlow, conn.kind, err = conn.router.Route(p)
-	if err != nil {
-		return shila.TolerableError(fmt.Sprint("Unable to get network flow.", err.Error()))
+	// Get the routing
+	if response, err := conn.router.Route(p); err != nil {
+		return shila.TolerableError(fmt.Sprint("Cant fetch routing response.", err.Error()))
+	} else {
+		conn.processRoutingResponse(response)
 	}
+
+	// Update the packet
 	p.Flow.NetFlow = conn.flow.NetFlow
 
 	// Create the contacting connection
@@ -296,9 +300,22 @@ func (conn *Connection) setState(state stateIdentifier) {
 }
 
 func (conn *Connection) Identifier() string {
-	return fmt.Sprint(conn.kind, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+	return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
 }
 
 func (conn *Connection) Says(str string) string {
 	return  fmt.Sprint(conn.Identifier(), ": ", str)
+}
+
+func (conn *Connection) processRoutingResponse(response router.Response) {
+
+	conn.mainIpFlow	  = response.IPFlow
+	conn.flow.NetFlow = shila.NetFlow{Dst: response.Dst, Path: response.Path}
+
+	// Set the category of the connection
+	if  response.From == router.IPOptions || response.From == router.RoutingTable {
+		conn.category = MainFlow
+	}  else if response.From == router.MPTCPEndpointToken {
+		conn.category = SubFlow
+	}
 }

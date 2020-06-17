@@ -1,4 +1,4 @@
-package netflow
+package router
 
 import "fmt"
 

@@ -7,7 +7,6 @@ import (
 
 type controlMessage struct {
 	IPFlow          shila.IPFlow
-	FlowKind        shila.FlowType
 	LAddrContactEnd net.UDPAddr
 }
 

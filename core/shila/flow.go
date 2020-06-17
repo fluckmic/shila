@@ -2,7 +2,6 @@
 package shila
 
 import (
-	"github.com/bclicn/color"
 	"net"
 	"shila/layer/tcpip"
 )
@@ -26,9 +25,9 @@ func (ipf IPFlow) Swap() IPFlow {
 }
 
 type NetFlow struct {
-	Src  NetworkAddress
-	Path NetworkPath
-	Dst  NetworkAddress
+	Src   NetworkAddress
+	Path  NetworkPath
+	Dst   NetworkAddress
 }
 
 func (nf NetFlow) Swap() NetFlow {
@@ -47,18 +46,3 @@ func GetIPFlow(raw []byte) (IPFlow, error) {
 	}
 }
 
-type FlowType uint8
-const (
-	_                 = iota
-	MainFlow FlowType = iota
-	SubFlow
-	Unknown
-)
-
-func(k FlowType) String() string {
-	switch k {
-	case MainFlow: 	return color.LightBlue("MainFlow")
-	case SubFlow:  	return color.LightPurple("SubFlow")
-	}
-	return "Unknown"
-}

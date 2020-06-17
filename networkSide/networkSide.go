@@ -138,7 +138,7 @@ func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (c
 	error    			= nil
 
 	if manager.state.Not(shila.Running) {
-		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}.")); return
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state ", manager.state, ".")); return
 	}
 
 	manager.lock.Lock()
@@ -146,7 +146,7 @@ func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (c
 
 	ipFlowKey := flow.IPFlow.Key()
 	if _, ok := manager.clientContactingEndpoints[ipFlowKey]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", ipFlowKey, "} already exists.")); return
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", ipFlowKey, " already exists.")); return
 	}
 
 	// Establish a new contacting client endpoint
@@ -187,7 +187,7 @@ func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (traf
 
 	ipFlowKey := flow.IPFlow.Key()
 	if _, ok := manager.clientTrafficEndpoints[ipFlowKey]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key {", ipFlowKey, "} already exists.")); return
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", ipFlowKey, " already exists.")); return
 	}
 
 	lAddrContact := flow.NetFlow.Src

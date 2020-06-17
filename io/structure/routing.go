@@ -43,19 +43,14 @@ type NetworkAddressAndPathJSON struct {
 	Address string
 	Path    NetworkPathJSON
 }
-func (json NetworkAddressAndPathJSON) GetNetworkAddressAndPath() (shila.NetworkAddress, shila.NetworkPath, error) {
+func (json NetworkAddressAndPathJSON) GetNetworkAddress() (shila.NetworkAddress, error) {
 
 	address, err := network.AddressGenerator{}.New(json.Address)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	path, err := json.Path.GetPath()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return address, path, nil
+	return address, nil
 }
 
 type RoutingEntryJSON struct {

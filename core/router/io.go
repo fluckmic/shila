@@ -1,5 +1,5 @@
 //
-package netflow
+package router
 
 import (
 	"encoding/json"
@@ -9,7 +9,6 @@ import (
 	"shila/core/shila"
 	"shila/io/structure"
 	"shila/log"
-	"shila/networkSide/network"
 )
 
 func loadRoutingEntriesFromDisk() ([]structure.RoutingEntryJSON, error) {
@@ -28,36 +27,30 @@ func loadRoutingEntriesFromDisk() ([]structure.RoutingEntryJSON, error) {
 	return entries, nil
 }
 
-func (r *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
+func (router *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 
 	// Invalid entries are silently ignored and not inserted!
 	for _, entry := range entries {
 
 		ipAddressPort, err := entry.Key.GetIPAddressPort()
 		if err != nil {
-			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
 		key := shila.GetIPAddressPortKey(ipAddressPort)
 
-		dst, path, err := entry.Flow.GetNetworkAddressAndPath()
+		dst, err := entry.Flow.GetNetworkAddress()
 		if err != nil {
-			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
 
-		flow := shila.NetFlow{
-			Src:  network.AddressGenerator{}.NewEmpty(),
-			Path: path,
-			Dst:  dst,
-		}
-
-		if err := r.InsertFromIPAddressPortKey(key, flow); err != nil {
-			log.Error.Println(r.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+		if err := router.InsertDestinationFromIPAddressPortKey(key, dst); err != nil {
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
 			continue
 		}
 
-		log.Verbose.Println(r.Says(fmt.Sprint("Inserted routing entry {", entry, "}.")))
+		log.Verbose.Println(router.Says(fmt.Sprint("Inserted routing entry {", entry, "}.")))
 	}
 
 	return nil
