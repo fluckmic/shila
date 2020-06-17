@@ -34,23 +34,23 @@ func (router *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 
 		ipAddressPort, err := entry.Key.GetIPAddressPort()
 		if err != nil {
-			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing Entry.").Error()))
 			continue
 		}
 		key := shila.GetIPAddressPortKey(ipAddressPort)
 
 		dst, err := entry.Flow.GetNetworkAddress()
 		if err != nil {
-			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing Entry.").Error()))
 			continue
 		}
 
 		if err := router.InsertDestinationFromIPAddressPortKey(key, dst); err != nil {
-			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing entry.").Error()))
+			log.Error.Println(router.Says(PrependError(err, "Skipped insertion of routing Entry.").Error()))
 			continue
 		}
 
-		log.Verbose.Println(router.Says(fmt.Sprint("Inserted routing entry {", entry, "}.")))
+		log.Verbose.Println(router.Says(fmt.Sprint("Inserted routing Entry {", entry, "}.")))
 	}
 
 	return nil

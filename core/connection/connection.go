@@ -16,17 +16,17 @@ import (
 )
 
 type Connection struct {
-	key         shila.IPFlowKey
-	flow        shila.Flow
-	mainIpFlow  shila.IPFlow			// Holds the main ip flow in the case of a subflow connection
-	category    Category
-	state       state
-	channels    channels
-	lock        sync.Mutex
-	touched     time.Time
-	kernelSide  *kernelSide.Manager
-	networkSide *networkSide.Manager
-	router      router.Router
+	key         	shila.IPFlowKey
+	flow        	shila.Flow
+	mainIpFlowKey  	shila.IPFlowKey			// Holds the key of the main ip flow in the case of a sub flow connection
+	category    	router.FlowCategory
+	state       	state
+	channels    	channels
+	lock        	sync.Mutex
+	touched     	time.Time
+	kernelSide  	*kernelSide.Manager
+	networkSide 	*networkSide.Manager
+	router      	router.Router
 }
 
 type channels struct {
@@ -174,7 +174,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlow.Key(), "!"))))
+							log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlowKey, "!"))))
 
 							return nil
 
@@ -309,13 +309,7 @@ func (conn *Connection) Says(str string) string {
 
 func (conn *Connection) processRoutingResponse(response router.Response) {
 
-	conn.mainIpFlow	  = response.IPFlow
-	conn.flow.NetFlow = shila.NetFlow{Dst: response.Dst, Path: response.Path}
+	conn.mainIpFlowKey 	= response.MainIPFlowKey
+	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
 
-	// Set the category of the connection
-	if  response.From == router.IPOptions || response.From == router.RoutingTable {
-		conn.category = MainFlow
-	}  else if response.From == router.MPTCPEndpointToken {
-		conn.category = SubFlow
-	}
 }

@@ -88,22 +88,22 @@ func (os OptionSubtype) String() string {
 	return "Unknown"
 }
 
-func GetReceiverToken(raw []byte) (EndpointToken, bool, error) {
+func GetReceiverToken(raw []byte) (EndpointToken, error) {
 	if _, tcp, err := tcpip.DecodeIPv4andTCPLayer(raw); err != nil {
 		// Error in decoding the ipv4/tcp options
-		return EndpointToken(0), false, err
+		return EndpointToken(0), err
 	} else {
 		if mptcpOptions, err := decodeMPTCPOptions(tcp); err != nil {
 			// MPTCP options does not contain the receiver token
-			return EndpointToken(0), false, nil
+			return EndpointToken(0), err
 		} else {
 			for _, mptcpOption := range mptcpOptions {
 				if mptcpJoinOptionSYN, ok := mptcpOption.(JoinOptionSYN); ok {
-					return EndpointToken(mptcpJoinOptionSYN.ReceiverToken), true, nil
+					return EndpointToken(mptcpJoinOptionSYN.ReceiverToken), nil
 				}
 			}
 			// Error in decoding the mptcp options
-			return EndpointToken(0), false, err
+			return EndpointToken(0), err
 		}
 	}
 }

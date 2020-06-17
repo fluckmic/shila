@@ -9,31 +9,19 @@ import (
 type Router struct {
 	mainIPFlows mapEndPointTokenToMainIPFlowKeys
 	entries 	mapMainIPFlowKeyToRoutingEntries
+	fixedTable	mapIPAddressPortKeyToDstAddresses
 }
 
-
-
-type destinationMappings struct {
-	fromMPTCPToken map[mptcp.EndpointToken]		shila.IPFlowKey
-	fromIPPortKey  map[shila.IPAddressPortKey]	shila.NetworkAddress
-}
-
-type mapMainIPFlowKeyToRoutingEntries map[shila.IPFlowKey] *entry
+type mapMainIPFlowKeyToRoutingEntries map[shila.IPFlowKey] *Entry
 type mapEndPointTokenToMainIPFlowKeys map[mptcp.EndpointToken] shila.IPFlowKey
-
-type entry struct {
-	dstAddr	 shila.NetworkAddress
-	paths 	 []shila.NetworkPath
-}
+type mapIPAddressPortKeyToDstAddresses map[shila.IPAddressPortKey] shila.NetworkAddress
 
 func New() Router {
 
 	router := Router{
+		mainIPFlows:	make(mapEndPointTokenToMainIPFlowKeys),
 		entries: 		make(mapMainIPFlowKeyToRoutingEntries),
-		destinations: destinationMappings{
-			fromMPTCPToken: ),
-			fromIPPortKey:  make(map[shila.IPAddressPortKey]	shila.NetworkAddress),
-		},
+		fixedTable:		make(mapIPAddressPortKeyToDstAddresses),
 	}
 
 	// See whether there is some routing from it which can be loaded
@@ -43,33 +31,54 @@ func New() Router {
 
 func (router *Router) Route(packet *shila.Packet) (Response, error) {
 
-	// If the packet contains a receiver token, then the new connection is a MPTCP subflow flow.
-	if token, ok, err := mptcp.GetReceiverToken(packet.Payload); ok {
-
+	if mainIPFlowKey, ok := router.getMainIPFlowKeyFromEndpointToken(packet); ok {
+		return router.routeSubFlow(mainIPFlowKey)
 	}
 
-	// For a MPTCP MainFlow flow the network flow can probably be extracted from the IP options
-	if netFlow, ok, err := router.getFromIPOptions(p.Payload); ok {
-		if err == nil {
-			return Response{ Dst: netFlow.Dst, From: IPOptions, IPFlow: p.Flow.IPFlow}, nil
-		} else {
-			return Response{}, shila.PrependError(err, "Unable to get IP options.")
-		}
+	return router.routeMainFlow(packet)
+}
+
+func (router *Router) routeMainFlow(packet *shila.Packet) (Response, error) {
+
+	// The key we get directly from the packet
+	mainIPFlowKey := packet.Flow.IPFlow.Key()
+
+	// For the destination we have to options:
+	var dstAddr shila.NetworkAddress; var ok bool
+
+	// 1) From the IP Options
+	dstAddr, ok = router.getDestinationFromIPOptions(packet)
+	if !ok {
+		// 2) From the routing table
+		dstAddr, ok = router.getDestinationFromIPAddressPortKey(packet)
 	}
 
-	// For a MPTCP MainFlow flow the network flow is probably available in the router table
-	if netFlow, ok := router.getFromIPAddressPortKey(p.Flow.IPFlow.DstKey()); ok {
-		return  Response{ Dst: netFlow.Dst, From: RoutingTable, IPFlow: p.Flow.IPFlow}, nil
+	if ok {
+		entry := router.insertAndReturnRoutingEntry(mainIPFlowKey, dstAddr)
+		return Response{
+			Dst: 			entry.Dst,
+			FlowCategory: 	MainFlow,
+			MainIPFlowKey: 	mainIPFlowKey,
+		},nil
 	}
 
-	return Response{}, shila.TolerableError("No routing information available.")
+	return Response{}, shila.TolerableError("Unable to route packet. No routing information available.")
+}
+
+func (router *Router) insertAndReturnRoutingEntry(mainIPFlowKey shila.IPFlowKey, dstAddr shila.NetworkAddress) Entry {
+
+	// Create new entry and insert it into the routing table
+	newEntry := Entry{ Dst: dstAddr, Paths: nil }
+	router.entries[mainIPFlowKey] = &newEntry
+	
+	return newEntry
 }
 
 func (router *Router) InsertDestinationFromIPAddressPortKey(key shila.IPAddressPortKey, dstAddr shila.NetworkAddress) error {
-	if _, ok := router.destinations.fromIPPortKey[key]; ok {
-		return shila.TolerableError("Response already exists.")
+	if _, ok := router.fixedTable[key]; ok {
+		return shila.TolerableError("Entry already exists.")
 	} else {
-		router.destinations.fromIPPortKey[key] = dstAddr
+		router.fixedTable[key] = dstAddr
 		return nil
 	}
 }
@@ -80,10 +89,10 @@ func (router *Router) InsertEndpointTokenToIPFlow(p *shila.Packet) error {
 			if token, err := mptcp.EndpointKeyToToken(key); err != nil {
 				return shila.PrependError(err, fmt.Sprint("Unable to convert token from key."))
 			} else {
-				if _, ok := router.destinations.fromMPTCPToken[token]; ok {
+				if _, ok := router.mainIPFlows[token]; ok {
 					return shila.TolerableError("Response already exists.")
 				} else {
-					router.destinations.fromMPTCPToken[token] = p.Flow.IPFlow.Key()
+					router.mainIPFlows[token] = p.Flow.IPFlow.Key()
 					return nil
 				}
 			}
@@ -114,13 +123,33 @@ func (router *Router) fillWithEntriesFromDisk() error {
 	return nil
 }
 
-if err == nil {
-flow, ok := router.getFromMPTCPEndpointToken(token)
-if ok {
-return Response{ Dst: flow.NetFlow.Dst, From: MPTCPEndpointToken, IPFlow: flow.IPFlow }, nil
-} else {
-return Response{}, shila.TolerableError(fmt.Sprint("No network flow for MPTCP receiver token ", token, "."))
+func (router *Router) getMainIPFlowKeyFromEndpointToken(packet *shila.Packet) (shila.IPFlowKey, bool) {
+	// If the packet contains a receiver token, then the new connection is a sub flow.
+	if token, err := mptcp.GetReceiverToken(packet.Payload); err == nil {
+		mainIPFlowKey, ok := router.mainIPFlows[token]
+		return mainIPFlowKey, ok
+	}
+	return "", false
 }
-} else {
-return Response{}, shila.PrependError(err, "Unable to fetch MPTCP receiver token.")
+
+func (router *Router) routeSubFlow(key shila.IPFlowKey) (Response, error) {
+
+	if entry, ok := router.entries[key]; ok {
+		return Response{
+			Dst: 			entry.Dst,
+			FlowCategory: 	SubFlow,
+			MainIPFlowKey:  key,
+		}, nil
+	}
+
+	return Response{}, GeneralError("Unable to route sub flow.")
+}
+
+func (router *Router) getDestinationFromIPOptions(packet *shila.Packet) (shila.NetworkAddress, bool) {
+	return nil, false
+}
+
+func (router *Router) getDestinationFromIPAddressPortKey(packet *shila.Packet) (shila.NetworkAddress, bool) {
+	dstAddr, ok := router.fixedTable[packet.Flow.IPFlow.DstKey()]
+	return dstAddr, ok
 }

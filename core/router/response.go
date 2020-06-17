@@ -1,3 +1,4 @@
+//
 package router
 
 import (
@@ -5,27 +6,30 @@ import (
 	"shila/networkSide/network"
 )
 
-type Response struct {
-	Dst    shila.NetworkAddress
-	Path   network.Path
-	From   ResponseLabel
-	IPFlow shila.IPFlow
+type Entry struct {
+	Dst	 	shila.NetworkAddress
+	Paths 	[]shila.NetworkPath
 }
 
-type ResponseLabel uint8
+type Response struct {
+	Dst    			shila.NetworkAddress
+	Path   			network.Path
+	FlowCategory	FlowCategory
+	MainIPFlowKey 	shila.IPFlowKey
+}
+
+type FlowCategory uint8
 const (
-	_                       = iota
-	IPOptions ResponseLabel = iota
-	MPTCPEndpointToken
-	RoutingTable
+	_                      = iota
+	MainFlow FlowCategory = iota
+	SubFlow
 	Unknown
 )
 
-func(label ResponseLabel) String() string {
+func(label FlowCategory) String() string {
 	switch label {
-	case IPOptions: 			return "IPOptions"
-	case MPTCPEndpointToken:  	return "MPTCPEndpointToken"
-	case RoutingTable:			return "RoutingTable"
+	case MainFlow: 	return "MainFlow"
+	case SubFlow:  	return "SubFlow"
 	}
 	return "Unknown"
 }

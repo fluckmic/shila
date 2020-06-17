@@ -15,7 +15,7 @@ func (e GeneralError) Error() string {
 
 func PrependError(err error, msg string) error {
 	switch err := err.(type) {
-	case ParsingError: 			return ParsingError(fmt.Sprint(msg, " - ", err.Error()))
-	default:					return GeneralError(fmt.Sprint(msg, " - ", err.Error()))
+	case ParsingError: 			return ParsingError(fmt.Sprint(msg, " ", err.Error()))
+	default:					return GeneralError(fmt.Sprint(msg, " ", err.Error()))
 	}
 }
