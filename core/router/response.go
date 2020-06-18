@@ -2,18 +2,18 @@
 package router
 
 import (
+	"github.com/bclicn/color"
 	"shila/core/shila"
-	"shila/networkSide/network"
 )
 
 type Entry struct {
 	Dst	 	shila.NetworkAddress
-	Paths 	[]shila.NetworkPath
+	Paths 	paths
 }
 
 type Response struct {
 	Dst    			shila.NetworkAddress
-	Path   			network.Path
+	Path   			shila.NetworkPath
 	FlowCategory	FlowCategory
 	MainIPFlowKey 	shila.IPFlowKey
 }
@@ -28,8 +28,8 @@ const (
 
 func(label FlowCategory) String() string {
 	switch label {
-	case MainFlow: 	return "MainFlow"
-	case SubFlow:  	return "SubFlow"
+	case MainFlow: 	return color.LightBlue("MainFlow")
+	case SubFlow:  	return color.LightPurple("SubFlow")
 	}
 	return "Unknown"
 }

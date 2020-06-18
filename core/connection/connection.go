@@ -63,6 +63,9 @@ func (conn *Connection) Close(err error) {
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.flow)
 	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.flow.IPFlow)
 
+	// Remove the entries from the router
+	conn.router.ClearEntry(conn.key)
+
 	conn.state.set(closed)
 
 	log.Info.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
@@ -311,5 +314,6 @@ func (conn *Connection) processRoutingResponse(response router.Response) {
 
 	conn.mainIpFlowKey 	= response.MainIPFlowKey
 	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
+	conn.category 		= response.FlowCategory
 
 }
