@@ -37,7 +37,7 @@ func GetIPAddressPortKey(addr net.TCPAddr) IPAddressPortKey {
 }
 
 func GetNetworkAddressAndPathKey(addr NetworkAddress, path NetworkPath) NetworkAddressAndPathKey {
-	return NetworkAddressAndPathKey(fmt.Sprint(KeyPrefix, addr.String(), KeyDelimiter,path.String(), KeySuffix))
+	return NetworkAddressAndPathKey(fmt.Sprint(KeyPrefix, addr.String(), KeyDelimiter, KeySuffix))
 }
 
 func GetNetworkAddressKey(addr NetworkAddress) NetworkAddressKey {
@@ -61,9 +61,9 @@ func (ipf *IPFlow) String() string {
 func (nf *NetFlow) Key() NetFlowKey {
 	srcString := nf.Src.String(); dstString := nf.Dst.String()
 	if srcString < dstString {
-		return NetFlowKey(fmt.Sprint(KeyPrefix, srcString, KeyDelimiter, nf.Path.String(), KeyDelimiter, dstString, KeySuffix))
+		return NetFlowKey(fmt.Sprint(KeyPrefix, srcString, KeyDelimiter, dstString, KeySuffix))
 	} else {
-		return NetFlowKey(fmt.Sprint(KeyPrefix, dstString, KeyDelimiter, nf.Path.String(), KeyDelimiter, srcString, KeySuffix))
+		return NetFlowKey(fmt.Sprint(KeyPrefix, dstString, KeyDelimiter, srcString, KeySuffix))
 	}
 }
 

@@ -7,8 +7,8 @@ import (
 )
 
 type Entry struct {
-	Dst	 	shila.NetworkAddress
-	Paths 	paths
+	Dst   shila.NetworkAddress
+	Paths paths
 }
 
 type Response struct {

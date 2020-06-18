@@ -36,6 +36,4 @@ type NetworkAddress interface {
 	String() string
 }
 
-type NetworkPath interface {
-	String() string
-}
+type NetworkPath interface {}
