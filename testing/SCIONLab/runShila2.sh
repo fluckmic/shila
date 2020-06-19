@@ -13,4 +13,4 @@ go build
 # Tiny.topo
 #export SCION_DAEMON_ADDRESS=[fd00:f00d:cafe::7f00:b]:30255
 
-./shila -config testing/MultiInstanceLocal/config2.json
+./shila -config testing/SCIONLab/config2.json
