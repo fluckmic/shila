@@ -8,7 +8,6 @@ import (
 	"io"
 	"shila/core/shila"
 	"shila/log"
-	"shila/networkSide/network"
 	"sync"
 )
 
@@ -104,10 +103,9 @@ type ServerBackboneConnection struct {
 
 func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneConnections) *ServerBackboneConnection {
 
-	path, _ := network.PathGenerator{}.New("")		// FIXME: path!
 	netFlow := shila.NetFlow{							// Net flow which is represented by this connection.
 		Src:  conns.server.lAddress.(*snet.UDPAddr),
-		Path: path,
+		Path: rAddress.(*snet.UDPAddr).Path,
 		Dst:  rAddress.(*snet.UDPAddr),
 	}
 

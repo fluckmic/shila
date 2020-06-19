@@ -152,9 +152,9 @@ func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (c
 	// Establish a new contacting client endpoint
 	contactRemoteAddr := manager.specificManager.ContactRemoteAddr(flow.NetFlow.Dst)
 	ipFlow 			  := flow.IPFlow
+	path 			  := flow.NetFlow.Path
 
-	// contactEndpoint := manager.specificManager.NewClient(contactRemoteAddr, ipFlow, shila.ContactNetworkEndpoint, manager.endpointIssues.Egress)
-	contactingEndpoint 		 := manager.specificManager.NewContactClient(contactRemoteAddr, ipFlow, manager.endpointIssues.Egress)
+	contactingEndpoint 		 := manager.specificManager.NewContactClient(contactRemoteAddr, path, ipFlow, manager.endpointIssues.Egress)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
@@ -179,7 +179,7 @@ func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (traf
 	error    			= nil
 
 	if manager.state.Not(shila.Running) {
-		error = shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}.")); return
+		error = shila.CriticalError(fmt.Sprint("Entity in wrong state ", manager.state, ".")); return
 	}
 
 	manager.lock.Lock()
@@ -192,9 +192,10 @@ func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (traf
 
 	lAddrContact := flow.NetFlow.Src
 	rAddr 		 := flow.NetFlow.Dst
+	path 		 := flow.NetFlow.Path
 	ipFlow 		 := flow.IPFlow
 
-	trafficEndpoint := manager.specificManager.NewTrafficClient(lAddrContact, rAddr, ipFlow, manager.endpointIssues.Egress)
+	trafficEndpoint := manager.specificManager.NewTrafficClient(lAddrContact, rAddr, path, ipFlow, manager.endpointIssues.Egress)
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {

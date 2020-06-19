@@ -49,6 +49,7 @@ func (p *paths) get(key shila.IPFlowKey) shila.NetworkPath {
 		if pathWrapper.nUsed == useCountOfNext {
 			p.storage[index].nUsed++
 			p.mapping[key] = index
+
 			return pathWrapper.path
 		}
 	}
@@ -85,7 +86,7 @@ func sortPaths(paths []pathWrapper, pathAlgorithm int) {
 		})
 	case appnet.MTU: {
 		sort.Slice(paths, func(i, j int) bool {
-			return paths[i].path.MTU() < paths[j].path.MTU()
+			return paths[i].path.MTU() > paths[j].path.MTU()
 		})
 	}
 	default:

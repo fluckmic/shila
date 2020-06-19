@@ -4,6 +4,7 @@ package connection
 import (
 	"fmt"
 	"github.com/bclicn/color"
+	"github.com/scionproto/scion/go/lib/snet"
 	"shila/config"
 	"shila/core/router"
 	"shila/core/shila"
@@ -303,7 +304,16 @@ func (conn *Connection) setState(state stateIdentifier) {
 }
 
 func (conn *Connection) Identifier() string {
-	return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+	if conn.flow.NetFlow.Path == nil {
+		return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+	} else {
+		switch scionPath := conn.flow.NetFlow.Path.(type) {
+		case snet.Path:
+			return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " < ", scionPath.Fingerprint() ," > ", conn.flow.NetFlow.Dst, ")")
+		default:
+			return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+		}
+	}
 }
 
 func (conn *Connection) Says(str string) string {

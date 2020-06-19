@@ -169,7 +169,7 @@ func (router *Router) routeSubFlow(packet *shila.Packet, key shila.IPFlowKey) (R
 			Dst: 			entry.Dst,
 			FlowCategory: 	SubFlow,
 			MainIPFlowKey:  key,
-			Path:			entry.Paths.get(key),
+			Path:			entry.Paths.get(packet.Flow.IPFlow.Key()),
 		}, nil
 	}
 

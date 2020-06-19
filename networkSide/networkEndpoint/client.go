@@ -11,7 +11,6 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/log"
-	"shila/networkSide/network"
 	"time"
 )
 
@@ -26,7 +25,7 @@ type Client struct {
 	lAddrContactEnd shila.NetworkAddress 	// Just set for traffic client network endpoint
 }
 
-func NewContactClient(rAddr shila.NetworkAddress, ipFlow shila.IPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+func NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow shila.IPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 						Base{
 										Role:    shila.ContactNetworkEndpoint,
@@ -36,14 +35,14 @@ func NewContactClient(rAddr shila.NetworkAddress, ipFlow shila.IPFlow, issues sh
 										Issues:  issues,
 									},
 		ipFlow:						ipFlow,
-		netFlow: 					shila.NetFlow{Dst: rAddr, Path: network.PathGenerator{}.NewEmpty()},
+		netFlow: 					shila.NetFlow{Dst: rAddr, Path: path},
 	}
 }
 
-func NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkAddress, ipFlow shila.IPFlow,
+func NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow shila.IPFlow,
 	issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 
-	client := NewContactClient(rAddr, ipFlow, issues)
+	client := NewContactClient(rAddr, path, ipFlow, issues)
 
 	client.(*Client).Base.Role 		 = shila.TrafficNetworkEndpoint
 	client.(*Client).lAddrContactEnd = lAddrContactEnd
@@ -59,13 +58,9 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 	}
 
 	// Establish a connection.
-	client.rConn, err = appnet.DialAddr(client.netFlow.Dst.(*snet.UDPAddr))
-	if err != nil {
-		err = shila.PrependError(ConnectionError(err.Error()), "Unable to dial.")
+	if err = client.establishConnection(); err != nil {
 		return
 	}
-	client.netFlow.Src = client.rConn.LocalAddr().(*net.UDPAddr)
-	log.Verbose.Print(client.Says("Established connection."))
 
 	// Send the control message.
 	if err = client.sendControlMessage(); err != nil {
@@ -79,6 +74,27 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 	client.State.Set(shila.Running)
 
 	return client.netFlow, nil
+}
+
+func (client *Client) establishConnection() (err error) {
+
+	scionAddr := client.netFlow.Dst.(*snet.UDPAddr) // FIXME: cast!
+
+	if client.netFlow.Path != nil {
+		scionPath := client.netFlow.Path.(snet.Path)	// FIXME: cast!
+		appnet.SetPath(scionAddr, scionPath)
+	}
+
+	client.rConn, err = appnet.DialAddr(scionAddr)
+	if err != nil {
+		err = shila.PrependError(ConnectionError(err.Error()), "Cannot establish connection.")
+		return
+	}
+
+	client.netFlow.Src = client.rConn.LocalAddr().(*net.UDPAddr)	// FIXME: cast!
+	log.Verbose.Print(client.Says("Established connection."))
+
+	return
 }
 
 func (client *Client) TearDown() error {

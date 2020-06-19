@@ -5,8 +5,8 @@ package shila
 // implement as they are used by the manager of the network side.
 
 type SpecificNetworkSideManager interface {
-	NewContactClient(rAddr NetworkAddress, ipFLow IPFlow, c EndpointIssuePubChannel) NetworkClientEndpoint
-	NewTrafficClient(lAddrContactEnd NetworkAddress, rAddr NetworkAddress, ipFLow IPFlow, c EndpointIssuePubChannel) NetworkClientEndpoint
+	NewContactClient(rAddr NetworkAddress, path NetworkPath, ipFLow IPFlow, c EndpointIssuePubChannel) NetworkClientEndpoint
+	NewTrafficClient(lAddrContactEnd NetworkAddress, rAddr NetworkAddress, path NetworkPath, ipFLow IPFlow, c EndpointIssuePubChannel) NetworkClientEndpoint
 	NewServer(lAddr NetworkAddress, r EndpointRole, c EndpointIssuePubChannel) NetworkServerEndpoint
 	ContactLocalAddr() 							NetworkAddress
 	ContactRemoteAddr(NetworkAddress) 			NetworkAddress
