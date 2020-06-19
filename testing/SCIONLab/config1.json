@@ -3,6 +3,6 @@
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress-1",
                       "IngressNamespace" : "shila-ingress-1",
                       "NumberOfEgressInterfaces" : 4 },
-  "NetFlow"     :   { "Path" : "testing/MultiInstanceLocal/routing1.json"}
+  "NetFlow"     :   { "Path" : "testing/SCIONLab/routing1.json"}
 }
 
