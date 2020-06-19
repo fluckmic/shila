@@ -19,8 +19,8 @@
 
 if [[ $1 == c ]]; then
     printf "Run as client.\n"
-    export SCION_DAEMON_ADDRESS=127.0.0.19:30255
-    go run intro.go -remote 1-ff00:0:111,[fd00:f00d:cafe::7f00:b]:2727
+    # export SCION_DAEMON_ADDRESS=127.0.0.19:30255
+    go run intro.go -remote 17-ffaa:1:d87,127.0.0.1:2727
 fi
 
 if [[ $1 == s ]]; then
@@ -30,7 +30,7 @@ if [[ $1 == s ]]; then
     # export SCION_DAEMON_ADDRESS=127.0.0.19:30255
 
     # Tiny.topo
-    export SCION_DAEMON_ADDRESS=[fd00:f00d:cafe::7f00:b]:30255
+    # export SCION_DAEMON_ADDRESS=[fd00:f00d:cafe::7f00:b]:30255
 
     go run intro.go -port 2727
 fi
