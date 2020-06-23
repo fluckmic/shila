@@ -18,12 +18,12 @@ func main() {
 
 	// get local and remote addresses from program arguments:
 	port 		:= flag.Uint("port", 0, "[Server] local port to listen on.")
-	remoteAddr 	:= flag.String("remote", "", "[Client] Remote (i.e. the server's) SCION Address (e.g. 17-ffaa:1:1,[127.0.0.1]:12345)")
+	remoteAddr 	:= flag.String("remote", "", "[Client] Remote SCION Address.")
 
 	flag.Parse()
 
 	if (*port > 0) == (len(*remoteAddr) > 0) {
-		check(fmt.Errorf("Either specify -port for server or -remote for client."))
+		os.Exit(1)
 	}
 
 	if *port > 0 {
@@ -36,12 +36,14 @@ func main() {
 }
 
 func runServer(port uint16) error {
-		conn, err := appnet.ListenPort(port)
+
+	conn, err := appnet.ListenPort(port)
 		if err != nil {
 			return err
 		}
-		err = handleConnection(conn)
+		err = handleConnection(&conn)
 		conn.Close()
+
 		return err
 }
 
@@ -53,7 +55,7 @@ func handleConnection(conn *snet.Conn) error {
 	buffer := make([]byte, 32*1024)
 
 	for {
-		n, from, err := conn.ReadFrom(buffer)
+		n, from, err := conn.(buffer)
 		if err != nil {
 			return err
 		}
