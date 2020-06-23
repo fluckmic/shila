@@ -115,7 +115,12 @@ type controlMessage struct {
 
 func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
 
+	fmt.Println("Hallo from decoder.")
+
 	for i := 0; i < nIncomingMsg; i++ {
+
+		fmt.Print("Server ", name, " ready to receive control message nr ", i, ".\n")
+
 		var ctrlMsg controlMessage
 		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
 			return err
