@@ -11,11 +11,11 @@ printf "Starting initialization of %s.\n" "$HOST_NAME"
 ##Determine the hosts id and make it available
 if   [[ "$HOST_NAME" == "mptcp-over-scion-vm-1" ]]; then
   HOST_ID=1
-elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-2l" ]]; then
+elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-2" ]]; then
   HOST_ID=2
-elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-3l" ]]; then
+elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-3" ]]; then
   HOST_ID=3
-elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-4l" ]]; then
+elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-4" ]]; then
   HOST_ID=4
 else
   printf "Failed - Cannot determine host id.\n"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CLIENTS=(vm-1 vm-2 vm-3 vm-4)
+CLIENTS=(vm-1 vm-2)
 
 ## First initialize all clients
 for CLIENT in "${CLIENTS[@]}"; do
