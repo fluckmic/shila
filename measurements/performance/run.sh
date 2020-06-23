@@ -16,6 +16,7 @@ done
 for SERVER in "${CLIENTS[@]}"; do
 
   ssh -tt scion@"$SERVER" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh'
+    echo $?
     if [[ ! $? ]]; then
     printf "Failed to start connection test server %s.\n" "$SERVER"
     exit 1
