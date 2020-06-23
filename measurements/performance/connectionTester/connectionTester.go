@@ -78,20 +78,24 @@ func runClient(address string, name string) error {
 	}
 	defer conn.Close()
 
+	fmt.Print("Client ", name, "connected to ", address, ".\n")
+
 	// Send control message
 	if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{ Name: name}); err != nil {
 		return err
 	}
+
+	fmt.Print("Client ", name, "sent control message to ", address, ".\n")
 
 	// Receive control message
 	var ctrlMsgR controlMessage
 	if err := gob.NewDecoder(io.Reader(conn)).Decode(&ctrlMsgR); err != nil {
 		return err
 	} else {
-		fmt.Print("Connection tester client", name, "exchanged control message with", ctrlMsgR.Name, ".\n")
+		fmt.Print("Client ", name, "received control message from ", ctrlMsgR.Name, ".\n")
 	}
 
-	return err
+	return nil
 }
 
 // Check just ensures the error is nil, or complains and quits
