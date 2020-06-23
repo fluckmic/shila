@@ -46,8 +46,11 @@ func runServer(port uint16, name string) error {
 		if err != nil {
 			return err
 		}
-		handleConnection(conn, name)
-		conn.Close()
+
+	fmt.Print("Server ", name, " ready for incoming messages.\n")
+
+	handleConnection(conn, name)
+	conn.Close()
 
 	return nil
 }
@@ -111,8 +114,6 @@ type controlMessage struct {
 }
 
 func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
-
-	fmt.Print("Connection tester server ", name, " ready to receive messages.")
 
 	for i := 0; i < nIncomingMsg; i++ {
 		var ctrlMsg controlMessage
