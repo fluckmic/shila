@@ -5,7 +5,7 @@ HOST_NAME=$(uname -n)
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
-HOST_ID=$(cat _HOST_ID)
+HOST_ID=$(cat ../_HOST_ID)
 
 CLIENT_ADDR=(17-ffaa:1:d87 19-ffaa:1:d88 20-ffaa:1:d89 18-ffaa:1:d8a)
 
