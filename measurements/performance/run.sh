@@ -1,9 +1,8 @@
 #!/bin/bash
 
 CLIENTS=(vm-1 vm-2 vm-3 vm-4)
-CLIENT_ADDR=(17-ffaa:1:d87 19-ffaa:1:d88 20-ffaa:1:d89 18-ffaa:1:d8a)
 
-# First initialize all clients
+## First initialize all clients
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q 'sudo bash ~/go/src/shila/measurements/performance/init.sh'
   if [[ $? -ne 0 ]]; then
@@ -12,21 +11,22 @@ for CLIENT in "${CLIENTS[@]}"; do
   fi
 done
 
-# Then do a connection checks.
+## Then do a connection checks.
+#  Start the connection test servers.
 for SERVER in "${CLIENTS[@]}"; do
-
   ssh -tt scion@"$SERVER" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh'
-    if [[  $? -ne 0 ]]; then
+  if [[  $? -ne 0 ]]; then
     printf "Failed to start connection test server %s.\n" "$SERVER"
     exit 1
-    fi
+  fi
+done
 
-    for CLIENT in "${CLIENTS[@]}"; do
-      if [[ "$CLIENT" == "$SERVER" ]]; then
-          continue
-      fi
-
-    done
-
- done
+#  Run the client side.
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestClient.sh'
+  if [[  $? -ne 0 ]]; then
+    printf "Connection test for client %s failed.\n" "$CLIENT"
+    exit 1
+  fi
+done
 

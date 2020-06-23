@@ -34,7 +34,7 @@ func main() {
 	}
 
 	if *port > 0 {
-		err = runServer(uint16(*port))
+		err = runServer(uint16(*port), *name)
 		check(err)
 	} else {
 		runClient(*remoteAddr, *name)
@@ -42,22 +42,22 @@ func main() {
 	}
 }
 
-func runServer(port uint16) error {
+func runServer(port uint16, name string) error {
 
 	conn, err := appnet.ListenPort(port)
 		if err != nil {
 			return err
 		}
-		err = handleConnection(conn)
+		err = handleConnection(conn, name)
 		conn.Close()
 
 		return err
 }
 
-func handleConnection(conn *snet.Conn) error {
+func handleConnection(conn *snet.Conn, name string) error {
 
 	pr, pw := io.Pipe()
-	go decoder(pr)
+	go decoder(pr, conn, name)
 
 	buffer := make([]byte, 32*1024)
 
@@ -79,13 +79,17 @@ func runClient(address string, name string) error {
 	}
 	defer conn.Close()
 
-	// Create control message
-	ctrlMsg := controlMessage{
-		Name:	name,
+	// Send control message
+	if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{ Name: name}); err != nil {
+		return err
 	}
 
-	if err := gob.NewEncoder(io.Writer(conn)).Encode(ctrlMsg); err != nil {
+	// Receive control message
+	var ctrlMsgR controlMessage
+	if err := gob.NewDecoder(io.Reader(conn)).Decode(&ctrlMsgR); err != nil {
 		return err
+	} else {
+		fmt.Print(name, "exchanged control message with", ctrlMsgR.Name, ".\n")
 	}
 
 	return nil
@@ -103,12 +107,14 @@ type controlMessage struct {
 	Name string
 }
 
-func decoder(reader *io.PipeReader) error {
+func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
 	for i := 0; i < nIncomingMsg; i++ {
 		var ctrlMsg controlMessage
 		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
 			return err
-		fmt.Print("Received control message from ", ctrlMsg.Name, ".\n")
+		}
+		if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{Name: name}); err != nil {
+			return err
 		}
 	}
 	return nil
