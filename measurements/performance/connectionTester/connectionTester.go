@@ -16,8 +16,6 @@ const (
 
 func main() {
 
-	var err error
-
 	// Get local and remote addresses from program arguments:
 	port 		:= flag.Uint("port", 0, "[Server] Local port to listen on.")
 	remoteAddr 	:= flag.String("remote", "", "[Client] Remote SCION Address.")
@@ -34,10 +32,10 @@ func main() {
 	}
 
 	if *port > 0 {
-		err = runServer(uint16(*port), *name)
+		err := runServer(uint16(*port), *name)
 		check(err)
 	} else {
-		runClient(*remoteAddr, *name)
+		err := runClient(*remoteAddr, *name)
 		check(err)
 	}
 }
@@ -48,10 +46,10 @@ func runServer(port uint16, name string) error {
 		if err != nil {
 			return err
 		}
-		err = handleConnection(conn, name)
+		handleConnection(conn, name)
 		conn.Close()
 
-		return err
+	return nil
 }
 
 func handleConnection(conn *snet.Conn, name string) error {
@@ -69,6 +67,7 @@ func handleConnection(conn *snet.Conn, name string) error {
 		_ = from
 		pw.Write(buffer[:n])
 	}
+	return nil
 }
 
 func runClient(address string, name string) error {
@@ -89,10 +88,10 @@ func runClient(address string, name string) error {
 	if err := gob.NewDecoder(io.Reader(conn)).Decode(&ctrlMsgR); err != nil {
 		return err
 	} else {
-		fmt.Print(name, "exchanged control message with", ctrlMsgR.Name, ".\n")
+		fmt.Print("Connection tester client", name, "exchanged control message with", ctrlMsgR.Name, ".\n")
 	}
 
-	return nil
+	return err
 }
 
 // Check just ensures the error is nil, or complains and quits
@@ -108,6 +107,9 @@ type controlMessage struct {
 }
 
 func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
+
+	fmt.Print("Connection tester server ", name, " ready to receive messages.")
+
 	for i := 0; i < nIncomingMsg; i++ {
 		var ctrlMsg controlMessage
 		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
