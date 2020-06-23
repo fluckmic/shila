@@ -6,7 +6,7 @@ CLIENT_ADDR=(17-ffaa:1:d87 19-ffaa:1:d88 20-ffaa:1:d89 18-ffaa:1:d8a)
 # First initialize all clients
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q 'sudo bash ~/go/src/shila/measurements/performance/init.sh'
-  if [[ ! $? ]]; then
+  if [[ $? -ne 0 ]]; then
     printf "Failed to initialize %s.\n" "$CLIENT"
     exit 1
   fi
@@ -17,7 +17,7 @@ for SERVER in "${CLIENTS[@]}"; do
 
   ssh -tt scion@"$SERVER" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh'
     echo $?
-    if [[ ! $? ]]; then
+    if [[  $? -ne 0 ]]; then
     printf "Failed to start connection test server %s.\n" "$SERVER"
     exit 1
     fi
