@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	nIncomingMsg = 3
+	nIncomingMsg = 1
 )
 
 func main() {
@@ -78,21 +78,21 @@ func runClient(address string, name string) error {
 	}
 	defer conn.Close()
 
-	fmt.Print("Client ", name, "connected to ", address, ".\n")
+	fmt.Print("Client ", name, " connected to ", address, ".\n")
 
 	// Send control message
 	if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{ Name: name}); err != nil {
 		return err
 	}
 
-	fmt.Print("Client ", name, "sent control message to ", address, ".\n")
+	fmt.Print("Client ", name, " sent control message to ", address, ".\n")
 
 	// Receive control message
 	var ctrlMsgR controlMessage
 	if err := gob.NewDecoder(io.Reader(conn)).Decode(&ctrlMsgR); err != nil {
 		return err
 	} else {
-		fmt.Print("Client ", name, "received control message from ", ctrlMsgR.Name, ".\n")
+		fmt.Print("Client ", name, " received control message from ", ctrlMsgR.Name, ".\n")
 	}
 
 	return nil
@@ -119,9 +119,14 @@ func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
 		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
 			return err
 		}
+
+		fmt.Print("Server ", name, " received control message from ", ctrlMsg.Name, ".\n")
+
 		if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{Name: name}); err != nil {
 			return err
 		}
+
+		fmt.Print("Server ", name, " sent control message back to ", ctrlMsg.Name, ".\n")
 	}
 	return nil
 }
