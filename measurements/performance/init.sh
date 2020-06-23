@@ -29,9 +29,11 @@ git pull
 ## Build the latest version of all software required
 export PATH=$PATH:/usr/local/go/bin
 
-# shila
-go build ../../
+# Connection tester
+go build -o _connTest ./connectionTester
 
+# shila
+go build -o _shila ../../
 
 printf "Initialization of %s done.\n" "$HOST_NAME"
 exit 0

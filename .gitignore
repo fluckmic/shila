@@ -18,8 +18,6 @@ testing/SingleClient/output/
 testing/SingleClient/report*
 
 measurements/performance/_*
-measurements/performance/shila
-
 
 misc/scion/intro/intro
 
