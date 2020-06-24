@@ -20,7 +20,7 @@ elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-3" ]]; then
 elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-4" ]]; then
   HOST_ID=4
 else
-  printf "Initialization failed - Cannot determine host id.\n" > _init.err
+  printf "Initialization of %s failed - Cannot determine host id.\n" "$HOST_NAME" > _init.err
   exit 1
 fi
 echo "$HOST_ID" > _HOST_ID
