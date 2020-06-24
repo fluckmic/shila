@@ -10,6 +10,7 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 clear
 
+## Do a simple test to see if we are able to establish a connection to all clients.
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q exit
   if [[ $? -ne 0 ]]; then
@@ -18,15 +19,12 @@ for CLIENT in "${CLIENTS[@]}"; do
   fi
 done
 
-
-
-## First initialize all clients
+## Initialize the clients
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
-  printf "Client %s started with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
@@ -45,16 +43,26 @@ for CLIENT in "${CLIENTS[@]}"; do
   printf "Client %s is done with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
-
 ## Then do a connection checks.
+
 #  Start the connection test servers.
-#for SERVER in "${CLIENTS[@]}"; do
-#  ssh -tt scion@"$SERVER" -q 'nohup sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh >> ConnTestServer.log 2>&1 &'
-#  if [[  $? -ne 0 ]]; then
-#    printf "Failed to start connection test server %s.\n" "$SERVER"
-#    exit 1
-#  fi
-#done
+SCRIPT_NAME="connTestServer"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+done
+
+sleep 3
+
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+
+  printf "Client %s is done with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
+done
 
 #  Run the client side.
 #for CLIENT in "${CLIENTS[@]}"; do

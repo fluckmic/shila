@@ -23,7 +23,8 @@ else
   printf "Initialization of %s failed - Cannot determine host id.\n" "$HOST_NAME" > _init.err
   exit 1
 fi
-echo "$HOST_ID" > _HOST_ID
+echo "$HOST_ID" > _hostId
+echo "$HOST_NAME" > _hostName
 
 ## Update the repo
 git pull
