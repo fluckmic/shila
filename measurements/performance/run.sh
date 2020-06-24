@@ -14,6 +14,7 @@ SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+  printf "Client %s started with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
@@ -29,7 +30,7 @@ for CLIENT in "${CLIENTS[@]}"; do
     exit 1
   fi
 
-  printf "Client %s is done with %s.\n" "$CLIENT" "$SCRIPT_NAME"
+  printf "Client %s is done with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
 
