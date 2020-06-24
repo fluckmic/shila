@@ -4,10 +4,9 @@ CLIENTS=(vm-1 vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 
-INIT_CMD="sudo bash ~/go/src/shila/measurements/performance/init.sh"
 ## First initialize all clients
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "init" "$INIT_CMD"
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "init" "sudo bash ~/go/src/shila/measurements/performance/init.sh"
 done
 
 ## Then do a connection checks.
