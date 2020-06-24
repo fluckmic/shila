@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/gob"
 	"flag"
 	"fmt"
@@ -59,9 +60,15 @@ func runServer(port uint16, name string) error {
 		}
 
 		// Send control message
-		if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{ Name: name}); err != nil {
+		var buffer bytes.Buffer
+		if err := gob.NewEncoder(&buffer).Encode(controlMessage{Name: name}); err != nil {
 			return err
 		}
+
+		if _, err := conn.WriteTo(buffer.Bytes(), conn.RemoteAddr()); err != nil {
+			return err
+		}
+
 		fmt.Print("Server ", name, " sent control message back to ", ctrlMsgR.Name, ".\n")
 	}
 
