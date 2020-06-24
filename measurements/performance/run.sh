@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CONNECTION_TEST_TIMEOUT=15
+
 CLIENTS=(mptcp-over-scion-vm-1 mptcp-over-scion-vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
@@ -77,10 +79,16 @@ done
 
 for CLIENT in "${CLIENTS[@]}"; do
   RUNNING=0
+  COUNT=0
   while [ "$RUNNING" -eq 0  ]; do
       ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
       RUNNING=$?
       sleep 1
+      COUNT="$COUNT"+1
+      if [[ "$COUNT" -ge "$CONNECTION_TEST_TIMEOUT" ]]; then
+        printf "Error : Timeout in connection test for %s.\n" "$CLIENT"
+        exit 1
+      fi
   done
 
   ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
