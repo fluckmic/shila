@@ -11,7 +11,7 @@ for CLIENT in "${CLIENTS[@]}"; do
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "CHECK_SESSION" "init"
+  ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "init"
   echo $?
 done
 
