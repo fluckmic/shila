@@ -14,7 +14,7 @@ printf "Starting connection test client %s.\n" "$HOST_NAME" >> _connTestClient.l
 
 for ADDRESS in "${ADDRESSES[@]}"; do
   if [[ "$ADDRESS" != "$OWN_ADDR" ]]; then
-    ./_connTest -name "$HOST_NAME" -remote "$ADDRESS" >> _connTestClient.log 2> _connTestClient.error
+    ./_connTest -name "$HOST_NAME" -remote "$ADDRESS" >> _connTestClient.log 2> _connTestClient.err
   fi
 done
 
