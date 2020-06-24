@@ -16,6 +16,7 @@ for CLIENT in "${CLIENTS[@]}"; do
   while [ "$RUNNING" -eq 0  ]; do
       ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "init"
       RUNNING=$?
+      sleep 1
   done
   printf "Client %s is done with %s.\n" "init"
 done
