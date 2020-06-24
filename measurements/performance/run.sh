@@ -14,13 +14,13 @@ SCRIPT_CMD="sudo bash ""$PATH""/""$SCRIPT_NAME"".sh"
 echo "$SCRIPT_CMD"
 
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_CMD"
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
   RUNNING=0
   while [ "$RUNNING" -eq 0  ]; do
-      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_CMD"
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
       RUNNING=$?
       sleep 1
   done
