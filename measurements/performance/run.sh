@@ -5,20 +5,24 @@ CLIENTS=(vm-1 vm-2)
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
 
+PATH="~/go/src/shila/measurements/performance"
+
 ## First initialize all clients
+SCRIPT_NAME="init"
+SCRIPT_CMD="sudo bash "PATH"/"SCRIPT_NAME".sh"
+
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "init" "sudo bash ~/go/src/shila/measurements/performance/init.sh"
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
   RUNNING=0
   while [ "$RUNNING" -eq 0  ]; do
-      printf "Client %s is still initializing..\n" "$CLIENT"
-      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "init"
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
       RUNNING=$?
       sleep 1
   done
-  printf "Client %s is done with %s.\n" "$CLIENT" "init"
+  printf "Client %s is done with %s.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
 
