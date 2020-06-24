@@ -7,6 +7,4 @@ cd "$BASE_DIR"
 
 printf "Starting connection test server %s.\n" "$HOST_NAME"
 .././_connTest -name "$HOST_NAME" -port 27271
-
-exit $?
-
+printf "Started %s.\n" "$HOST_NAME"
