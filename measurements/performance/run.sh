@@ -4,6 +4,7 @@ CLIENTS=(vm-1 vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
+CHECK_ERROR='bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh'
 
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
@@ -22,6 +23,12 @@ for CLIENT in "${CLIENTS[@]}"; do
       RUNNING=$?
       sleep 1
   done
+
+  ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+
   printf "Client %s is done with %s.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
