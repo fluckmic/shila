@@ -11,7 +11,7 @@ PATH="~/go/src/shila/measurements/performance"
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH""/""$SCRIPT_NAME"".sh"
 
-echo "$SCRIPT_CMD"
+echo "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
 
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
