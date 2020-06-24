@@ -14,7 +14,7 @@ done
 ## Then do a connection checks.
 #  Start the connection test servers.
 for SERVER in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$SERVER" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh'
+  ssh -tt scion@"$SERVER" -q 'nohup sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestServer.sh >> ConnTestServer.log 2>&1 &'
   if [[  $? -ne 0 ]]; then
     printf "Failed to start connection test server %s.\n" "$SERVER"
     exit 1
