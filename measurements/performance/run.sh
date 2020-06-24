@@ -12,13 +12,13 @@ SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME"
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_CMD"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
   RUNNING=0
   while [ "$RUNNING" -eq 0  ]; do
-      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_CMD"
       RUNNING=$?
       sleep 1
   done
