@@ -5,13 +5,11 @@ CLIENTS=(vm-1 vm-2)
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
 
-PATH="~/go/src/shila/measurements/performance"
+PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 ## First initialize all clients
 SCRIPT_NAME="init"
-SCRIPT_CMD="sudo bash ""$PATH""/""$SCRIPT_NAME"".sh"
-
-echo "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
