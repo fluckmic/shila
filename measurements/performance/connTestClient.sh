@@ -7,7 +7,7 @@ HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
 # Load the addresses of the scion access points.
-ADDRESSES=$(cat scionApAddresses)
+ADDRESSES="${cat scionApAddresses}"
 OWN_ADDR=$(ADDRESSES["$HOST_ID"])
 
 
