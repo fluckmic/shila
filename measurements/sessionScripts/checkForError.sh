@@ -8,7 +8,7 @@ PATH_TO_EXPERIMENT=$2
 ERROR_FILE="$PATH_TO_EXPERIMENT""/_""$SESSION_NAME"".err"
 
 if [[ -f "$ERROR_FILE" ]]; then
-  printf "Error in %s.\n" "$SESSION_NAME"".sh"
+  printf "Error : Failure in %s.\n" "$SESSION_NAME"".sh"
   cat "$ERROR_FILE"
   exit 1
 fi

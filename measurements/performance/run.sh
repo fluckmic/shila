@@ -17,6 +17,7 @@ for CLIENT in "${CLIENTS[@]}"; do
     printf "Unable to connect to %s.\n" "$CLIENT"
     exit 1
   fi
+  printf "Success : Connection to %s.\n" "$CLIENT"
 done
 
 ## Initialize the clients
@@ -40,7 +41,7 @@ for CLIENT in "${CLIENTS[@]}"; do
     exit 1
   fi
 
-  printf "Client %s is done with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
+  printf "Success : Initialization of %s.\n" "$CLIENT"
 done
 
 ## Then do a connection checks.
@@ -61,7 +62,7 @@ for CLIENT in "${CLIENTS[@]}"; do
     exit 1
   fi
 
-  printf "Client %s is done with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
+  printf "Success : Starting connection test server on %s.\n" "$CLIENT"
 done
 
 #  Run the client side.
