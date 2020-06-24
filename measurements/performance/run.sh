@@ -11,7 +11,7 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 clear
 
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q 
+  ssh -tt scion@"$CLIENT" -q exit
   if [[ $? -ne 0 ]]; then
     printf "Unable to connect to %s.\n" "$CLIENT"
     exit 1
