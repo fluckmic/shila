@@ -1,0 +1,43 @@
+--- # Topology for shila
+ASes:
+  "1-ff00:0:110":
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "1-ff00:0:120":
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "1-ff00:0:130":
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "1-ff00:0:111":
+    cert_issuer: 1-ff00:0:110
+  "1-ff00:0:112":
+    cert_issuer: 1-ff00:0:110
+  "2-ff00:0:220":
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+links:
+  - {a: "1-ff00:0:110#1",      b: "1-ff00:0:120-A#6",    linkAtoB: CORE, mtu: 1000}
+  - {a: "1-ff00:0:110#2",      b: "1-ff00:0:130-A#1004", linkAtoB: CORE, mtu: 950}
+  - {a: "1-ff00:0:120-A#1",    b: "1-ff00:0:130-B#1005", linkAtoB: CORE, mtu: 1350}
+  - {a: "1-ff00:0:120-B#2",    b: "2-ff00:0:220#501",    linkAtoB: CORE, mtu: 1400}
+  - {a: "1-ff00:0:120-B#3",    b: "2-ff00:0:220#502",    linkAtoB: CORE, mtu: 800}
+  - {a: "1-ff00:0:120#5",      b: "1-ff00:0:111-B#104",  linkAtoB: CHILD, mtu: 1000}
+  - {a: "1-ff00:0:130-B#1002", b: "1-ff00:0:111-A#105",  linkAtoB: CHILD, mtu: 960}
+  - {a: "1-ff00:0:130-A#1003", b: "1-ff00:0:112#4095",   linkAtoB: CHILD, mtu: 1300}
+  - {a: "1-ff00:0:111-A#103",  b: "1-ff00:0:112#4094",   linkAtoB: CHILD, mtu: 1410}
+CAs:
+  CA1-1:
+    ISD: 1
+    commonName: CA1-1
+  CA2-1:
+    ISD: 2
+    commonName: CA2-1
