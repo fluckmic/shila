@@ -10,9 +10,14 @@ for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "init" "sudo bash ~/go/src/shila/measurements/performance/init.sh"
 done
 
+
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "init"
-  echo $?
+  RUNNING=0
+  while [ "$RUNNING" -eq 0  ]; do
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "init"
+      RUNNING=$?
+  done
+  printf "Client %s is done with %s.\n" "init"
 done
 
 
