@@ -3,11 +3,18 @@
 CLIENTS=(vm-1 vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
+CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
 
 ## First initialize all clients
 for CLIENT in "${CLIENTS[@]}"; do
   ssh -tt scion@"$CLIENT" -q "$START_SESSION" "init" "sudo bash ~/go/src/shila/measurements/performance/init.sh"
 done
+
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" -q "CHECK_SESSION" "init"
+  echo $?
+done
+
 
 ## Then do a connection checks.
 #  Start the connection test servers.

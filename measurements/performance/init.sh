@@ -2,13 +2,15 @@
 
 ## Load the hosts name and the base directory
 HOST_NAME=$(uname -n)
-
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
-printf "Starting initialization of %s.\n" "$HOST_NAME"
+printf "Starting initialization of %s.\n" "$HOST_NAME" > _init.log
 
-##Determine the hosts id and make it available
+## Remove all unnecessary stuff.
+rm -f _*
+
+## Determine the hosts id and make it available
 if   [[ "$HOST_NAME" == "mptcp-over-scion-vm-1" ]]; then
   HOST_ID=1
 elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-2" ]]; then
@@ -18,7 +20,7 @@ elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-3" ]]; then
 elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-4" ]]; then
   HOST_ID=4
 else
-  printf "Failed - Cannot determine host id.\n"
+  printf "Initialization failed - Cannot determine host id.\n" > _error.log
   exit 1
 fi
 echo "$HOST_ID" > _HOST_ID
@@ -35,6 +37,6 @@ go build -o _connTest ./connectionTester
 # shila
 go build -o _shila ../../
 
-printf "Initialization of %s done.\n" "$HOST_NAME"
+printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
 exit 0
 
