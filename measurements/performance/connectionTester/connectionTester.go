@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
-	"github.com/scionproto/scion/go/lib/snet"
 	"io"
 	"os"
 )
@@ -47,29 +46,26 @@ func runServer(port uint16, name string) error {
 			return err
 		}
 
-	fmt.Print("Server ", name, " ready for incoming messages.\n")
+	fmt.Print("Server ", name, " ready to receive ", nIncomingMsg, " incoming messages.\n")
 
-	handleConnection(conn, name)
-	conn.Close()
+	for i := 0; i < nIncomingMsg; i++ {
 
-	return nil
-}
+		// Receive control message
+		var ctrlMsgR controlMessage
+		if err := gob.NewDecoder(io.Reader(conn)).Decode(&ctrlMsgR); err != nil {
+			return err
+		} else {
+			fmt.Print("Server ", name, " received control message from ", ctrlMsgR.Name, ".\n")
+		}
 
-func handleConnection(conn *snet.Conn, name string) error {
-
-	pr, pw := io.Pipe()
-	go decoder(pr, conn, name)
-
-	buffer := make([]byte, 32*1024)
-
-	for {
-		n, from, err := conn.ReadFrom(buffer)
-		if err != nil {
+		// Send control message
+		if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{ Name: name}); err != nil {
 			return err
 		}
-		_ = from
-		pw.Write(buffer[:n])
+		fmt.Print("Server ", name, " sent control message back to ", ctrlMsgR.Name, ".\n")
 	}
+
+	conn.Close()
 	return nil
 }
 
@@ -111,24 +107,4 @@ func check(e error) {
 
 type controlMessage struct {
 	Name string
-}
-
-func decoder(reader *io.PipeReader, conn *snet.Conn, name string) error {
-
-	for i := 0; i < nIncomingMsg; i++ {
-
-		var ctrlMsg controlMessage
-		if err := gob.NewDecoder(reader).Decode(&ctrlMsg); err != nil {
-			return err
-		}
-
-		fmt.Print("Server ", name, " received control message from ", ctrlMsg.Name, ".\n")
-
-		if err := gob.NewEncoder(io.Writer(conn)).Encode(controlMessage{Name: name}); err != nil {
-			return err
-		}
-
-		fmt.Print("Server ", name, " sent control message back to ", ctrlMsg.Name, ".\n")
-	}
-	return nil
 }
