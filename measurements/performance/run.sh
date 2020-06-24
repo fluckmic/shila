@@ -8,6 +8,8 @@ CHECK_ERROR='bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh'
 
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
+clear
+
 ## First initialize all clients
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
