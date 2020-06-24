@@ -10,6 +10,16 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 clear
 
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" who
+  if [[ $? -ne 0 ]]; then
+    printf "Unable to connect to %s.\n" "$CLIENT"
+    exit 1
+  fi
+done
+
+
+
 ## First initialize all clients
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
