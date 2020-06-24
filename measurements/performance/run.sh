@@ -67,12 +67,26 @@ for CLIENT in "${CLIENTS[@]}"; do
   printf "Success : Starting connection test server on %s.\n" "$CLIENT"
 done
 
-#  Run the client side.
-#for CLIENT in "${CLIENTS[@]}"; do
-#  ssh -tt scion@"$CLIENT" -q 'sudo bash ~/go/src/shila/measurements/performance/connectionTester/runConnTestClient.sh'
-#  if [[  $? -ne 0 ]]; then
-#    printf "Connection test for client %s failed.\n" "$CLIENT"
-#    exit 1
-#  fi
-#done
+#  Run the connection test clients.
+SCRIPT_NAME="connTestClient"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
+for CLIENT in "${CLIENTS[@]}"; do
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+done
+
+for CLIENT in "${CLIENTS[@]}"; do
+  RUNNING=0
+  while [ "$RUNNING" -eq 0  ]; do
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
+      RUNNING=$?
+      sleep 1
+  done
+
+  ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
+  if [[ $? -ne 0 ]]; then
+    exit 1
+  fi
+
+  printf "Success : Connection test for %s.\n" "$CLIENT"
+done
