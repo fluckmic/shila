@@ -12,12 +12,12 @@ OWN_ADDR=$(ADDRESSES["$HOST_ID"])
 
 
 printf "Starting connection test client %s.\n" "$HOST_NAME" > _connTestClient.log
-printf "Own addr: %s.\n" "$OWN_ADDR"
+printf "Own addr: %s.\n" "$OWN_ADDR" > _connTestClient.log
 
 for ADDRESS in $(ADDRESSES[@]); do
-  printf "Connection test to %s.\n" "$ADDRESS"
+  printf "Connection test to %s.\n" "$ADDRESS" > _connTestClient.log
   if [[ "$ADDRESS" != "$OWN_ADDR" ]]; then
-    printf "Connection test to %s.\n" "$ADDRESS"
+    printf "Connection test to %s.\n" "$ADDRESS" > _connTestClient.log
     ./_connTest -name "$HOST_NAME" -remote "$ADDRESS" > _connTestClient.log 2> _connTestClient.error
   fi
 done
