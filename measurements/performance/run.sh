@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CLIENTS=(mptcp-over-scion-vm-1 mptcp-over-scion-vm-2 nothing)
+CLIENTS=(mptcp-over-scion-vm-1 mptcp-over-scion-vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
