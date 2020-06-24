@@ -25,10 +25,9 @@ for CLIENT in "${CLIENTS[@]}"; do
       sleep 1
   done
 
-  printf "Client %s checks for error.\n" "$CLIENT"
-
   ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
   if [[ $? -ne 0 ]]; then
+     printf "Client %s no good.\n" "$CLIENT"
     exit 1
   fi
 
