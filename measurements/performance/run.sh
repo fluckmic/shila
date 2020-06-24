@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CLIENTS=(vm-1 vm-2)
+CLIENTS=(mptcp-over-scion-vm-1 mptcp-over-scion-vm-2)
 
 START_SESSION='bash ~/go/src/shila/measurements/sessionScripts/startSession.sh'
 CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
@@ -13,21 +13,20 @@ SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
   printf "Client %s started with %s.sh.\n" "$CLIENT" "$SCRIPT_NAME"
 done
 
 for CLIENT in "${CLIENTS[@]}"; do
   RUNNING=0
   while [ "$RUNNING" -eq 0  ]; do
-      ssh -tt scion@"$CLIENT" "$CHECK_SESSION" "$SCRIPT_NAME"
+      ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
       RUNNING=$?
       sleep 1
   done
 
-  ssh -tt scion@"$CLIENT" "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
+  ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
   if [[ $? -ne 0 ]]; then
-    printf "Client %s no good.\n" "$CLIENT"
     exit 1
   fi
 
