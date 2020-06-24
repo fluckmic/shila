@@ -7,12 +7,12 @@ HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
 # Load the addresses of the scion access points.
-ADDRESSES="${cat scionApAddresses}"
+ADDRESSES=(17-ffaa:1:d87,[127.0.0.1]:27271 19-ffaa:1:d88,[127.0.0.1]:27271)
 OWN_ADDR=$(ADDRESSES["$HOST_ID"])
 
 
-printf "Starting connection test client %s.\n" "$HOST_NAME" > _connTestClient.log
-printf "Own addr: %s.\n" "$OWN_ADDR" > _connTestClient.log
+printf "Starting connection test client %s.\n" "$HOST_NAME" >> _connTestClient.log
+printf "Own addr: %s.\n" "$OWN_ADDR" >> _connTestClient.log
 
 for ADDRESS in $(ADDRESSES[@]); do
   printf "Connection test to %s.\n" "$ADDRESS" > _connTestClient.log
