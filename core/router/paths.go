@@ -3,12 +3,9 @@ package router
 import (
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 	"github.com/scionproto/scion/go/lib/snet"
+	"shila/config"
 	"shila/core/shila"
 	"sort"
-)
-
-const (
-	pathSelectionConfig = appnet.Shortest
 )
 
 type paths struct {
@@ -29,7 +26,7 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 		return paths{}
 	}
 
-	sortPaths(scionPaths, pathSelectionConfig)
+	sortPaths(scionPaths)
 
 	return paths{
 		storage: scionPaths,
@@ -77,9 +74,8 @@ func fetchSCIONPaths(dstAddr shila.NetworkAddress) []pathWrapper {
 	}
 }
 
-func sortPaths(paths []pathWrapper, pathAlgorithm int) {
-
-	switch pathAlgorithm {
+func sortPaths(paths []pathWrapper) {
+	switch selectPathAlgorithm() {
 	case appnet.Shortest:
 		sort.Slice(paths, func(i, j int) bool {
 			return len(paths[i].path.Interfaces()) < len(paths[j].path.Interfaces())
@@ -93,4 +89,14 @@ func sortPaths(paths []pathWrapper, pathAlgorithm int) {
 		return
 	}
 	return
+}
+
+func selectPathAlgorithm() int {
+	if config.Config.Router.PathSelection == "mtu" {
+		return appnet.MTU
+	} else if config.Config.Router.PathSelection == "shortest" {
+		return appnet.Shortest
+	} else {
+		return appnet.Shortest
+	}
 }

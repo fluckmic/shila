@@ -9,6 +9,7 @@ type ConfigJSON struct {
 	Logging				LoggingConfigJSON
 	NetworkSide			NetworkSideConfigJSON
 	NetworkEndpoint		NetworkEndpointConfigJSON
+	Router				RouterConfigJSON
 }
 
 type WorkingSideConfigJSON struct {
@@ -58,4 +59,8 @@ type NetworkEndpointConfigJSON struct {
 	WaitingTimeAfterConnectionIssue	 	int 				// Time to wait after a connection issue has occurred.
 	ServerResendInterval           	 	int 				// Time to wait until a server endpoint tries to resend a packet.
 	SizeHoldingArea                	 	int           		// Initial size (shila packets) of the holding area.
+}
+
+type RouterConfigJSON struct {
+	PathSelection 						string				// What type to use for the path selection. (mtu, shortest)
 }

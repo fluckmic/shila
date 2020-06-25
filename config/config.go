@@ -90,5 +90,8 @@ func defaultConfig() *structure.ConfigJSON {
 			ServerResendInterval:            		 	2,
 			SizeHoldingArea:                 		 	100,
 		},
+		Router: structure.RouterConfigJSON{
+			PathSelection: 								"shortest",
+		},
 	}
 }
