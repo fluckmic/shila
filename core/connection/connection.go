@@ -4,7 +4,6 @@ package connection
 import (
 	"fmt"
 	"github.com/bclicn/color"
-	"github.com/scionproto/scion/go/lib/snet"
 	"shila/config"
 	"shila/core/router"
 	"shila/core/shila"
@@ -189,7 +188,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print(conn.Says(color.Green("Successfully established!")))
+							// log.Info.Print(conn.Says(color.Green("Successfully established!")))
 							return nil
 
 	case established: 		conn.touched 	= time.Now()
@@ -304,6 +303,8 @@ func (conn *Connection) setState(state stateIdentifier) {
 }
 
 func (conn *Connection) Identifier() string {
+	return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
+	/*
 	if conn.flow.NetFlow.Path == nil {
 		return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
 	} else {
@@ -314,6 +315,7 @@ func (conn *Connection) Identifier() string {
 			return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
 		}
 	}
+	 */
 }
 
 func (conn *Connection) Says(str string) string {

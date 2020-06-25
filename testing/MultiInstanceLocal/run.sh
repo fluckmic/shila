@@ -1,6 +1,8 @@
 #!/bin/bash
 SESSION=$USER
 
+bash ../../helper/netnsClear.sh
+
 tmux kill-session
 
 tmux -2 new-session -d -s $SESSION
