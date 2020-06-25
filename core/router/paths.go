@@ -39,10 +39,10 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 
 func (p *paths) get(key shila.IPFlowKey) shila.NetworkPath {
 
-	if p.storage == nil {
+	if (p.storage == nil) || (len(p.storage) < 1) {
 		return nil
 	}
-
+	
 	useCountOfNext := len(p.mapping) / len(p.storage) // #used / #total
 
 	for index, pathWrapper := range p.storage {
