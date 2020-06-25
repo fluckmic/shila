@@ -11,14 +11,14 @@ printf "Starting initialization of %s.\n" "$HOST_NAME" > _init.log
 rm -f _*
 
 ## Determine the hosts id and make it available
-if   [[ "$HOST_NAME" == "mptcp-over-scion-vm-1" ]]; then
+if   [[ "$HOST_NAME" == "mptcp-over-scion-vm-0" ]]; then
+  HOST_ID=0
+elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-1" ]]; then
   HOST_ID=1
 elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-2" ]]; then
   HOST_ID=2
 elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-3" ]]; then
   HOST_ID=3
-elif [[ "$HOST_NAME" == "mptcp-over-scion-vm-4" ]]; then
-  HOST_ID=4
 else
   printf "Initialization of %s failed - Cannot determine host id.\n" "$HOST_NAME" > _init.err
   exit 1

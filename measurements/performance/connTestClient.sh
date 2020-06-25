@@ -8,7 +8,7 @@ HOST_ID=$(cat _hostId)
 
 # Load the addresses of the scion access points.
 ADDRESSES=(17-ffaa:1:d87,[127.0.0.1]:2727 19-ffaa:1:d88,[127.0.0.1]:2727)
-OWN_ADDR="${ADDRESSES["$HOST_ID" - 1]}"
+OWN_ADDR="${ADDRESSES["$HOST_ID"]}"
 
 printf "Starting connection test client %s.\n" "$HOST_NAME" >> _connTestClient.log
 

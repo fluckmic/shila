@@ -177,7 +177,9 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlowKey, "!"))))
+							//log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlowKey, "!"))))
+							log.Info.Print(conn.Says(color.Green("Successfully established!")))
+
 
 							return nil
 
@@ -304,18 +306,6 @@ func (conn *Connection) setState(state stateIdentifier) {
 
 func (conn *Connection) Identifier() string {
 	return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
-	/*
-	if conn.flow.NetFlow.Path == nil {
-		return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
-	} else {
-		switch scionPath := conn.flow.NetFlow.Path.(type) {
-		case snet.Path:
-			return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " < ", scionPath.Fingerprint() ," > ", conn.flow.NetFlow.Dst, ")")
-		default:
-			return fmt.Sprint(conn.category, " Connection (", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst, ")")
-		}
-	}
-	 */
 }
 
 func (conn *Connection) Says(str string) string {
