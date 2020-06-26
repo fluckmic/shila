@@ -10,3 +10,4 @@ HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
 printf "Starting shila on the server side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
+sudo ./_shila >> "$LOG_FILE" 2>> "$ERR_FILE"

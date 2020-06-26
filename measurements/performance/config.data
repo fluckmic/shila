@@ -1,0 +1,4 @@
+{
+  "KernelSide"  :   { "NumberOfEgressInterfaces" : @1 },
+  "Router"      :   { "PathSelection" : @2 }
+}

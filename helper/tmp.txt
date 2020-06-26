@@ -1,2 +1,0 @@
-shila-egress-2
-shila-ingress-2
