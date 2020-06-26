@@ -10,12 +10,12 @@ CLIENTS=(mptcp-over-scion-vm-0 mptcp-over-scion-vm-1 mptcp-over-scion-vm-2)
 CLIENT_IDS=(0 1 2)
 N_REPETITIONS=5
 N_INTERFACES=(1 2 3 7 10)
-PATH_SELECTION=(0 1)
+PATH_SELECTIONS=(0 1)
 DURATION=60
 
 DURATION_BETWEEN=10
 
-N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTION[@]}))
+N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
 TOTAL_DURATION=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
@@ -29,67 +29,48 @@ clear
 printf "Starting %s:\n\n" "$EXPERIMENT_NAME"
 printf "Clients:\t"; echo "${CLIENTS[@]}"
 printf "Interfaces:\t"; echo "${N_INTERFACES[@]}"
-printf "Path selection:\t"; echo "${PATH_SELECTION[@]}"
+printf "Path selection:\t"; echo "${PATH_SELECTIONS[@]}"
 printf "Duration:\t%s\n" "$DURATION"
 printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS"
 printf "Estimated duration:\t\t%dh\n\n" "$TOTAL_DURATION"
 ########################################################################################################################
-## Do a simple test to see if we are able to establish a connection
-#  to all clients and clean up everything.
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh"
-for CLIENT in "${CLIENTS[@]}"; do
- ssh -tt scion@"$CLIENT" -q "$SCRIPT_CMD" 1
- if [[ $? -ne 0 ]]; then
-   printf "Failure : Cannot connect to %s.\n" "$CLIENT"
-   exit 1
- fi
- printf "Success : Connection to %s.\n" "$CLIENT"
-done
-########################################################################################################################
-## Initialize the clients
-SCRIPT_NAME="init"
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+## Create the experiments file
 
-for CLIENT in "${CLIENTS[@]}"; do
- ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
-done
-for CLIENT in "${CLIENTS[@]}"; do
- ./waitforReturn.sh "$CLIENT" "$SCRIPT_NAME" 0 30   # Polling w/ timeout after 30 seconds.
- if [[ $? -eq 1 ]]; then
-   exit 1
- fi
- printf "Success : Initialization of %s.\n" "$CLIENT"
-done
-########################################################################################################################
-## Do connection checks.
-#  Start the connection test servers.
-SCRIPT_NAME="connTestServer"
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+rm -f _experiments.data
 
-for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
-done
-sleep 3
-for CLIENT in "${CLIENTS[@]}"; do
- ./waitforReturn.sh "$CLIENT" "$SCRIPT_NAME" 1 0   # No polling.
- if [[ $? -eq 1 ]]; then
-   exit 1
- fi
- printf "Success : Starting connection test server on %s.\n" "$CLIENT"
+for SRC in "${CLIENT_IDS[@]}"; do
+  for DST in "${CLIENT_IDS[@]}"; do
+  if [[ $SRC != $DST ]]; then
+    for N_INTERFACE in "${N_INTERFACES[@]}"; do
+      for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
+        COUNT=1
+        while [[ "$COUNT" -le "$N_REPETITIONS" ]]; do
+          echo "$SRC" "$DST" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments.data
+          COUNT=$(($COUNT+1))
+        done
+      done
+    done
+  fi
+  done
 done
 
-#  Run the connection test clients.
-SCRIPT_NAME="connTestClient"
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+# Create a random order
+shuf _experiments.data | shuf -o _experiments.data
 
-for CLIENT in "${CLIENTS[@]}"; do
-  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
-done
-for CLIENT in "${CLIENTS[@]}"; do
- ./waitforReturn.sh "$CLIENT" "$SCRIPT_NAME" 0 20   # Polling w/ timeout 10 seconds.
- if [[ $? -eq 1 ]]; then
-   exit 1
- fi
- printf "Success : Connection test for %s.\n" "$CLIENT"
-done
-########################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
