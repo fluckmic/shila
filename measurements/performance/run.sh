@@ -1,12 +1,12 @@
 #!/bin/bash
 
-CONNECTION_TEST_TIMEOUT=15
+PRINT_DEBUG=1
 
 PATH_TO_EXPERIMENT=$(dirname "$0")
 
 EXPERIMENT_NAME="Performance measurement"
 
-CLIENTS=(mptcp-over-scion-vm-0 mptcp-over-scion-vm-1 mptcp-over-scion-vm-2)
+mapfile -t CLIENTS < hostNames.data
 CLIENT_IDS=(0 1 2)
 N_REPETITIONS=5
 N_INTERFACES=(1 2 3 7 10)
@@ -18,13 +18,16 @@ DURATION_BETWEEN=10
 N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
 TOTAL_DURATION=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
+CONNECTION_TEST_TIMEOUT=15
+
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 KILL_ALL_SESSIONS="bash ~/go/src/shila/measurements/sessionScripts/terminateAllSessions.sh"
 
 clear
+rm -f _*
 ########################################################################################################################
-## Do a simple test to see if we are able to establish a connection
+## Print infos about the experiment.
 
 printf "Starting %s:\n\n" "$EXPERIMENT_NAME"
 printf "Clients:\t"; echo "${CLIENTS[@]}"
@@ -34,18 +37,27 @@ printf "Duration:\t%s\n" "$DURATION"
 printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS"
 printf "Estimated duration:\t\t%dh\n\n" "$TOTAL_DURATION"
 ########################################################################################################################
+## Create the output folder / path.
+
+DATE=$(date +%F-%H-%M-%S)
+OUTPUT_PATH="_""$DATE"
+mkdir "$OUTPUT_PATH"
+
+########################################################################################################################
 ## Create the experiments file
+
+./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG"
 
 rm -f _experiments.data
 
-for SRC in "${CLIENT_IDS[@]}"; do
-  for DST in "${CLIENT_IDS[@]}"; do
-  if [[ $SRC != $DST ]]; then
+for SRC_ID in "${CLIENT_IDS[@]}"; do
+  for DST_ID in "${CLIENT_IDS[@]}"; do
+  if [[ $SRC_ID != $DST_ID ]]; then
     for N_INTERFACE in "${N_INTERFACES[@]}"; do
       for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
         COUNT=1
         while [[ "$COUNT" -le "$N_REPETITIONS" ]]; do
-          echo "$SRC" "$DST" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments.data
+          echo "$SRC_ID" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments.data
           COUNT=$(($COUNT+1))
         done
       done
@@ -56,7 +68,44 @@ done
 
 # Create a random order
 shuf _experiments.data | shuf -o _experiments.data
+########################################################################################################################
+## Run the experiment
 
+rm _experiments.fail 2>/dev/null
+
+N_EXPERIMENTS_DONE=0
+N_EXPERIMENTS_FAIL=0
+
+while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
+
+  ./printDebug.sh "Start doing experiments." "$PRINT_DEBUG"
+
+  # Repeat until all experiments are done. Repeat the ones failed.
+  if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
+
+    rm _experiments.data
+    cp _experiments.fail _experiments.data
+    rm _experiments.fail
+  fi
+  N_EXPERIMENTS_FAIL=0
+
+  while read EXPERIMENT; do
+
+     ./printDebug.sh "Start doing experiment ""$EXPERIMENT""." "$PRINT_DEBUG"
+
+    ./doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
+    if [[ $? -ne 0 ]]; then
+      echo "$EXPERIMENT" >> _experiments.fail
+      N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
+      printf "Failure : Experiment %s failed.\n" "$EXPERIMENT"
+    else
+      N_EXPERIMENTS_DONE=$(($N_EXPERIMENTS_DONE+1))
+      printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS"
+    fi
+
+  done < _experiments.data
+done
+########################################################################################################################
 
 
 
