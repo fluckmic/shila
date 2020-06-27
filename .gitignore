@@ -26,6 +26,3 @@ misc/scion/intro/intro
 
 # Logs
 log-*
-
-#
-routing*.json
