@@ -14,7 +14,7 @@ fi
 # Polls the session until it terminates.
 COUNT=0
 while [ "$POLL" -eq 0  ]; do
-  ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
+  ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SESSION_NAME"
   POLL=$?
   sleep 1
   COUNT="$COUNT"+"$STEP"
