@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Terminates a tmux session (if it exits).
+BASE_DIR=$(dirname "$0")
+cd "$BASE_DIR"
 
 SESSION_NAME=$1
 
