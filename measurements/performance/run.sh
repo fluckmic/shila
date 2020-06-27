@@ -28,7 +28,6 @@ CONNECTION_TEST_TIMEOUT=15
 
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
-KILL_ALL_SESSIONS="bash ~/go/src/shila/measurements/sessionScripts/terminateAllSessions.sh"
 
 clear
 rm -f -d _*
