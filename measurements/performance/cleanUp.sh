@@ -7,6 +7,8 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
+echo "Start cleanup."
+
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then
   rm -f _*
@@ -25,5 +27,7 @@ sudo pkill iperf
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
+
+echo "Done cleanup."
 
 exit 0
