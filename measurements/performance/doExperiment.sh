@@ -16,13 +16,13 @@ LOG_FILE="_iperfClientSide_""$SRC_ID""_""$DST_ID""_""$N_INTERFACE""_""$PATH_SELE
 
 ########################################################################################################################
 ## Clean up the clients involved.
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh"
-ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD" 0
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh 0"
+ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT"
   exit 1
 fi
-ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD" 0
+ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD"
  if [[ $? -ne 0 ]]; then
    printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT"
    exit 1

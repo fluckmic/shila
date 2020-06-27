@@ -120,7 +120,7 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
     ./printDebug.sh "Start doing experiment ""$EXPERIMENT""." "$PRINT_DEBUG"
 
-    #./doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
+    ./doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> _experiments.fail
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))

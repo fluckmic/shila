@@ -7,8 +7,6 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
-exit 0
-
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then
   rm -f _*
@@ -20,7 +18,6 @@ rm -f _*.err
 
 # Kill all tmux sessions
 sudo pkill -f tmux
-
 
 # Kill all shila and iperf instances
 sudo pkill shila &>/dev/null
