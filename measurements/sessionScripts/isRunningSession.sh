@@ -6,6 +6,7 @@ SESSION_NAME=$1
 
 printf "Check if there is a running session %s?\n" "$SESSION_NAME"
 
+pwd
 tmux list-sessions
 sudo tmux list-session
 
