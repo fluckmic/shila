@@ -4,12 +4,13 @@
 
 SESSION_NAME=$1
 
-echo "in is running session"
-echo "$SESSION_NAME"
+printf "Check if there is a running session %s?" "$SESSION_NAME"
 
 tmux has-session -t "$SESSION_NAME" &>/dev/null
-RETURN=$?
-
-echo "$RETURN"
-
-exit "$RETURN"
+if [[ $= -eq 0 ]]; then
+  printf "There is a running session %s/n." "$SESSION_NAME"
+  exit 0
+else
+  printf "There is no running session %s/n." "$SESSION_NAME"
+  exit 1
+fi
