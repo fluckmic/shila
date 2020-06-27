@@ -13,15 +13,15 @@ if [[ $1 -eq 1 ]]; then
 fi
 
 # Remove all log and error files.
-#rm -f _*.log
-#rm -f _*.err
+rm -f _*.log
+rm -f _*.err
 
 # Kill all tmux sessions
 #sudo pkill -f tmux
 
 ../sessionScripts/./terminateSession.sh "shilaClientSide"
 ../sessionScripts/./terminateSession.sh "shilaServerSide"
-#../sessionScripts/./terminateSession.sh "iperfClientSide"
+../sessionScripts/./terminateSession.sh "iperfClientSide"
 ../sessionScripts/./terminateSession.sh "iperfServerSide"
 
 # Kill all shila and iperf instances
