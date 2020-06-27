@@ -2,7 +2,7 @@
 
 PRINT_DEBUG=1
 
-PATH_TO_EXPERIMENT=$(dirname "$0")
+PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 SRC_ID=$1; DST_ID=$2; N_INTERFACE=$3; PATH_SELECT=$4; REPETITION=$5; DURATION=$6; OUTPUT_FOLDER=$7
 

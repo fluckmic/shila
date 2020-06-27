@@ -8,10 +8,10 @@ EXPERIMENT_NAME="Performance measurement"
 
 mapfile -t CLIENTS < hostNames.data
 CLIENT_IDS=(0 1 2)
-N_REPETITIONS=5
-N_INTERFACES=(1 2 3 7 10)
-PATH_SELECTIONS=(0 1)
-DURATION=60
+N_REPETITIONS=1
+N_INTERFACES=(1)
+PATH_SELECTIONS=(1)
+DURATION=10
 
 DURATION_BETWEEN=10
 
@@ -89,8 +89,6 @@ for CLIENT in "${CLIENTS[@]}"; do
  fi
  printf "Success : Initialization of %s.\n" "$CLIENT"
 done
-########################################################################################################################
-exit 0
 ########################################################################################################################
 ## Run the experiment
 
