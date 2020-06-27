@@ -14,7 +14,7 @@ for CLIENT in "${CLIENTS[@]}"; do
   CNT=$(($CNT+1))
 done
 
-N_REPETITIONS=1
+N_REPETITIONS=2
 N_INTERFACES=(1)
 PATH_SELECTIONS=(1)
 DURATION=10
@@ -103,9 +103,9 @@ rm _experiments.fail 2>/dev/null
 N_EXPERIMENTS_DONE=0
 N_EXPERIMENTS_FAIL=0
 
-while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
+./printDebug.sh "Start doing experiments." "$PRINT_DEBUG"
 
-  ./printDebug.sh "Start doing experiments." "$PRINT_DEBUG"
+while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
   # Repeat until all experiments are done. Repeat the ones failed.
   if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
