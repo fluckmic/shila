@@ -5,13 +5,11 @@ HOST_NAME=$(uname -n)
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
-printf "%s" "$BASE_DIR"
-
 printf "Starting initialization of %s.\n" "$HOST_NAME" > _init.log
 
 ## Remove all unnecessary stuff.
 rm -f _*
-./cleanUp.sh 1
+#./cleanUp.sh 1
 
 ## Determine the hosts id and make it available
 if   [[ "$HOST_NAME" == "mptcp-over-scion-vm-0" ]]; then
