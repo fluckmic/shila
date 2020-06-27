@@ -75,7 +75,7 @@ fi
 ./printDebug.sh "Started shila instance on the client." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Start the iperf instance on the client.
-SCRIPT_NAME="IperfClientSide"
+SCRIPT_NAME="iperfClientSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$REPETITION" "$DURATION"
 if [[ $? -ne 0 ]]; then
