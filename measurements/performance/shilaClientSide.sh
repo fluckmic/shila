@@ -18,3 +18,4 @@ sed "s/@1/""$N_VIRTUAL_INTERFACES""/g" config.data | sed "s/@2/""$PATH_SELECTION
 
 printf "Starting shila on the client side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 sudo ./_shila -config _clientConfig.json >> "$LOG_FILE" 2>> "$ERR_FILE"
+printf "Terminating shila on the client side." >> "$LOG_FILE"
