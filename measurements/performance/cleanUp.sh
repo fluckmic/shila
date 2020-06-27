@@ -21,7 +21,7 @@ fi
 
 ../sessionScripts/./terminateSession.sh "shilaClientSide"
 ../sessionScripts/./terminateSession.sh "shilaServerSide"
-#../sessionScripts/./terminateSession.sh "iperfClientSide"
+../sessionScripts/./terminateSession.sh "iperfClientSide"
 #../sessionScripts/./terminateSession.sh "iperfServerSide"
 
 # Kill all shila and iperf instances
