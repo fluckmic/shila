@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PRINT_DEBUG=0
+PRINT_DEBUG=1
 
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
