@@ -5,8 +5,7 @@
 SESSION_NAME=$1
 
 printf "Check if there is a running session %s?\n" "$SESSION_NAME"
-
-pkill -USR1 tmux
+ps aux | grep -w [t]mux
 tmux list-sessions
 
 tmux has-session -t "$SESSION_NAME" &>/dev/null
