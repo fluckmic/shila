@@ -17,7 +17,7 @@ fi
 #rm -f _*.err
 
 # Kill all tmux sessions
-sudo pkill -f tmux
+#sudo pkill -f tmux
 
 # Kill all shila and iperf instances
 #sudo pkill shila &>/dev/null
