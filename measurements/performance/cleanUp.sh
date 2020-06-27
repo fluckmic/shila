@@ -7,8 +7,6 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
-printf "Starting clean up."
-
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then
   rm -f _*
@@ -27,7 +25,5 @@ tmux kill-server &>/dev/null
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
-
-printf "Clean up done."
 
 exit 0
