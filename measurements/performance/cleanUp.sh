@@ -17,11 +17,11 @@ rm -f _*.log
 rm -f _*.err
 
 # Kill all tmux sessions
-tmux kill-server 2>/dev/null
+tmux kill-server &>/dev/null
 
 # Kill all shila and iperf instances
-#sudo pkill shila >&2>/dev/null
-sudo pkill iperf >&2>/dev/null
+sudo pkill shila &>/dev/null
+sudo pkill iperf &>/dev/null
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
