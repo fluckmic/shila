@@ -28,8 +28,8 @@ tmux kill-server 2>/dev/null
 echo "3"
 
 # Kill all shila and iperf instances
-sudo pkill shila
-sudo pkill iperf
+sudo pkill shila >&2>/dev/null
+sudo pkill iperf >&2>/dev/null
 
 echo "4"
 
