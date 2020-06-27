@@ -15,7 +15,7 @@ fi
 COUNT=0
 while [ "$POLL" -eq 0  ]; do
   ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SCRIPT_NAME"
-  RUNNING=$?
+  POLL=$?
   sleep 1
   COUNT="$COUNT"+"$STEP"
     if [[ "$COUNT" -ge "$TIMEOUT" ]]; then
