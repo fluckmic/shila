@@ -7,7 +7,7 @@ SESSION_NAME=$1
 printf "Check if there is a running session %s?\n" "$SESSION_NAME"
 
 tmux has-session -t "$SESSION_NAME" &>/dev/null
-if [[ $= -eq 0 ]]; then
+if [[ $? -eq 0 ]]; then
   printf "There is a running session %s\n." "$SESSION_NAME"
   exit 0
 else
