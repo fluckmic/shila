@@ -17,7 +17,7 @@ rm -f _*.log
 rm -f _*.err
 
 # Kill all tmux sessions
-tmux kill-server &>/dev/null
+#tmux kill-server &>/dev/null
 
 # Kill all shila and iperf instances
 sudo pkill shila &>/dev/null
