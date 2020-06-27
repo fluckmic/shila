@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+tmux list-sessions
+
 ## Load the hosts name and the base directory
 HOST_NAME=$(uname -n)
 BASE_DIR=$(dirname "$0")
@@ -20,6 +23,8 @@ rm -f _*.err
 #sudo pkill -f tmux
 
 echo "Before"
+
+
 
 ../sessionScripts/./terminateSession.sh shilaClientSide
 ../sessionScripts/./terminateSession.sh shilaServerSide
