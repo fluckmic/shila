@@ -4,4 +4,4 @@
 
 SESSION_NAME=$1
 
-tmux has-session -t "$SESSION_NAME" 2>/dev/null
+tmux has-session -t "$SESSION_NAME" &>/dev/null
