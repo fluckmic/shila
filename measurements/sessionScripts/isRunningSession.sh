@@ -10,3 +10,5 @@ tmux has-session -t "$SESSION_NAME" &>/dev/null
 RETURN=$?
 
 echo "$RETURN"
+
+exit "$RETURN"
