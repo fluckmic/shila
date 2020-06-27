@@ -1,6 +1,7 @@
 #!/bin/bash
 
-CHECK_SESSION='bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh'
+CHECK_SESSION="bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh"
+CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 
 CLIENT=$1
 SESSION_NAME=$2
@@ -25,7 +26,9 @@ while [ "$POLL" -eq 0  ]; do
 done
 
 # Checks if the session terminated with an error. Returns error code 1 if so.
-ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SCRIPT_NAME" "$PATH_TO_EXPERIMENT"
+ssh -tt scion@"$CLIENT" -q "$CHECK_ERROR" "$SESSION_NAME" "$PATH_TO_EXPERIMENT"
 if [[ $? -ne 0 ]]; then
   exit 1
 fi
+
+exit 0
