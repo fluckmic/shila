@@ -77,7 +77,7 @@ func defaultConfig() *structure.ConfigJSON {
 			WaitingTimeUntilEscalation: 				5,
 		},
 		Logging:         structure.LoggingConfigJSON{
-			PrintVerbose: 								false,
+			PrintVerbose: 								true,
 		},
 		NetworkSide:     structure.NetworkSideConfigJSON{
 			ContactingServerPort: 						9876,
