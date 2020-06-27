@@ -90,7 +90,7 @@ fi
 ########################################################################################################################
 ## Copy back the measurements
 
-scp scion@"$SRC_CLIENT":/"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER"
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to copy back the result from %s.\n" "$SRC_CLIENT"
   exit 1

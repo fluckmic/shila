@@ -7,6 +7,8 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
+exit 0
+
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then
   rm -f _*
