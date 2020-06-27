@@ -18,5 +18,6 @@ mapfile -t PORTS < IperfListeningPorts.data
 PORT=${PORTS["$REMOTE_ID"]}
 
 printf "Starting iperf on the client side %s for %ds (%ds interval).\n" "$HOST_NAME" "$DURATION" "$INTERVAL" >> "$LOG_FILE"
-printf "%s %s %s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$N_INTERFACE" "$PATH_SELECT" "$REPETITION" "$DURATION" "$INTERVAL" >> "$LOG_FILE"
+printf "%HostID RemoteID Address Port Repetition PathSelect Duration Interval\n" >> "$LOG_FILE"
+printf "%s %s %s %s %s %s %s %s.\n" "$HOST_ID" "$REMOTE_ID" "$ADDRESS" "$PORT" "$REPETITION" "$PATH_SELECT" "$DURATION" "$INTERVAL" >> "$LOG_FILE"
 sudo ip netns exec shila-egress iperf -c "$ADDRESS" -p "$PORT" -t "$DURATION" -i "$INTERVAL" >> "$LOG_FILE" 2>> "$ERR_FILE"
