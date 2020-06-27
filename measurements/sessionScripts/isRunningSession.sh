@@ -4,7 +4,8 @@
 
 SESSION_NAME=$1
 
-echo "In isRunningSession"
+echo "in is running session"
+echo "$SESSION_NAME"
 
 tmux has-session -t "$SESSION_NAME" &>/dev/null
 RETURN=$?
