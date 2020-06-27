@@ -82,7 +82,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT"
   exit 1
 fi
-./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 $((2 * $DURATION))   # With polling, times out after 2x experiment duration.
+./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 0 #$((2 * $DURATION))   # With polling, times out after 2x experiment duration.
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
