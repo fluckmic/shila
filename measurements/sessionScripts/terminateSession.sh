@@ -8,9 +8,10 @@ cd "$BASE_DIR"
 
 SESSION_NAME=$1
 
+echo "$SESSION_NAME"
+
 ./isRunningSession.sh "$SESSION_NAME"
-RETURN=$?
-if [[ $RETURN -eq 0 ]]; then
+if [[ $? -eq 0 ]]; then
   echo "Before kill-session"
   tmux kill-session -t "$SESSION_NAME" &>/dev/null
 fi
