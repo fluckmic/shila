@@ -118,7 +118,7 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
   while read EXPERIMENT; do
 
-     ./printDebug.sh "Start doing experiment ""$EXPERIMENT""." "$PRINT_DEBUG"
+    ./printDebug.sh "Start doing experiment ""$EXPERIMENT""." "$PRINT_DEBUG"
 
     ./doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
     if [[ $? -ne 0 ]]; then
