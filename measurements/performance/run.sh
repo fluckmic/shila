@@ -2,7 +2,7 @@
 
 PRINT_DEBUG=1
 
-PATH_TO_EXPERIMENT=$(dirname "$0")
+PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
 
