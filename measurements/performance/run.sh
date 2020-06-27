@@ -25,7 +25,7 @@ CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 KILL_ALL_SESSIONS="bash ~/go/src/shila/measurements/sessionScripts/terminateAllSessions.sh"
 
 clear
-rm -f _*
+rm -f -d _*
 ########################################################################################################################
 ## Print infos about the experiment.
 
@@ -74,10 +74,13 @@ shuf _experiments.data | shuf -o _experiments.data
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
-./printDebug.sh "Start initializing clients." "$PRINT_DEBUG"
-
 for CLIENT in "${CLIENTS[@]}"; do
+ ./printDebug.sh "Start initializing ""$CLIENT""." "$PRINT_DEBUG"
  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+ if [[ $? -ne 0 ]]; then
+  printf "Failure : Cannot connect to %s.\n" "$CLIENT"
+  exit 1
+ fi
 done
 for CLIENT in "${CLIENTS[@]}"; do
  ./waitForReturn.sh "$CLIENT" "$SCRIPT_NAME" 0 30   # Polling w/ timeout after 30 seconds.
