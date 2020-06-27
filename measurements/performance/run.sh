@@ -68,6 +68,26 @@ done
 
 # Create a random order
 shuf _experiments.data | shuf -o _experiments.data
+
+########################################################################################################################
+## Initialize the clients
+SCRIPT_NAME="init"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+
+./printDebug.sh "Start initializing clients." "$PRINT_DEBUG"
+
+for CLIENT in "${CLIENTS[@]}"; do
+ ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+done
+for CLIENT in "${CLIENTS[@]}"; do
+ ./waitForReturn.sh "$CLIENT" "$SCRIPT_NAME" 0 30   # Polling w/ timeout after 30 seconds.
+ if [[ $? -eq 1 ]]; then
+   exit 1
+ fi
+ printf "Success : Initialization of %s.\n" "$CLIENT"
+done
+########################################################################################################################
+exit 0
 ########################################################################################################################
 ## Run the experiment
 
