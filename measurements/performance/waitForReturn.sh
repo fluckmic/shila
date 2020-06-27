@@ -18,7 +18,7 @@ while [ "$POLL" -eq 0  ]; do
   POLL=$?
   sleep 1
   COUNT="$COUNT"+"$STEP"
-    if [[ "$COUNT" -ge "$TIMEOUT" ]]; then
+    if [[ "$COUNT" -gt "$TIMEOUT" ]]; then
       printf "Failure : Time out running %s for %s.\n" "$SESSION_NAME" "$CLIENT"
       exit 1
     fi
