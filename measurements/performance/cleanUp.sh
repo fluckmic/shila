@@ -13,8 +13,8 @@ if [[ $1 -eq 1 ]]; then
 fi
 
 # Remove all log and error files.
-rm -f _*.log
-rm -f _*.err
+#rm -f _*.log
+#rm -f _*.err
 
 # Kill all tmux sessions
 sudo pkill -f tmux
