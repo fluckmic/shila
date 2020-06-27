@@ -20,8 +20,8 @@ rm -f _*.err
 sudo pkill -f tmux
 
 # Kill all shila and iperf instances
-sudo pkill shila &>/dev/null
-sudo pkill iperf &>/dev/null
+#sudo pkill shila &>/dev/null
+#sudo pkill iperf &>/dev/null
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
