@@ -19,10 +19,10 @@ rm -f _*.err
 # Kill all tmux sessions
 #sudo pkill -f tmux
 
-../sessionScripts/./terminateSession.sh "shilaClientSide"
-../sessionScripts/./terminateSession.sh "shilaServerSide"
-#../sessionScripts/./terminateSession.sh "iperfClientSide"
-../sessionScripts/./terminateSession.sh "iperfServerSide"
+../sessionScripts/./terminateSession.sh shilaClientSide
+../sessionScripts/./terminateSession.sh shilaServerSide
+../sessionScripts/./terminateSession.sh iperfClientSide
+../sessionScripts/./terminateSession.sh iperfServerSide
 
 # Kill all shila and iperf instances
 #sudo pkill shila &>/dev/null
