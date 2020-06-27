@@ -4,9 +4,6 @@
 
 SESSION_NAME=$1
 
-ps -aef | fgrep -i tmux
-tmux ls
-
 printf "Check if there is a running session %s?\n" "$SESSION_NAME"
 
 tmux has-session -t "$SESSION_NAME" &>/dev/null
