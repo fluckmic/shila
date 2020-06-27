@@ -19,6 +19,8 @@ rm -f _*.err
 # Kill all tmux sessions
 #sudo pkill -f tmux
 
+echo "Before"
+
 ../sessionScripts/./terminateSession.sh shilaClientSide
 ../sessionScripts/./terminateSession.sh shilaServerSide
 ../sessionScripts/./terminateSession.sh iperfClientSide
