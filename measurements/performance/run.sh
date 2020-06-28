@@ -106,7 +106,7 @@ N_EXPERIMENTS_FAIL=0
 
 while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
-  # Repeat until all experiments are done. Repeat the ones failed.
+  # Repeat until all experiments are finished. Repeat the ones failed.
   if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
 
     rm _experiments.data
@@ -115,11 +115,14 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
   fi
   N_EXPERIMENTS_FAIL=0
 
-  while read EXPERIMENT; do
+  EXPERIMENTS=()
+  mapfile -t EXPERIMENTS < _experiments.data
+
+  for EXPERIMENT in "${EXPERIMENTS[@]}"; do
 
     printf "Start with experiment %s.\n" "$EXPERIMENT"
 
-    ./doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
+    bash doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> _experiments.fail
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
@@ -130,7 +133,7 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
       printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS"
     fi
 
-  done < _experiments.data
+  done
 done
 ########################################################################################################################
 

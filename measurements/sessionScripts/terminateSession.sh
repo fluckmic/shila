@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "Enter terminate session."
-
 # Terminates a tmux session (if it exits).
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
