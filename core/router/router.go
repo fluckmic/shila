@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"shila/core/shila"
 	"shila/layer/mptcp"
+	"shila/log"
 	"sync"
 )
 
@@ -26,7 +27,9 @@ func New() Router {
 	}
 
 	// See whether there is some routing from it which can be loaded
-	_ = router.fillWithEntriesFromDisk()
+	if err := router.fillWithEntriesFromDisk(); err != nil {
+		log.Verbose.Print(err.Error())
+	}
 	return router
 }
 
@@ -114,7 +117,7 @@ func (router *Router) Identifier() string {
 func (router *Router) fillWithEntriesFromDisk() error {
 	routingEntries, err := loadRoutingEntriesFromDisk()
 	if err != nil {
-		return PrependError(err, "Unable to load entries from disk.")
+		return PrependError(err, "Unable to load routing entries from disk.")
 	}
 	err = router.batchInsert(routingEntries)
 	return nil
