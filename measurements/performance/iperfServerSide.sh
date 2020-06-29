@@ -13,4 +13,4 @@ mapfile -t PORTS < IperfListeningPorts.data
 PORT="${PORTS["$HOST_ID"]}"
 
 printf "Starting iperf on the server side %s listening on port %s.\n" "$HOST_NAME" "$PORT" >> "$LOG_FILE"
-sudo ip netns exec shila-ingress iperf3 -s -p "$PORT" >> "$LOG_FILE" 2>> "$ERR_FILE"
+sudo ip netns exec shila-ingress iperf -s -p "$PORT" >> "$LOG_FILE" 2>> "$ERR_FILE"
