@@ -4,10 +4,10 @@ BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
 # Kill running instances
-pkill -f shila
+#pkill -f shila
 
 # Delete all namespaces
-#bash ../../helper/netnsClear.sh
+bash ../../helper/netnsClear.sh
 
 ## Update the repo
 #git pull
