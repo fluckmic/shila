@@ -38,7 +38,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT"
   exit 1
 fi
-sleep 10
+sleep 2
 ./waitForReturn.sh "$DST_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1
@@ -53,7 +53,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT"
   exit 1
 fi
-sleep 10
+sleep 2
 ./waitForReturn.sh "$DST_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1
@@ -68,7 +68,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT"
   exit 1
 fi
-sleep 10
+sleep 2
 ./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1

@@ -29,7 +29,7 @@ START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 
 clear
-rm -f -d _*
+rm -f -d -r _*
 ########################################################################################################################
 ## Print infos about the experiment.
 

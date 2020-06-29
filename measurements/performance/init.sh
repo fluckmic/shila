@@ -28,9 +28,15 @@ git pull
 
 ## Build the latest version of all software required
 export PATH=$PATH:/usr/local/go/bin
-
 # shila
 go build -o _shila ../../
+
+sudo systemctl stop scionlab.target
+sleep 5
+sudo systemctl start scionlab.target
+
+
+
 
 printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
 exit 0
