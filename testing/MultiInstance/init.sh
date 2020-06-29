@@ -10,7 +10,7 @@ pkill shila
 bash ../../helper/netnsClear.sh
 
 ## Update the repo
-git pull
+git pull &>/dev/null
 
 ## Build the latest version of all software required
 export PATH=$PATH:/usr/local/go/bin
