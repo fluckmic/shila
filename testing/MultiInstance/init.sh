@@ -5,6 +5,7 @@ cd "$BASE_DIR"
 
 # Kill running instances
 pkill shila
+pkill iperf
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
