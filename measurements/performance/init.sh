@@ -23,9 +23,6 @@ fi
 echo "$HOST_ID" > _hostId
 echo "$HOST_NAME" > _hostName
 
-## Restart scion service
-sudo systemctl restart scionlab.target
-
 ## Update the repo
 git pull > _init.log 2> _init.err
 if [[ $? -ne 0 ]]; then

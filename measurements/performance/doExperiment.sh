@@ -31,6 +31,7 @@ ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD"
 ./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Start the shila instance on the server.
+./printDebug.sh "Starting shila instance on the server." "$PRINT_DEBUG"
 SCRIPT_NAME="shilaServerSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ssh -tt scion@"$DST_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
@@ -43,9 +44,10 @@ sleep 2
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
-./printDebug.sh "Started shila instance on the server." "$PRINT_DEBUG"
+./printDebug.sh "Done." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Start the iperf instance on the server.
+./printDebug.sh "Starting iperf instance on the server." "$PRINT_DEBUG"
 SCRIPT_NAME="iperfServerSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ssh -tt scion@"$DST_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
@@ -58,9 +60,10 @@ sleep 2
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
-./printDebug.sh "Started iperf instance on the server." "$PRINT_DEBUG"
+./printDebug.sh "Done." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Start the shila instance on the client.
+./printDebug.sh "Starting shila instance on the client." "$PRINT_DEBUG"
 SCRIPT_NAME="shilaClientSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$N_INTERFACE" "$PATH_SELECT"
@@ -73,9 +76,10 @@ sleep 2
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
-./printDebug.sh "Started shila instance on the client." "$PRINT_DEBUG"
+./printDebug.sh "Done." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Start the iperf instance on the client.
+./printDebug.sh "Starting iperf instance on the client." "$PRINT_DEBUG"
 SCRIPT_NAME="iperfClientSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$REPETITION" "$DURATION"
@@ -87,11 +91,13 @@ fi
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
-./printDebug.sh "Iperf instance on the client completed successful." "$PRINT_DEBUG"
+./printDebug.sh "Done." "$PRINT_DEBUG"
 ########################################################################################################################
 ## Copy back the measurements
 
 mkdir "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+
+./printDebug.sh "Start copying back the experiment data." "$PRINT_DEBUG"
 
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 if [[ $? -ne 0 ]]; then
@@ -108,7 +114,7 @@ fi
 
 cp "$OUTPUT_FOLDER""/""$LOG_FOLDER""/""$LOG_FILE" _latestExperiment.log
 
-./printDebug.sh "Copied back the experiment data." "$PRINT_DEBUG"
+./printDebug.sh "Done." "$PRINT_DEBUG"
 
 ########################################################################################################################
 ## Clean up the clients involved.

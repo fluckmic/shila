@@ -9,5 +9,8 @@ ERR_FILE="_shilaServerSide.err"
 HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
+sudo systemctl restart scionlab.target
+sleep 2
+
 printf "Starting shila on the server side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 sudo ./_shila >> "$LOG_FILE" 2>> "$ERR_FILE"
