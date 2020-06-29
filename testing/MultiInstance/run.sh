@@ -26,7 +26,7 @@ tmux send-keys "sudo bash runIperfServer.sh mptcp-over-scion-vm-0 0" C-m
 tmux select-pane -t 4
 tmux send-keys "sudo bash runIperfServer.sh mptcp-over-scion-vm-1 1" C-m
 
-#tmux select-pane -t 2
+tmux select-pane -t 2
 
 # Attach to session
 tmux -2 attach-session -t $SESSION
