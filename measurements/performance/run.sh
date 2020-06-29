@@ -14,17 +14,16 @@ for CLIENT in "${CLIENTS[@]}"; do
   CNT=$(($CNT+1))
 done
 
-N_REPETITIONS=1
-N_INTERFACES=(1)
+N_REPETITIONS=3
+N_INTERFACES=(1 2 3 7 10)
 PATH_SELECTIONS=(0)
-DURATION=10
+DURATION=210
 
 DURATION_BETWEEN=10
 
 N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
-TOTAL_DURATION=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
-
-CONNECTION_TEST_TIMEOUT=15
+TOTAL_DURATION_M=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 60 ))
+TOTAL_DURATION_H=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
@@ -40,7 +39,7 @@ printf "Interfaces:\t"; echo "${N_INTERFACES[@]}"
 printf "Path selection:\t"; echo "${PATH_SELECTIONS[@]}"
 printf "Duration:\t%s\n" "$DURATION"
 printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS"
-printf "Estimated duration:\t\t%dh\n\n" "$TOTAL_DURATION"
+printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H"
 ########################################################################################################################
 ## Create the output folder / path.
 

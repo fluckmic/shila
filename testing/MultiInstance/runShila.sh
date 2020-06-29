@@ -26,7 +26,7 @@ sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
 
 printf "%s\n\n" "$CLIENT"
 
-CMD="sudo ""$PATH_TO_EXPERIMENT""/./_shila -config ""$PATH_TO_EXPERIMENT""/""$CONFIG_FILE"
+CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ./_shila -config ""$CONFIG_FILE"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
  if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to initialize %s.\n" "$CLIENT"

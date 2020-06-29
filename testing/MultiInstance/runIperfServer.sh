@@ -14,7 +14,7 @@ else
   exit 1
 fi
 
-CMD="sudo ip netns exec shila-ingress iperf -s -p""$PORT"
+CMD="sudo ip netns exec shila-ingress iperf3 -s -p""$PORT"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to start iperf server on %s.\n" "$CLIENT"
