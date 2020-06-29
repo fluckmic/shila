@@ -110,7 +110,6 @@ cp "$OUTPUT_FOLDER""/""$LOG_FOLDER""/""$LOG_FILE" _latestExperiment.log
 
 ./printDebug.sh "Copied back the experiment data." "$PRINT_DEBUG"
 
-exit 0
 ########################################################################################################################
 ## Clean up the clients involved.
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh"
