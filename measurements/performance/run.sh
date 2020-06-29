@@ -131,7 +131,6 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
     else
       N_EXPERIMENTS_DONE=$(($N_EXPERIMENTS_DONE+1))
       printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS"
-      exit 0
     fi
 
   done
