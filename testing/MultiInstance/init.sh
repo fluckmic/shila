@@ -12,3 +12,7 @@ bash ../../helper/netnsClear.sh
 ## Update the repo
 git pull
 
+## Build the latest version of all software required
+export PATH=$PATH:/usr/local/go/bin
+# shila
+go build -o _shila ../../
