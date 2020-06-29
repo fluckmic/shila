@@ -3,6 +3,7 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"shila/config"
 	"shila/core/shila"
@@ -49,7 +50,7 @@ func (router *Router) batchInsert(entries []structure.RoutingEntryJSON) error {
 			continue
 		}
 
-		//log.Verbose.Println(router.Says(fmt.Sprint("Inserted routing Entry {", entry, "}.")))
+		log.Verbose.Println(router.Says(fmt.Sprint("Inserted routing Entry {", entry, "}.")))
 	}
 
 	return nil
