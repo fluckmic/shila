@@ -3,6 +3,8 @@
 CHECK_SESSION="bash ~/go/src/shila/measurements/sessionScripts/isRunningSession.sh"
 CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 
+PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
+
 CLIENT=$1
 SESSION_NAME=$2
 POLL=$3         # Does poll the the session until it terminates if == 0
