@@ -23,6 +23,9 @@ fi
 echo "$HOST_ID" > _hostId
 echo "$HOST_NAME" > _hostName
 
+## Restart scion service
+sudo systemctl restart scionlab.target
+
 ## Update the repo
 git pull > _init.log 2> _init.err
 if [[ $? -ne 0 ]]; then
@@ -35,9 +38,7 @@ export PATH=$PATH:/usr/local/go/bin
 # shila
 go build -o _shila ../../
 
-sudo systemctl stop scionlab.target
-sleep 5
-sudo systemctl start scionlab.target
+sleep 1
 
 printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
 exit 0
