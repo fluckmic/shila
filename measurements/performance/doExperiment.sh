@@ -12,7 +12,8 @@ mapfile -t CLIENTS < hostNames.data
 SRC_CLIENT="${CLIENTS["$SRC_ID"]}"
 DST_CLIENT="${CLIENTS["$DST_ID"]}"
 
-LOG_FILE="_iperfClientSide_""$SRC_ID""_""$DST_ID""_""$N_INTERFACE""_""$PATH_SELECT""_""$REPETITION"".log"
+LOG_FOLDER="_iperfClientSide_""$SRC_ID""_""$DST_ID""_""$N_INTERFACE""_""$PATH_SELECT""_""$REPETITION"
+LOG_FILE="$LOG_FOLDER"".log"
 
 ########################################################################################################################
 ## Clean up the clients involved.
@@ -90,13 +91,21 @@ fi
 ########################################################################################################################
 ## Copy back the measurements
 
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER"
+mkdir "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to copy back the result from %s.\n" "$SRC_CLIENT"
   exit 1
 fi
 
-rm _latestExperiment.log
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaClientSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaServerSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+
+if [[ -f _latestExperiment.log ]]; then
+  rm _latestExperiment.log
+fi
+
 cp "$OUTPUT_FOLDER"/"$LOG_FILE" _latestExperiment.log
 
 ./printDebug.sh "Copied back the experiment data." "$PRINT_DEBUG"
