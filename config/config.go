@@ -69,8 +69,8 @@ func defaultConfig() *structure.ConfigJSON {
 			IngressIP:                					"10.7.0.9",
 		},
 		KernelEndpoint:  structure.KernelEndpointConfigJSON{
-			SizeIngressBuffer:          				10,
-			SizeEgressBuffer:           				10,
+			SizeIngressBuffer:          				100,
+			SizeEgressBuffer:           				100,
 			SizeRawIngressBuffer:       				500,
 			SizeRawIngressStorage:      				2500,
 			ReadSizeRawIngress:         				30,
@@ -83,8 +83,8 @@ func defaultConfig() *structure.ConfigJSON {
 			ContactingServerPort: 						9876,
 		},
 		NetworkEndpoint: structure.NetworkEndpointConfigJSON{
-			SizeIngressBuffer:              		 	10,
-			SizeEgressBuffer:                		 	10,
+			SizeIngressBuffer:              		 	100,
+			SizeEgressBuffer:                		 	100,
 			SizeRawIngressStorage:           		 	2500,
 			WaitingTimeAfterConnectionIssue: 		 	2,
 			ServerResendInterval:            		 	2,
