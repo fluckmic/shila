@@ -56,7 +56,7 @@ func defaultConfig() *structure.ConfigJSON {
 		},
 		Connection:      structure.ConnectionConfigJSON{
 			VacuumInterval:                      		1,
-			MaxTimeUntouched:                    		200,
+			MaxTimeUntouched:                    		300,
 			WaitingTimeTrafficConnEstablishment: 		2,
 		},
 		NetFlow:         structure.NetFlowConfigJSON{
