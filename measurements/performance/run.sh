@@ -126,7 +126,6 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
       echo "$EXPERIMENT" >> _experiments.fail
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
       printf "Failure : Experiment %s failed.\n" "$EXPERIMENT"
-      exit 1
     else
       N_EXPERIMENTS_DONE=$(($N_EXPERIMENTS_DONE+1))
       printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS"
