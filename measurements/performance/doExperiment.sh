@@ -77,6 +77,7 @@ if [[ $? -eq 1 ]]; then
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG"
+sleep 5
 ########################################################################################################################
 ## Start the iperf instance on the client.
 ./printDebug.sh "Starting iperf instance on the client." "$PRINT_DEBUG"
