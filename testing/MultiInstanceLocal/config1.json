@@ -1,8 +1,6 @@
 {
   "Logging"     :   { "PrintVerbose" : false },
-  "KernelSide"  :   { "EgressNamespace"  : "shila-egress-1",
-                      "IngressNamespace" : "shila-ingress-1",
-                      "NumberOfEgressInterfaces" : 1 },
-  "NetFlow"     :   { "Path" : "testing/MultiInstanceLocal/routing.json"}
+  "KernelSide"  :   { "EgressNamespace"  : "shila-egress-2",
+                      "IngressNamespace" : "shila-ingress-2",
+                      "NumberOfEgressInterfaces" : 10 }
 }
-

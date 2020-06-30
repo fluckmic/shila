@@ -19,7 +19,11 @@ testing/SingleClient/report*
 
 measurements/performance/_*
 
+testing/MultiInstance/_*
+testing/MultiInstanceLocal/_*
+
 misc/scion/intro/intro
+misc/snoopy/snoop
 
 # GoLand folders
 .idea/
