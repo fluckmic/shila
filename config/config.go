@@ -52,7 +52,7 @@ func loadConfigFromDisk(config *structure.ConfigJSON, path string) error {
 func defaultConfig() *structure.ConfigJSON {
 	return &structure.ConfigJSON{
 		WorkingSide:     structure.WorkingSideConfigJSON{
-			NumberOfWorkerPerChannel: 			 		1,
+			NumberOfWorkerPerChannel: 			 		5,
 		},
 		Connection:      structure.ConnectionConfigJSON{
 			VacuumInterval:                      		5,
