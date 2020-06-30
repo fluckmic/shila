@@ -4,7 +4,7 @@ ADDRESS="10.7.0.9"
 
 SRC_ID=0
 DST_ID=1
-DURATION=210
+DURATION=100
 INTERVAL=1
 
 if [[ $# -eq 1 ]]; then

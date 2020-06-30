@@ -3,5 +3,5 @@
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress",
                       "IngressNamespace" : "shila-ingress",
                       "NumberOfEgressInterfaces" : 2 },
-  "Connection"  :   { "MaxTimeUntouched"  : 60}
+  "Connection"  :   { "MaxTimeUntouched"  : 10}
 }
