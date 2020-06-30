@@ -4,7 +4,7 @@
 # ./run.sh s
 
 # Run the client with
-# ./run.sh c
+# ./run.sh snoopy
 
 if [[ $1 == c ]]; then
     printf "Run as client.\n"

@@ -9,7 +9,7 @@ go_*
 _usr_local_go_*
 shila
 
-# Test binary, built with `go test -c`
+# Test binary, built with `go test -snoopy`
 *.test
 
 testing/VM/output/
