@@ -55,7 +55,7 @@ func defaultConfig() *structure.ConfigJSON {
 			NumberOfWorkerPerChannel: 			 		1,
 		},
 		Connection:      structure.ConnectionConfigJSON{
-			VacuumInterval:                      		1,
+			VacuumInterval:                      		5,
 			MaxTimeUntouched:                    		300,
 			WaitingTimeTrafficConnEstablishment: 		2,
 		},
