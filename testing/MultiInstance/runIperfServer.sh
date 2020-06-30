@@ -1,7 +1,7 @@
 #!/bin/bash
 
 clear
-sleep 10
+sleep 15
 
 CLIENT=$1
 
