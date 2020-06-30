@@ -4,7 +4,7 @@ ADDRESS="10.7.0.9"
 
 SRC_ID=1
 DST_ID=0
-DURATION=300
+DURATION=210
 INTERVAL=1
 
 mapfile -t PORTS < IperfListeningPorts.data

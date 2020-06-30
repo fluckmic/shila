@@ -17,3 +17,6 @@ git pull &>/dev/null
 export PATH=$PATH:/usr/local/go/bin
 # shila
 go build -o _shila ../../
+
+sudo systemctl restart scionlab.target
+sleep 2
