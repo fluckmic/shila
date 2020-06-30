@@ -28,7 +28,7 @@ PORT=${PORTS["$DST_ID"]}
 
 printf "Send for %s seconds from %s to %s (port %s).\n" "$DURATION" "$SRC_CLIENT" "$DST_CLIENT" "$PORT"
 
-CMD="sudo ip netns exec shila-egress iperf3 -c ""$ADDRESS"" -p ""$PORT"" -t ""$DURATION"" -i ""$INTERVAL  --get-server-output"
+CMD="sudo ip netns exec shila-egress iperf3 -c ""$ADDRESS"" -p ""$PORT"" -t ""$DURATION"" -i ""$INTERVAL -J --get-server-output"
 echo "$CMD"
 sshpass -f client.password ssh -tt scion@"$SRC_CLIENT" -q "$CMD"
  if [[ $? -ne 0 ]]; then
