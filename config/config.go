@@ -52,12 +52,12 @@ func loadConfigFromDisk(config *structure.ConfigJSON, path string) error {
 func defaultConfig() *structure.ConfigJSON {
 	return &structure.ConfigJSON{
 		WorkingSide:     structure.WorkingSideConfigJSON{
-			NumberOfWorkerPerChannel: 			 		5,
+			NumberOfWorkerPerChannel: 			 		1,
 		},
 		Connection:      structure.ConnectionConfigJSON{
 			VacuumInterval:                      		5,
 			MaxTimeUntouched:                    		300,
-			WaitingTimeTrafficConnEstablishment: 		2,
+			WaitingTimeTrafficConnEstablishment: 		1,
 		},
 		NetFlow:         structure.NetFlowConfigJSON{
 			Path: 								 		"routing.json",
