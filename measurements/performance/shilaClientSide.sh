@@ -17,7 +17,7 @@ PATH_SELECTION="${PATH_SELECTIONS[$2]}"
 sed "s/@1/""$N_VIRTUAL_INTERFACES""/g" config.data | sed "s/@2/""$PATH_SELECTION""/g" > _clientConfig.json
 
 sudo systemctl restart scionlab.target
-sleep 2
+sleep 3
 
 printf "Starting shila on the client side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 sudo ./_shila -config _clientConfig.json >> "$LOG_FILE" 2>> "$ERR_FILE"
