@@ -14,7 +14,7 @@ PATH_SELECTIONS=("\"mtu\"" "\"shortest\"")
 N_VIRTUAL_INTERFACES=$1
 PATH_SELECTION="${PATH_SELECTIONS[$2]}"
 
-sed "s/@1/""$N_VIRTUAL_INTERFACES""/g" config.data | sed "s/@2/""$PATH_SELECTION""/g" > _clientConfig.json
+sed "s/@1/""$N_VIRTUAL_INTERFACES""/g" clientConfig.data | sed "s/@2/""$PATH_SELECTION""/g" > _clientConfig.json
 
 sudo systemctl restart scionlab.target
 sleep 3

@@ -1,0 +1,6 @@
+{
+  "Config"      : {
+    "DumpConfig": true,
+    "ConfigDumpPath": "_serverConfig.dump"
+  }
+}

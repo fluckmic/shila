@@ -31,26 +31,27 @@ CHECK_ERROR="bash ~/go/src/shila/measurements/sessionScripts/checkForError.sh"
 clear
 rm -f -d -r _*
 ########################################################################################################################
-## Print infos about the experiment.
-
-printf "Starting %s:\n\n" "$EXPERIMENT_NAME"
-printf "Clients:\t"; echo "${CLIENTS[@]}"
-printf "Interfaces:\t"; echo "${N_INTERFACES[@]}"
-printf "Path selection:\t"; echo "${PATH_SELECTIONS[@]}"
-printf "Duration:\t%s\n" "$DURATION"
-printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS"
-printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H"
-########################################################################################################################
 ## Create the output folder / path.
 
 DATE=$(date +%F-%H-%M-%S)
 OUTPUT_PATH="_""$DATE"
 mkdir "$OUTPUT_PATH"
+########################################################################################################################
+## Print infos about the experiment.
 
+LOGFILE_EXPERIMENT="$OUTPUT_PATH""/experiment.log"
+
+printf "Starting %s:\n\n" "$EXPERIMENT_NAME" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Clients:\t"; echo "${CLIENTS[@]}" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Interfaces:\t"; echo "${N_INTERFACES[@]}" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Path selection:\t"; echo "${PATH_SELECTIONS[@]}" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
+printf "\nTotal number of experiments:\t%d\n" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Create the experiments file
 
-./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG"
+./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
 rm -f _experiments.data
 
@@ -79,10 +80,10 @@ SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT in "${CLIENTS[@]}"; do
- ./printDebug.sh "Start initializing ""$CLIENT""." "$PRINT_DEBUG"
+ ./printDebug.sh "Start initializing ""$CLIENT""." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
  ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
  if [[ $? -ne 0 ]]; then
-  printf "Failure : Cannot connect to %s.\n" "$CLIENT"
+  printf "Failure : Cannot connect to %s.\n" "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
  fi
 done
@@ -91,7 +92,7 @@ for CLIENT in "${CLIENTS[@]}"; do
  if [[ $? -eq 1 ]]; then
    exit 1
  fi
- printf "Success : Initialization of %s.\n" "$CLIENT"
+ printf "Success : Initialization of %s.\n" "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
 done
 ########################################################################################################################
 ## Run the experiment
@@ -101,7 +102,7 @@ rm _experiments.fail 2>/dev/null
 N_EXPERIMENTS_DONE=0
 N_EXPERIMENTS_FAIL=0
 
-./printDebug.sh "Start doing experiments." "$PRINT_DEBUG"
+./printDebug.sh "Start doing experiments." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
 while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
@@ -119,16 +120,16 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
   for EXPERIMENT in "${EXPERIMENTS[@]}"; do
 
-    printf "Start with experiment %s.\n" "$EXPERIMENT"
+    printf "Start with experiment %s.\n" "$EXPERIMENT" | tee -a "$LOGFILE_EXPERIMENT"
 
-    bash doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH"
+    bash doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT"
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> _experiments.fail
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
-      printf "Failure : Experiment %s failed.\n" "$EXPERIMENT"
+      printf "Failure : Experiment %s failed.\n" "$EXPERIMENT" | tee -a "$LOGFILE_EXPERIMENT"
     else
       N_EXPERIMENTS_DONE=$(($N_EXPERIMENTS_DONE+1))
-      printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS"
+      printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS" | tee -a "$LOGFILE_EXPERIMENT"
     fi
 
   done
