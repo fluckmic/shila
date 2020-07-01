@@ -109,7 +109,7 @@ func defaultConfig() *structure.ConfigJSON {
 			PathSelection: 								"shortest",
 		},
 		Config: structure.ConfigConfigJSON{
-			DumpConfig:									true,
+			DumpConfig:									false,
 			ConfigDumpPath:								"_config.dump",
 		},
 	}
