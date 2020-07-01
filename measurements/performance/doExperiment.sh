@@ -106,11 +106,10 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaClientSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER" | tee -a "$LOGFILE_EXPERIMENT"
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_clientConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER" | tee -a "$LOGFILE_EXPERIMENT"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaServerSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER" | tee -a "$LOGFILE_EXPERIMENT"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_serverConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER" | tee -a "$LOGFILE_EXPERIMENT"
-
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaClientSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_clientConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaServerSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_serverConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 if [[ -f _latestExperiment.log ]]; then
   rm _latestExperiment.log
