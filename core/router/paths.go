@@ -9,13 +9,14 @@ import (
 )
 
 type paths struct {
-	storage 	[]pathWrapper
+	storage 	[]PathWrapper
 	mapping 	map[shila.IPFlowKey] int
 }
 
-type pathWrapper struct {
-	path  snet.Path
-	nUsed int
+type PathWrapper struct {
+	path  		snet.Path
+	nUsed 		int
+	rawMetric 	int
 }
 
 // If there is any error in the creation of the paths we just do not specify any. This is oke.
@@ -34,10 +35,10 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 	}
 }
 
-func (p *paths) get(key shila.IPFlowKey) shila.NetworkPath {
+func (p *paths) get(key shila.IPFlowKey) (*PathWrapper, int) {
 
 	if (p.storage == nil) || (len(p.storage) < 1) {
-		return nil
+		return nil, -1
 	}
 	
 	useCountOfNext := len(p.mapping) / len(p.storage) // #used / #total
@@ -47,11 +48,11 @@ func (p *paths) get(key shila.IPFlowKey) shila.NetworkPath {
 			p.storage[index].nUsed++
 			p.mapping[key] = index
 
-			return pathWrapper.path
+			return &pathWrapper, len(p.mapping)
 		}
 	}
 
-	return nil
+	return nil, -1
 }
 
 func (p *paths) free(key shila.IPFlowKey) {
@@ -61,20 +62,25 @@ func (p *paths) free(key shila.IPFlowKey) {
 	}
 }
 
-func fetchSCIONPaths(dstAddr shila.NetworkAddress) []pathWrapper {
-	dstAddrIA 	:= dstAddr.(*snet.UDPAddr).IA
+func fetchSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
+	dstAddrIA := dstAddr.(*snet.UDPAddr).IA
 	if paths, err := appnet.QueryPaths(dstAddrIA); err != nil {
 		return nil
 	} else {
-		pathsWrapped := make([]pathWrapper, 0, len(paths))
+		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
-			pathsWrapped = append(pathsWrapped, pathWrapper{path: path, nUsed: 0})
+			switch selectPathAlgorithm() {
+			case appnet.Shortest:
+				pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetric: len(path.Interfaces())})
+			case appnet.MTU:
+				pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetric: int(path.MTU())})
+			}
 		}
 		return pathsWrapped
 	}
 }
 
-func sortPaths(paths []pathWrapper) {
+func sortPaths(paths []PathWrapper) {
 	switch selectPathAlgorithm() {
 	case appnet.Shortest:
 		sort.Slice(paths, func(i, j int) bool {

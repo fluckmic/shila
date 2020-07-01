@@ -1,0 +1,24 @@
+--- # MTU test topology
+ASes:
+  "1-ff00:0:112": # A
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "2-ff00:0:220": # B
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+links:
+  - {a: "1-ff00:0:112-A#1",    b: "2-ff00:0:220-B#1",    linkAtoB: CORE,  mtu: 400}
+  - {a: "1-ff00:0:112-A#2",    b: "2-ff00:0:220-B#2",    linkAtoB: CORE,  mtu: 800}
+  - {a: "1-ff00:0:112-A#3",    b: "2-ff00:0:220-B#3",    linkAtoB: CORE,  mtu: 1200}
+  - {a: "1-ff00:0:112-A#4",    b: "2-ff00:0:220-B#4",    linkAtoB: CORE,  mtu: 1600}
+CAs:
+  CA1-1:
+    ISD: 1
+    commonName: CA1-1
+  CA2-1:
+    ISD: 2
+    commonName: CA2-1

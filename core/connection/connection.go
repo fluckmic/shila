@@ -3,7 +3,6 @@ package connection
 
 import (
 	"fmt"
-	"github.com/bclicn/color"
 	"shila/config"
 	"shila/core/router"
 	"shila/core/shila"
@@ -16,17 +15,19 @@ import (
 )
 
 type Connection struct {
-	key         	shila.IPFlowKey
-	flow        	shila.Flow
-	mainIpFlowKey  	shila.IPFlowKey			// Holds the key of the main ip flow in the case of a sub flow connection
-	category    	router.FlowCategory
-	state       	state
-	channels    	channels
-	lock        	sync.Mutex
-	touched     	time.Time
-	kernelSide  	*kernelSide.Manager
-	networkSide 	*networkSide.Manager
-	router      	router.Router
+	key         shila.IPFlowKey
+	flow        shila.Flow
+	mainIpFlow  shila.IPFlow // Holds the main ip flow in the case of a sub flow connection
+	category    router.FlowCategory
+	quality     int // Currently the raw metric off the associated scion path (for client side)
+	state       state
+	channels    channels
+	lock        sync.Mutex
+	touched     time.Time
+	kernelSide  *kernelSide.Manager
+	networkSide *networkSide.Manager
+	router      router.Router
+	flowCount   int
 }
 
 type channels struct {
@@ -68,7 +69,7 @@ func (conn *Connection) Close(err error) {
 
 	conn.state.set(closed)
 
-	log.Info.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
+	log.Verbose.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
@@ -177,9 +178,9 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							conn.channels.KernelEndpoint.Egress <- p
 							conn.setState(established)
 
-							//log.Info.Print(conn.Says(color.Green(fmt.Sprint("Successfully established ", conn.mainIpFlowKey, "!"))))
-							log.Info.Print(conn.Says(color.Green("Successfully established!")))
+							log.Verbose.Print(conn.Says("Successfully established!"))
 
+							conn.printEstablishmentStatement()
 
 							return nil
 
@@ -201,6 +202,17 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 
 	default: 				return shila.CriticalError("Unknown connection state.")
 	}
+}
+
+func (conn *Connection) printEstablishmentStatement() {
+	log.Info.Println("")
+	log.Info.Println(conn.category, conn.createHumanReadableConnectionID(), "-",
+		conn.flowCount, "connection successful established!")
+	log.Info.Print("| IP Flow: \t ", conn.flow.IPFlow.Src.IP, ":", conn.flow.IPFlow.Src.Port, " <-> ",
+		conn.flow.IPFlow.Dst.IP, ":", conn.flow.IPFlow.Dst.Port)
+	log.Info.Print("| Net Flow: \t ", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst)
+	log.Info.Print("| Quality: \t ", conn.quality)
+	log.Info.Print("| Main Flow: \t ", conn.mainIpFlow)
 }
 
 func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
@@ -314,8 +326,87 @@ func (conn *Connection) Says(str string) string {
 
 func (conn *Connection) processRoutingResponse(response router.Response) {
 
-	conn.mainIpFlowKey 	= response.MainIPFlowKey
+	conn.mainIpFlow 	= response.MainIPFlow
 	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
 	conn.category 		= response.FlowCategory
+	conn.quality		= response.Quality
+	conn.flowCount		= response.FlowCount
+}
 
+func (conn *Connection) createHumanReadableConnectionID() string {
+	// For the moment just a simple approach, but makes our life a lot easier.
+	return createLettersFromNumber(conn.mainIpFlow.Src.Port)
+}
+
+func createLettersFromNumber(index int) string {
+
+	getLetter := func(index int) string {
+		switch index {
+		case 0:
+			return "A"
+		case 1:
+			return "B"
+		case 2:
+			return "C"
+		case 3:
+			return "D"
+		case 4:
+			return "E"
+		case 5:
+			return "F"
+		case 6:
+			return "G"
+		case 7:
+			return "H"
+		case 8:
+			return "I"
+		case 9:
+			return "J"
+		case 10:
+			return "K"
+		case 11:
+			return "L"
+		case 12:
+			return "M"
+		case 13:
+			return "N"
+		case 14:
+			return "O"
+		case 15:
+			return "P"
+		case 16:
+			return "Q"
+		case 17:
+			return "R"
+		case 18:
+			return "S"
+		case 19:
+			return "T"
+		case 20:
+			return "U"
+		case 21:
+			return "V"
+		case 22:
+			return "W"
+		case 23:
+			return "X"
+		case 24:
+			return "Y"
+		case 25:
+			return "Z"
+		default:
+			return "Z"
+		}
+	}
+
+	index--
+
+	fac := index / 26
+	rem := index % 26
+
+	if fac > 0 {
+		return createLettersFromNumber(fac) + getLetter(rem)
+	} else {
+		return getLetter(rem)
+	}
 }
