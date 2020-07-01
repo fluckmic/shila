@@ -12,6 +12,21 @@ var Config structure.ConfigJSON
 
 func init() {
 	Config = loadConfig()
+
+	if Config.Config.DumpConfig {
+		dumpConfig()
+	}
+}
+
+func dumpConfig() {
+	// Dump the applied config file
+	if configDump, err := json.Marshal(Config); err != nil {
+		fmt.Print(err)
+	} else {
+		if err := ioutil.WriteFile(Config.Config.ConfigDumpPath, configDump, 0644); err != nil {
+			fmt.Print(err)
+		}
+	}
 }
 
 func loadConfig() structure.ConfigJSON {
@@ -92,6 +107,10 @@ func defaultConfig() *structure.ConfigJSON {
 		},
 		Router: structure.RouterConfigJSON{
 			PathSelection: 								"shortest",
+		},
+		Config: structure.ConfigConfigJSON{
+			DumpConfig:									true,
+			ConfigDumpPath:								"_config.dump",
 		},
 	}
 }

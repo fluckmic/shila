@@ -10,6 +10,7 @@ type ConfigJSON struct {
 	NetworkSide			NetworkSideConfigJSON
 	NetworkEndpoint		NetworkEndpointConfigJSON
 	Router				RouterConfigJSON
+	Config				ConfigConfigJSON
 }
 
 type WorkingSideConfigJSON struct {
@@ -46,6 +47,11 @@ type KernelEndpointConfigJSON struct {
 
 type LoggingConfigJSON struct {
 	PrintVerbose 						bool				// Print verbose messages.
+}
+
+type ConfigConfigJSON struct {
+	DumpConfig							bool				// Dumps the complete configuration of shila upon start up.
+	ConfigDumpPath						string				// Where to dump the config dump.
 }
 
 type NetworkSideConfigJSON struct {
