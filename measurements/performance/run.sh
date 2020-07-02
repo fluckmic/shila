@@ -61,12 +61,13 @@ printf "%s " "$PATH_SELECT" | tee -a "$LOGFILE_EXPERIMENT"
 done
 printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
 
+printf "Repetitions:\t%s\n" "$N_REPETITIONS" | tee -a "$LOGFILE_EXPERIMENT"
+
 printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
 printf "\nTotal number of experiments:\t%d\n" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Create the experiments file
-
 ./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
 rm -f _experiments.data
