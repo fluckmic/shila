@@ -16,7 +16,7 @@ done
 
 N_REPETITIONS=10
 N_INTERFACES=(1 2 3 5 7 10)
-PATH_SELECTIONS=(1)
+PATH_SELECTIONS=(0 1)
 DURATION=210
 
 DURATION_BETWEEN=20
@@ -42,15 +42,32 @@ mkdir "$OUTPUT_PATH"
 LOGFILE_EXPERIMENT="$OUTPUT_PATH""/experiment.log"
 
 printf "Starting %s:\n\n" "$EXPERIMENT_NAME" | tee -a "$LOGFILE_EXPERIMENT"
-printf "Clients:\t"; echo "${CLIENTS[@]}" | tee -a "$LOGFILE_EXPERIMENT"
-printf "Interfaces:\t"; echo "${N_INTERFACES[@]}" | tee -a "$LOGFILE_EXPERIMENT"
-printf "Path selection:\t"; echo "${PATH_SELECTIONS[@]}" | tee -a "$LOGFILE_EXPERIMENT"
+
+printf "Clients:\t" | tee -a "$LOGFILE_EXPERIMENT"
+for CLIENT in "${CLIENTS[@]}"; do
+printf "%s " "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+done
+printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
+
+printf "Interfaces:\t" | tee -a "$LOGFILE_EXPERIMENT"
+for N_INTERFACE in "${N_INTERFACES[@]}"; do
+printf "%s " "$N_INTERFACE" | tee -a "$LOGFILE_EXPERIMENT"
+done
+printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
+
+printf "Path selection:\t" | tee -a "$LOGFILE_EXPERIMENT"
+for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
+printf "%s " "$PATH_SELECT" | tee -a "$LOGFILE_EXPERIMENT"
+done
+printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
+
+printf "Repetitions:\t%s\n" "$N_REPETITIONS" | tee -a "$LOGFILE_EXPERIMENT"
+
 printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
 printf "\nTotal number of experiments:\t%d\n" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Create the experiments file
-
 ./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
 rm -f _experiments.data
@@ -135,20 +152,3 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
   done
 done
 ########################################################################################################################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
