@@ -23,7 +23,7 @@ while ~feof(fid)
     
      %parse experiment info
     if currentLineIndex == lineWithExperimentInfo
-        [PathSelect, HostID, RemoteID, nInterfaces, Repetition, Duration] = parseExperimentInfo(currentLine);
+        [PathSelect, HostID, RemoteID, nInterfaces, Repetition, Duration] = parseExperimentInfoIperfLogLine(currentLine);
         
         lastLineWithClientData  = firstLineWithClientData + Duration - 1;
         firstLineWithServerData = lastLineWithClientData + linesBetweenClientAndServerData + 1;
@@ -35,13 +35,15 @@ while ~feof(fid)
    
     %parse client data
     if currentLineIndex >= firstLineWithClientData && currentLineIndex <= lastLineWithClientData
-        [time, transfer, bandwidth] = parseSingleIperfLogLine(currentLine);
+        [~, transfer, bandwidth] = parseSingleIperfLogLine(currentLine);
+        time = currentLineIndex - firstLineWithClientData + 1;
         measurementsClient(time, :, :) = [transfer, bandwidth];  
     end
     
     %parse server data
     if currentLineIndex >= firstLineWithServerData && currentLineIndex <= lastLineWithServerData
-        [time, transfer, bandwidth] = parseSingleIperfLogLine(currentLine);
+        time = currentLineIndex - firstLineWithServerData + 1;
+        [~, transfer, bandwidth] = parseSingleIperfLogLine(currentLine);
         measurementsServer(time, :, :) = [transfer, bandwidth];
     end
     

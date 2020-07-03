@@ -18,8 +18,12 @@ testing/SingleClient/output/
 testing/SingleClient/report*
 
 measurements/performance/_*
+measurements/performance/2020*
 
 _*
+
+# Matlab
+*.m~
 
 misc/scion/intro/intro
 misc/snoopy/snoop
