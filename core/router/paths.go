@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 	"github.com/scionproto/scion/go/lib/snet"
 	"shila/config"
@@ -68,7 +69,8 @@ func fetchSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 		return nil
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
-		for _, path := range paths {
+		for i, path := range paths {
+			fmt.Printf("[%2d] %s\n", i, fmt.Sprintf("%s", path))
 			switch selectPathAlgorithm() {
 			case appnet.Shortest:
 				pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetric: len(path.Interfaces())})
