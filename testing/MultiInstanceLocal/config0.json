@@ -2,7 +2,8 @@
   "Logging"     :   { "PrintVerbose" : false },
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress-1",
                       "IngressNamespace" : "shila-ingress-1",
-                      "NumberOfEgressInterfaces" : 4 },
-  "NetFlow"     :   { "Path" : "/home/scion/go/src/shila/testing/MultiInstanceLocal/routing.json" }
+                      "NumberOfEgressInterfaces" : 3 },
+  "NetFlow"     :   { "Path" : "/home/scion/go/src/shila/testing/MultiInstanceLocal/routing.json" },
+  "Router"      :   {"PathSelection" :  "sharability" }
 }
 

@@ -151,12 +151,12 @@ func (router *Router) routeMainFlow(packet *shila.Packet) (Response, error) {
 		entry := router.insertAndReturnRoutingEntry(mainIPFlowKey, dstAddr)
 		pathWrapper, flowCount := entry.Paths.get(mainIPFlowKey)
 		return Response{
-			Dst: 			entry.Dst,
-			FlowCategory: 	MainFlow,
-			MainIPFlow: 	packet.Flow.IPFlow,
-			FlowCount:		flowCount,
-			Path: 			pathWrapper.path,
-			Quality: 		pathWrapper.rawMetric,
+			Dst:          entry.Dst,
+			FlowCategory: MainFlow,
+			MainIPFlow:   packet.Flow.IPFlow,
+			FlowCount:    flowCount,
+			Path:         pathWrapper.path,
+			RawMetrics:   pathWrapper.rawMetrics,
 		},nil
 	}
 
@@ -173,12 +173,12 @@ func (router *Router) routeSubFlow(packet *shila.Packet, ipFlow shila.IPFlow) (R
 		// Create and return the response
 		pathWrapper, subFlowCount := entry.Paths.get(packet.Flow.IPFlow.Key())
 		return Response{
-			Dst: 			entry.Dst,
-			FlowCategory: 	SubFlow,
-			MainIPFlow:		ipFlow,
-			FlowCount:		subFlowCount,
-			Path:			pathWrapper.path,
-			Quality:		pathWrapper.rawMetric,
+			Dst:          entry.Dst,
+			FlowCategory: SubFlow,
+			MainIPFlow:   ipFlow,
+			FlowCount:    subFlowCount,
+			Path:         pathWrapper.path,
+			RawMetrics:   pathWrapper.rawMetrics,
 		}, nil
 	}
 

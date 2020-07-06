@@ -19,7 +19,7 @@ type Connection struct {
 	flow        shila.Flow
 	mainIpFlow  shila.IPFlow // Holds the main ip flow in the case of a sub flow connection
 	category    router.FlowCategory
-	quality     int // Currently the raw metric off the associated scion path (for client side)
+	rawMetrics  []int
 	state       state
 	channels    channels
 	lock        sync.Mutex
@@ -211,7 +211,7 @@ func (conn *Connection) printEstablishmentStatement() {
 	log.Info.Print("| IP Flow: \t ", conn.flow.IPFlow.Src.IP, ":", conn.flow.IPFlow.Src.Port, " <-> ",
 		conn.flow.IPFlow.Dst.IP, ":", conn.flow.IPFlow.Dst.Port)
 	log.Info.Print("| Net Flow: \t ", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst)
-	log.Info.Print("| Quality: \t ", conn.quality)
+	log.Info.Print("| Metrics: \t ", conn.rawMetrics)
 	log.Info.Print("| Main Flow: \t ", conn.mainIpFlow)
 }
 
@@ -329,7 +329,7 @@ func (conn *Connection) processRoutingResponse(response router.Response) {
 	conn.mainIpFlow 	= response.MainIPFlow
 	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
 	conn.category 		= response.FlowCategory
-	conn.quality		= response.Quality
+	conn.rawMetrics = response.RawMetrics
 	conn.flowCount		= response.FlowCount
 }
 

@@ -1,0 +1,40 @@
+--- # Length test topology
+ASes:
+  "1-ff00:0:110": # A
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "1-ff00:0:111": # B
+    cert_issuer: 1-ff00:0:110
+  "1-ff00:0:114": # C
+    cert_issuer: 1-ff00:0:110
+  "1-ff00:0:113": # D
+    cert_issuer: 1-ff00:0:110
+  "1-ff00:0:112": # E
+    cert_issuer: 1-ff00:0:110
+  "2-ff00:0:221": # F
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+  "2-ff00:0:220": # G
+    cert_issuer: 2-ff00:0:221
+links:
+  - {a: "1-ff00:0:110-A#1",    b: "1-ff00:0:112-E#1",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:110-A#5",    b: "1-ff00:0:114-C#3",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:110-A#2",    b: "1-ff00:0:114-C#1",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:110-A#3",    b: "1-ff00:0:111-B#1",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:110-A#4",    b: "2-ff00:0:221-F#1",    linkAtoB: CORE}
+  - {a: "1-ff00:0:111-B#2",    b: "1-ff00:0:113-D#1",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:111-B#3",    b: "1-ff00:0:113-D#3",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:114-C#2",    b: "1-ff00:0:112-E#2",    linkAtoB: CHILD}
+  - {a: "1-ff00:0:113-D#2",    b: "1-ff00:0:112-E#3",    linkAtoB: CHILD}
+  - {a: "2-ff00:0:221-F#2",    b: "2-ff00:0:220-G#1",    linkAtoB: CHILD}
+CAs:
+  CA1-1:
+    ISD: 1
+    commonName: CA1-1
+  CA2-1:
+    ISD: 2
+    commonName: CA2-1
