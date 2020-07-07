@@ -9,6 +9,10 @@ if   [[ "$CLIENT" == "mptcp-over-scion-vm-0" ]]; then
   PORT=11111
 elif [[ "$CLIENT" == "mptcp-over-scion-vm-1" ]]; then
   PORT=22222
+elif [[ "$CLIENT" == "mptcp-over-scion-vm-2" ]]; then
+  PORT=33333
+  elif [[ "$CLIENT" == "mptcp-over-scion-vm-3" ]]; then
+  PORT=44444
 else
   printf "Failure : " "Unknown host %s.\n" "$CLIENT"
   exit 1
