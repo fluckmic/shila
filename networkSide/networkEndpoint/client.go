@@ -139,6 +139,7 @@ func (client *Client) serveIngress() {
 			log.Error.Println(client.Says("Received zero payload packet."))
 		}
 		client.Ingress <-  shila.NewPacket(client, client.ipFlow, pyldMsg.Payload)
+		log.Verbose.Print(client.Says("Received packet."))
 	}
 }
 
