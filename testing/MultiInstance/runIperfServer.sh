@@ -6,13 +6,13 @@ sleep 15
 CLIENT=$1
 
 if   [[ "$CLIENT" == "mptcp-over-scion-vm-0" ]]; then
-  PORT=11111
+  PORT=60000
 elif [[ "$CLIENT" == "mptcp-over-scion-vm-1" ]]; then
-  PORT=22222
+  PORT=60001
 elif [[ "$CLIENT" == "mptcp-over-scion-vm-2" ]]; then
-  PORT=33333
+  PORT=60002
   elif [[ "$CLIENT" == "mptcp-over-scion-vm-3" ]]; then
-  PORT=44444
+  PORT=60003
 else
   printf "Failure : " "Unknown host %s.\n" "$CLIENT"
   exit 1
