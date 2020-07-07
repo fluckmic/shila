@@ -20,9 +20,13 @@ while [ "$POLL" -eq 0  ]; do
   ssh -tt scion@"$CLIENT" -q "$CHECK_SESSION" "$SESSION_NAME"
   POLL=$?
   sleep 1
+  printf "* "
+  if [[ $(($COUNT % 60)) -eq 0 ]]; then
+    printf "\n"
+  fi
   COUNT="$COUNT"+"$STEP"
     if [[ "$COUNT" -gt "$TIMEOUT" ]]; then
-      printf "Failure : Time out running %s for %s.\n" "$SESSION_NAME" "$CLIENT"
+      printf "\nFailure : Time out running %s for %s.\n" "$SESSION_NAME" "$CLIENT"
       exit 1
     fi
 done
