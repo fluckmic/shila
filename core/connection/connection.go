@@ -259,7 +259,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
 			conn.Close(err)
 		} else {
-			log.Verbose.Print(conn.Says(fmt.Sprint("About to set the state to ", clientEstablished)))
+			log.Verbose.Print(conn.Says(fmt.Sprint("Want to set the state to ", clientEstablished)))
 			conn.lock.Lock()
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
@@ -270,11 +270,10 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.lock.Unlock()
 		}
 	}()
-	log.Verbose.Print(conn.Says(fmt.Sprint("About to set state to ", clientReady)))
+
 	// set new state
-	conn.state.set(clientReady)
-
-
+	conn.setState(clientReady)
+	
 	return nil
 }
 
