@@ -214,6 +214,8 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 
 func (conn *ServerBackboneConnection) processPayloadMessage() error {
 
+	log.Verbose.Print(conn.Says("Ready to process payload message."))
+
 	// Fetch the next payload message
 	var pyldMsg payloadMessage
 	if err := gob.NewDecoder(conn.inReader).Decode(&pyldMsg); err != nil {
