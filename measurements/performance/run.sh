@@ -15,13 +15,15 @@ for CLIENT in "${CLIENTS[@]}"; do
 done
 
 N_REPETITIONS=10
-N_INTERFACES=(1 2 3 5 7 10)
+N_INTERFACES=(1 2 4 5 7 8)
 PATH_SELECTIONS=(0 1)
-DURATION=210
+DURATION=120
 
 DURATION_BETWEEN=20
+PERCENTAGE_FAIL=(1/5)
 
 N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
+N_EXPERIMENTS=$(($N_EXPERIMENTS + $(($N_EXPERIMENTS * $PERCENTAGE_FAIL )) ))
 TOTAL_DURATION_M=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 60 ))
 TOTAL_DURATION_H=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
@@ -64,7 +66,7 @@ printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Repetitions:\t%s\n" "$N_REPETITIONS" | tee -a "$LOGFILE_EXPERIMENT"
 
 printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
-printf "\nTotal number of experiments:\t%d\n" | tee -a "$LOGFILE_EXPERIMENT"
+printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Create the experiments file

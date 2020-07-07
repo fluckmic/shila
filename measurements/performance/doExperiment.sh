@@ -30,6 +30,7 @@ if [[ $? -ne 0 ]]; then
 fi
 sleep 2
 ./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+sleep 10
 ########################################################################################################################
 ## Start the shila instance on the server.
 ./printDebug.sh "Starting shila instance on the server." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
@@ -57,7 +58,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-sleep 2
+sleep 5
 ./waitForReturn.sh "$DST_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1
@@ -93,6 +94,18 @@ if [[ $? -ne 0 ]]; then
 fi
 ./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 $((2 * $DURATION))   # With polling, times out after 2x experiment duration.
 if [[ $? -eq 1 ]]; then
+  ERROR_DATE=$(date +%F-%H-%M-%S)
+  ERROR_FOLDER="$OUTPUT_FOLDER""/""$LOG_FOLDER""_""$ERROR_DATE"
+
+  mkdir "$ERROR_FOLDER"
+
+  scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
+  scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
+  scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
+  scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
+  scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
+  scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
+
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
