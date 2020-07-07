@@ -9,6 +9,7 @@ import (
 type paths struct {
 	storage 	[]PathWrapper
 	mapping 	map[shila.IPFlowKey] int
+	sharability int
 }
 
 type PathWrapper struct {
@@ -26,22 +27,24 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 		return paths{}
 	}
 
+	sharabilityValue := -1
 	switch selectPathAlgorithm() {
 	case mtu:
-		scionPaths = getMtuOptSubset(scionPaths)
+		scionPaths, sharabilityValue = getMtuOptSubset(scionPaths)
 
 	case length:
-		scionPaths = getLengthOptSubset(scionPaths)
+		scionPaths, sharabilityValue = getLengthOptSubset(scionPaths)
 
 	case sharability:
-		scionPaths = getSharabilityOptSubset(scionPaths)
+		scionPaths, sharabilityValue = getSharabilityOptSubset(scionPaths)
 	default:
 		return paths{}
 	}
 
 	return paths{
-		storage: scionPaths,
-		mapping: make(map[shila.IPFlowKey] int),
+		storage: 		scionPaths,
+		mapping: 		make(map[shila.IPFlowKey] int),
+		sharability: 	sharabilityValue,
 	}
 }
 
@@ -79,7 +82,7 @@ func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
-			rawMetrics := []int{int(path.MTU()), len(path.Interfaces()), -1}
+			rawMetrics := []int{int(path.MTU()), len(path.Interfaces())}
 			pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetrics: rawMetrics })
 			//fmt.Printf("[%2d] %s\n", i, fmt.Sprintf("%s", path))
 		}

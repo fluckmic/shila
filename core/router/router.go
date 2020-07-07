@@ -157,6 +157,7 @@ func (router *Router) routeMainFlow(packet *shila.Packet) (Response, error) {
 			FlowCount:    flowCount,
 			Path:         pathWrapper.path,
 			RawMetrics:   pathWrapper.rawMetrics,
+			Sharability:  entry.Paths.sharability,
 		},nil
 	}
 
@@ -179,6 +180,7 @@ func (router *Router) routeSubFlow(packet *shila.Packet, ipFlow shila.IPFlow) (R
 			FlowCount:    subFlowCount,
 			Path:         pathWrapper.path,
 			RawMetrics:   pathWrapper.rawMetrics,
+			Sharability:  entry.Paths.sharability,
 		}, nil
 	}
 

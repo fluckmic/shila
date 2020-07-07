@@ -1,10 +1,7 @@
 package router
 
 import (
-	"fmt"
-	"math/big"
 	"shila/config"
-	"shila/log"
 	"sort"
 )
 
@@ -22,31 +19,41 @@ type pathSubsets struct {
 	nOfDiffSubsets   int
 }
 
-func getSharabilityOptSubset(paths []PathWrapper) []PathWrapper {
+func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 
-	nPathsAvailable := len(paths)
-	nPathsRequested := config.Config.KernelSide.NumberOfEgressInterfaces
-
-	log.Info.Print("Determine sharability optimum pathSubset for ", nPathsAvailable, " paths.\n")
-	for _, path := range paths {
-		fmt.Printf("%v\n", path.path)
+	if len(paths) < 2 {
+		return paths, 0
 	}
-	log.Info.Print(big.NewInt(0).Binomial(int64(nPathsAvailable), int64(nPathsAvailable)), " possibilities for ",
-		nPathsRequested, " different paths taken.\n")
+
+	nPathsRequested := config.Config.KernelSide.NumberOfEgressInterfaces
 
 	setEdgeIndices(paths)
 
-	mergedSubsets 	 := createInitialSubsets(paths)
+	mergedSubsets 	 := createInitialPathSubsets(paths)
 	for mergedSubsets.nOfDiffSubsets > 1 && mergedSubsets.sizeOfEachSubset < nPathsRequested {
-		mergedSubsets = mergeSubsets(nPathsAvailable, paths, mergedSubsets)
+		mergedSubsets = mergeSubsets(paths, mergedSubsets)
 	}
 
-	calculateSharability(mergedSubsets)
+	calculateSharabilityForPathSubsets(mergedSubsets)
 
-	return nil
+	return pickSharabilityOptSubset(paths, mergedSubsets)
 }
 
-func calculateSharability(subsets pathSubsets) {
+func pickSharabilityOptSubset(paths []PathWrapper, subsets pathSubsets) ([]PathWrapper, int) {
+
+	sort.Slice(subsets.subsets, func(i, j int) bool {
+		return subsets.subsets[i].sharability < subsets.subsets[j].sharability
+	})
+
+	sharabilityOptSubset := make([]PathWrapper, 0)
+	for _, pathIndex := range subsets.subsets[0].pathIndices {
+		sharabilityOptSubset = append(sharabilityOptSubset, paths[pathIndex])
+	}
+
+	return sharabilityOptSubset, subsets.subsets[0].sharability
+}
+
+func calculateSharabilityForPathSubsets(subsets pathSubsets) {
 	for indexCurrentSubset, currentSubset := range subsets.subsets {
 		sort.Ints(currentSubset.edgeIndices)
 		for i := 0; i < len(currentSubset.edgeIndices)-1; i++ {
@@ -57,9 +64,33 @@ func calculateSharability(subsets pathSubsets) {
 	}
 }
 
-func mergeSubsets(nPathsAvailable int, paths []PathWrapper, currentSubsets pathSubsets) pathSubsets {
+func calculateSharabilityForPaths(paths []PathWrapper) (sharabilityValue int) {
 
-	mergedSubsets := make([]pathSubset, 0)
+	// First determine the edge indices
+	setEdgeIndices(paths)
+
+	// Merge all edge indices
+	allEdgeIndices := make([]int, 0)
+	for _, path := range paths {
+		allEdgeIndices = append(allEdgeIndices, path.edgeIndices...)
+	}
+
+	// Sort them
+	sort.Ints(allEdgeIndices)
+
+	// Calculate the sharability
+	for i := 0; i < len(allEdgeIndices)-1; i++ {
+		if allEdgeIndices[i] == allEdgeIndices[i+1] {
+			sharabilityValue++
+		}
+	}
+	return
+}
+
+func mergeSubsets(paths []PathWrapper, currentSubsets pathSubsets) pathSubsets {
+
+	nPathsAvailable := len(paths)
+	mergedSubsets 	:= make([]pathSubset, 0)
 
 	for _, currentSubset := range currentSubsets.subsets {
 
@@ -83,7 +114,7 @@ func mergeSubsets(nPathsAvailable int, paths []PathWrapper, currentSubsets pathS
 	}
 }
 
-func createInitialSubsets(paths []PathWrapper) pathSubsets {
+func createInitialPathSubsets(paths []PathWrapper) pathSubsets {
 	nPaths := len(paths)
 	initialSubsets := make([]pathSubset,0)
 	for i := 0; i < nPaths; i++ {
@@ -97,7 +128,6 @@ func createInitialSubsets(paths []PathWrapper) pathSubsets {
 	return pathSubsets{subsets: initialSubsets, sizeOfEachSubset: 2, nOfDiffSubsets: len(initialSubsets)}
 }
 
-// Returns the number of distinct edges in paths
 func setEdgeIndices(paths []PathWrapper) {
 
 	edgeToIndex 	:= make(map [edge] int)	// Map an edge to an index.

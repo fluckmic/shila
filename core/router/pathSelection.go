@@ -26,23 +26,27 @@ func(ps pathSelection) String() string {
 	return "Unknown"
 }
 
-func getLengthOptSubset(scionPaths []PathWrapper) []PathWrapper {
-	sortPaths(scionPaths, length)
-	return truncatePaths(scionPaths)	// Not necessary to carry around more paths than needed.
+func getLengthOptSubset(paths []PathWrapper) (optSubset []PathWrapper, sharabilityValue int) {
+	sortPaths(paths, length)
+	optSubset = trowAwayOddPaths(paths)
+	sharabilityValue = calculateSharabilityForPaths(optSubset)
+	return
 }
 
-func getMtuOptSubset(scionPaths []PathWrapper) []PathWrapper {
-	sortPaths(scionPaths, mtu)
-	return truncatePaths(scionPaths)
+func getMtuOptSubset(paths []PathWrapper) (optSubset []PathWrapper, sharabilityValue int) {
+	sortPaths(paths, mtu)
+	optSubset = trowAwayOddPaths(paths)
+	sharabilityValue = calculateSharabilityForPaths(optSubset)
+	return
 }
 
-func truncatePaths(scionPaths []PathWrapper) []PathWrapper {
-	if len(scionPaths) <= config.Config.KernelSide.NumberOfEgressInterfaces {
-		return scionPaths
+func trowAwayOddPaths(paths []PathWrapper) []PathWrapper {
+	if len(paths) <= config.Config.KernelSide.NumberOfEgressInterfaces {
+		return paths
 	} else {
-		truncScionPaths := make([]PathWrapper, config.Config.KernelSide.NumberOfEgressInterfaces)
-		copy(truncScionPaths, scionPaths[0:config.Config.KernelSide.NumberOfEgressInterfaces])
-		return truncScionPaths
+		subset := make([]PathWrapper, config.Config.KernelSide.NumberOfEgressInterfaces)
+		copy(subset, paths[0:config.Config.KernelSide.NumberOfEgressInterfaces])
+		return subset
 	}
 }
 
@@ -66,7 +70,7 @@ func sortPaths(paths []PathWrapper, selection pathSelection) {
 func selectPathAlgorithm() pathSelection {
 	if config.Config.Router.PathSelection == "mtu" {
 		return mtu
-	} else if config.Config.Router.PathSelection == "shortest" {
+	} else if config.Config.Router.PathSelection == "length" {
 		return length
 	} else if config.Config.Router.PathSelection == "sharability" {
 		return sharability

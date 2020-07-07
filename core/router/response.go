@@ -18,6 +18,7 @@ type Response struct {
 	MainIPFlow   shila.IPFlow
 	FlowCount    int
 	RawMetrics   []int
+	Sharability  int
 }
 
 type FlowCategory uint8

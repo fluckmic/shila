@@ -9,7 +9,7 @@ ERR_FILE="_shilaClientSide.err"
 HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
-PATH_SELECTIONS=("\"mtu\"" "\"shortest\"")
+PATH_SELECTIONS=("\"mtu\"" "\"length\"")
 
 N_VIRTUAL_INTERFACES=$1
 PATH_SELECTION="${PATH_SELECTIONS[$2]}"

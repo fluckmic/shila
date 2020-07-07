@@ -28,6 +28,7 @@ type Connection struct {
 	networkSide *networkSide.Manager
 	router      router.Router
 	flowCount   int
+	sharability int
 }
 
 type channels struct {
@@ -211,7 +212,8 @@ func (conn *Connection) printEstablishmentStatement() {
 	log.Info.Print("| IP Flow: \t ", conn.flow.IPFlow.Src.IP, ":", conn.flow.IPFlow.Src.Port, " <-> ",
 		conn.flow.IPFlow.Dst.IP, ":", conn.flow.IPFlow.Dst.Port)
 	log.Info.Print("| Net Flow: \t ", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst)
-	log.Info.Print("| Metrics: \t ", conn.rawMetrics)
+	log.Info.Print("| Metrics: \t ", conn.rawMetrics[0], " (mtu) ", conn.rawMetrics[1], " (length)")
+	log.Info.Print("| Sharability: \t ", conn.sharability)
 	log.Info.Print("| Main Flow: \t ", conn.mainIpFlow)
 }
 
@@ -329,7 +331,8 @@ func (conn *Connection) processRoutingResponse(response router.Response) {
 	conn.mainIpFlow 	= response.MainIPFlow
 	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
 	conn.category 		= response.FlowCategory
-	conn.rawMetrics = response.RawMetrics
+	conn.rawMetrics 	= response.RawMetrics
+	conn.sharability 	= response.Sharability
 	conn.flowCount		= response.FlowCount
 }
 
