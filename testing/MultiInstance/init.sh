@@ -3,6 +3,8 @@
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
+printf "Doing init.\n"
+
 # Kill running instances
 pkill shila
 pkill iperf

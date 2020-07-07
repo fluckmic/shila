@@ -6,9 +6,9 @@ PATH_TO_EXPERIMENT="~/go/src/shila/testing/MultiInstance"
 
 CLIENT=$1
 
-if   [[ "$CLIENT" == "mptcp-over-scion-vm-3" ]]; then
+if   [[ "$CLIENT" == "mptcp-over-scion-vm-0" ]]; then
   CONFIG_FILE="config0.json"
-elif [[ "$CLIENT" == "mptcp-over-scion-vm-4" ]]; then
+elif [[ "$CLIENT" == "mptcp-over-scion-vm-1" ]]; then
   CONFIG_FILE="config1.json"
 else
   printf "Failure : " "Unknown host %s.\n" "$CLIENT"
@@ -19,8 +19,9 @@ fi
 SCRIPT_NAME="init"
 CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
- if [[ $? -ne 0 ]]; then
-  printf "Failure : Unable to initialize %s.\n" "$CLIENT"
+RET=$?
+ if [[ $RET -ne 0 ]]; then
+  printf "Failure : Unable to initialize %s. Error cod: %d.\n" "$CLIENT" "$RET"
   exit 1
  fi
 
