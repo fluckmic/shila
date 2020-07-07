@@ -43,8 +43,8 @@ func (conns *ServerBackboneConnections) retrieve(rAddress shila.NetworkAddress) 
 }
 
 func (conns *ServerBackboneConnections) remove(key shila.NetworkAddressKey) {
-	//conns.lock.Lock()
-	//defer conns.lock.Unlock()
+	conns.lock.Lock()
+	defer conns.lock.Unlock()
 	delete(conns.connections, key)
 }
 
@@ -235,6 +235,7 @@ func (conn *ServerBackboneConnection) removeConnection() {
 }
 
 func (conn *ServerBackboneConnection) writeIngress(buff []byte) (err error) {
+	log.Verbose.Print(conn.Says("Write Ingress."))
 	_, err = conn.inWriter.Write(buff)
 	return
 }
