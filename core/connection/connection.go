@@ -101,6 +101,7 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 
 	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
 							// conn.touched = time.Now()
+							log.Verbose.Print(conn.Says(fmt.Sprint("Process packet in ", clientReady)))
 							conn.channels.Contacting.Egress <- p
 							return nil
 
@@ -273,7 +274,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// set new state
 	conn.setState(clientReady)
-	
+
 	return nil
 }
 
