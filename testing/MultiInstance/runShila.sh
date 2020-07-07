@@ -6,9 +6,9 @@ PATH_TO_EXPERIMENT="~/go/src/shila/testing/MultiInstance"
 
 CLIENT=$1
 
-if   [[ "$CLIENT" == "mptcp-over-scion-vm-0" ]]; then
+if   [[ "$CLIENT" == "mptcp-over-scion-vm-3" ]]; then
   CONFIG_FILE="config0.json"
-elif [[ "$CLIENT" == "mptcp-over-scion-vm-1" ]]; then
+elif [[ "$CLIENT" == "mptcp-over-scion-vm-4" ]]; then
   CONFIG_FILE="config1.json"
 else
   printf "Failure : " "Unknown host %s.\n" "$CLIENT"
