@@ -135,6 +135,7 @@ func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneC
 
 func (conn *ServerBackboneConnection) decodeIngress() {
 
+	log.Verbose.Print(conn.Says("Decode Ingress."))
 	// The first message should be a control message which contains
 	// all the information necessary to setup the backbone connection.
 	ctrlMsg, err := conn.retrieveControlMessage()
@@ -144,12 +145,16 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 		return
 	}
 
+	log.Verbose.Print(conn.Says("Retrieved Control Message."))
+
 	// Process the control message.
 	if err := conn.processControlMessage(ctrlMsg); err != nil {
 		log.Error.Println(conn.Says(err.Error()))
 		conn.removeConnection()
 		return
 	}
+
+	log.Verbose.Print(conn.Says("Decoded Control Message."))
 
 	// Now we are ready to listen for and process payload.
 	for {
@@ -235,7 +240,6 @@ func (conn *ServerBackboneConnection) removeConnection() {
 }
 
 func (conn *ServerBackboneConnection) writeIngress(buff []byte) (err error) {
-	log.Verbose.Print(conn.Says("Write Ingress."))
 	_, err = conn.inWriter.Write(buff)
 	return
 }
