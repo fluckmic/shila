@@ -270,10 +270,10 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.lock.Unlock()
 		}
 	}()
-
+	log.Verbose.Print(conn.Says(fmt.Sprint("About to set state to ", clientReady)))
 	// set new state
 	conn.state.set(clientReady)
-	log.Verbose.Print(conn.Says(fmt.Sprint("Set state to ", clientReady)))
+
 
 	return nil
 }
