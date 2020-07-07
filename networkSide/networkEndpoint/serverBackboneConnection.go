@@ -256,7 +256,7 @@ func (conn *ServerBackboneConnection) writeEgress(payload []byte) (err error){
 
 	_, err = conn.server.lConnection.WriteTo(buffer.Bytes(), conn.netFlows.effective.Dst.(*snet.UDPAddr))
 
-	log.Verbose.Print(conn.Says("Sent payload."))
+	log.Verbose.Print(conn.Says(fmt.Sprint("Sent payload to ", conn.netFlows.effective.Dst.(*snet.UDPAddr))))
 	return
 }
 
