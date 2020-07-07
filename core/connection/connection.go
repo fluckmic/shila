@@ -67,7 +67,7 @@ func (conn *Connection) Close(err error) {
 	// Remove the entries from the router
 	conn.router.ClearEntry(conn.key)
 
-	conn.state.set(closed)
+	conn.setState(closed)
 
 	log.Verbose.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
 }
@@ -76,6 +76,8 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
+
+	log.Verbose.Print(conn.Says("Process packet.."))
 
 	// From where was the packet received?
 	var err error
