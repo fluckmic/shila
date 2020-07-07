@@ -94,6 +94,8 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 		conn.Close(err)
 	}
 
+	log.Verbose.Print(conn.Says("Done with a packet."))
+
 	return err
 }
 
