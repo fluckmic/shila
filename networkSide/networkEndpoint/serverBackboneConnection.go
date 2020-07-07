@@ -49,8 +49,6 @@ func (conns *ServerBackboneConnections) remove(key shila.NetworkAddressKey) {
 }
 
 func (conns *ServerBackboneConnections) add(key shila.NetworkAddressKey, conn *ServerBackboneConnection) {
-	conns.lock.Lock()
-	defer conns.lock.Unlock()
 	conns.connections[key] = conn
 	return
 }
