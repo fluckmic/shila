@@ -6,16 +6,10 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
 
-mapfile -t CLIENTS < hostNames.data
-
-CNT=0
-for CLIENT in "${CLIENTS[@]}"; do
-  CLIENT_IDS+=($CNT)
-  CNT=$(($CNT+1))
-done
-
+CLIENT_IDS=(2 3)
+CLIENTS=(mptcp-over-scion-vm-2 mptcp-over-scion-vm-3)
 N_REPETITIONS=2
-N_INTERFACES=(1 2 4 5 7 8)
+N_INTERFACES=(1 4 7 8)
 PATH_SELECTIONS=(0 1)
 DURATION=120
 
@@ -48,6 +42,12 @@ printf "Starting %s:\n\n" "$EXPERIMENT_NAME" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Clients:\t" | tee -a "$LOGFILE_EXPERIMENT"
 for CLIENT in "${CLIENTS[@]}"; do
 printf "%s " "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+done
+printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
+
+printf "Client Ids:\t" | tee -a "$LOGFILE_EXPERIMENT"
+for CLIENT_ID in "${CLIENT_IDS[@]}"; do
+printf "%s " "$CLIENT_ID" | tee -a "$LOGFILE_EXPERIMENT"
 done
 printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
 
