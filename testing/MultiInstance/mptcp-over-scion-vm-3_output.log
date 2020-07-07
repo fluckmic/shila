@@ -1,0 +1,53 @@
+VERBOSE: main.go:37: Setup started...
+VERBOSE: main.go:56: Kernel side setup successfully.
+VERBOSE: main.go:65: Network side setup successfully.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60000} {17-ffaa:1:d87,127.0.0.1:60000 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60001} {19-ffaa:1:d88,127.0.0.1:60001 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60002} {20-ffaa:1:d89,127.0.0.1:60002 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60003} {18-ffaa:1:d8a,127.0.0.1:60003 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60000} {17-ffaa:1:d87,127.0.0.1:60000 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60001} {19-ffaa:1:d88,127.0.0.1:60001 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60002} {20-ffaa:1:d89,127.0.0.1:60002 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60003} {18-ffaa:1:d8a,127.0.0.1:60003 {[{map[]}]}}}}.
+VERBOSE: main.go:85: Working sides setup successfully.
+VERBOSE: main.go:87: Setup done, starting machinery..
+VERBOSE: server.go:62: Server Contact Network Endpoint (0-0,:9876 <- *): Setup and running.
+VERBOSE: kernelSide.go:112: Kernel side started.
+INFO: Shila up and running.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Contact Network Endpoint (0-0,:9876 <- 20-ffaa:1:d89,127.0.0.1:1033): Created.
+VERBOSE: server.go:62: Server Traffic Network Endpoint (0-0,:60003 <- *): Setup and running.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1033): State change from Raw to ServerReady.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1033): State change from ServerReady to ServerEstablished.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1034): Created.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1033): State change from ServerEstablished to Established.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Contact Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1037): Created.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Contact Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1038): Created.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1038): State change from Raw to ServerReady.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1038): State change from ServerReady to ServerEstablished.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1037): State change from Raw to ServerReady.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1037): State change from ServerReady to ServerEstablished.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1039): Created.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1040): Created.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1037): State change from ServerEstablished to Established.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1038): State change from ServerEstablished to Established.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Contact Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1041): Created.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1041): State change from Raw to ServerReady.
+VERBOSE: connection.go:315: Unknown Connection (0-0,:60003 <-> 20-ffaa:1:d89,127.0.0.1:1041): State change from ServerReady to ServerEstablished.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): Created.
+ERROR: serverBackboneConnection.go:143: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): gob: unknown type id or corrupted data Failed to decode control message.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): Created.
+ERROR: serverBackboneConnection.go:143: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): gob: type mismatch: no fields matched compiling decoder for controlMessage Failed to decode control message.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): Created.
+ERROR: serverBackboneConnection.go:143: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): gob: type mismatch: no fields matched compiling decoder for controlMessage Failed to decode control message.
+VERBOSE: serverBackboneConnection.go:133: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): Created.
+ERROR: serverBackboneConnection.go:143: Backbone connection in Server Traffic Network Endpoint (0-0,:60003 <- 20-ffaa:1:d89,127.0.0.1:1042): gob: type mismatch: no fields matched compiling decoder for controlMessage Failed to decode control message.
+ERROR: shutdown.go:90: Fatal error. Received issue from endpoint with unhandled role. Should not happen.
+VERBOSE: server.go:75: Server Traffic Network Endpoint (0-0,:60003 <- *): Got torn down.
+VERBOSE: server.go:75: Server Contact Network Endpoint (0-0,:60003 <- *): Got torn down.
+panic: send on closed channel
+
+goroutine 110 [running]:
+shila/networkSide/networkEndpoint.(*Server).resendFunctionality(0xc0003f0240)
+	/home/scion/go/src/shila/networkSide/networkEndpoint/server.go:138 +0x12c
+created by shila/networkSide/networkEndpoint.(*Server).SetupAndRun
+	/home/scion/go/src/shila/networkSide/networkEndpoint/server.go:59 +0x1ad

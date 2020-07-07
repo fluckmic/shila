@@ -33,7 +33,7 @@ RET=$?
 printf "%s\n\n" "$CLIENT"
 
 CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ./_shila -config ""$CONFIG_FILE"
-sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
+sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" | tee -a "_""$CLIENT""_output.log"
  if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to initialize %s.\n" "$CLIENT"
   exit 1

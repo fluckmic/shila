@@ -1,0 +1,56 @@
+VERBOSE: main.go:37: Setup started...
+VERBOSE: main.go:56: Kernel side setup successfully.
+VERBOSE: main.go:65: Network side setup successfully.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60000} {17-ffaa:1:d87,127.0.0.1:60000 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60001} {19-ffaa:1:d88,127.0.0.1:60001 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60002} {20-ffaa:1:d89,127.0.0.1:60002 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60003} {18-ffaa:1:d8a,127.0.0.1:60003 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60000} {17-ffaa:1:d87,127.0.0.1:60000 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60001} {19-ffaa:1:d88,127.0.0.1:60001 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60002} {20-ffaa:1:d89,127.0.0.1:60002 {[{map[]}]}}}}.
+VERBOSE: io.go:53: Router: Inserted routing Entry {{{10.7.0.9 60003} {18-ffaa:1:d8a,127.0.0.1:60003 {[{map[]}]}}}}.
+VERBOSE: main.go:85: Working sides setup successfully.
+VERBOSE: main.go:87: Setup done, starting machinery..
+VERBOSE: server.go:62: Server Contact Network Endpoint (0-0,:9876 <- *): Setup and running.
+VERBOSE: kernelSide.go:112: Kernel side started.
+INFO: Shila up and running.
+VERBOSE: client.go:95: Client Contact Network Endpoint (127.0.0.1:1033 -> 18-ffaa:1:d8a,127.0.0.1:9876): Established connection.
+VERBOSE: client.go:95: Client Traffic Network Endpoint (127.0.0.1:1034 -> 18-ffaa:1:d8a,127.0.0.1:60003): Established connection.
+VERBOSE: connection.go:315: MainFlow Connection (127.0.0.1:1034 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientReady to ClientEstablished.
+VERBOSE: client.go:107: Client Contact Network Endpoint (127.0.0.1:1033 -> 18-ffaa:1:d8a,127.0.0.1:9876): Got torn down.
+VERBOSE: connection.go:315: MainFlow Connection (127.0.0.1:1034 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientEstablished to Established.
+VERBOSE: connection.go:181: MainFlow Connection (127.0.0.1:1034 <-> 18-ffaa:1:d8a,127.0.0.1:60003): Successfully established!
+INFO: 
+INFO: MainFlow BLWL - 1 connection successful established!
+INFO: | IP Flow: 	 196.62.70.31:43874 <-> 10.7.0.9:60003
+INFO: | Net Flow: 	 127.0.0.1:1034 <-> 18-ffaa:1:d8a,127.0.0.1:60003
+INFO: | Quality: 	 12
+INFO: | Main Flow: 	 {{196.62.70.31 43874 } {10.7.0.9 60003 }}
+VERBOSE: client.go:95: Client Contact Network Endpoint (127.0.0.1:1037 -> 18-ffaa:1:d8a,127.0.0.1:9876): Established connection.
+VERBOSE: client.go:95: Client Contact Network Endpoint (127.0.0.1:1038 -> 18-ffaa:1:d8a,127.0.0.1:9876): Established connection.
+VERBOSE: client.go:95: Client Traffic Network Endpoint (127.0.0.1:1039 -> 18-ffaa:1:d8a,127.0.0.1:60003): Established connection.
+VERBOSE: connection.go:315: SubFlow Connection (127.0.0.1:1039 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientReady to ClientEstablished.
+VERBOSE: client.go:107: Client Contact Network Endpoint (127.0.0.1:1037 -> 18-ffaa:1:d8a,127.0.0.1:9876): Got torn down.
+VERBOSE: client.go:95: Client Traffic Network Endpoint (127.0.0.1:1040 -> 18-ffaa:1:d8a,127.0.0.1:60003): Established connection.
+VERBOSE: connection.go:315: MainFlow Connection (127.0.0.1:1040 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientReady to ClientEstablished.
+VERBOSE: client.go:107: Client Contact Network Endpoint (127.0.0.1:1038 -> 18-ffaa:1:d8a,127.0.0.1:9876): Got torn down.
+VERBOSE: connection.go:315: SubFlow Connection (127.0.0.1:1039 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientEstablished to Established.
+VERBOSE: connection.go:181: SubFlow Connection (127.0.0.1:1039 <-> 18-ffaa:1:d8a,127.0.0.1:60003): Successfully established!
+INFO: 
+INFO: SubFlow BLWL - 2 connection successful established!
+INFO: | IP Flow: 	 81.157.211.36:36063 <-> 10.7.0.9:60003
+INFO: | Net Flow: 	 127.0.0.1:1039 <-> 18-ffaa:1:d8a,127.0.0.1:60003
+INFO: | Quality: 	 12
+INFO: | Main Flow: 	 {{196.62.70.31 43874 } {10.7.0.9 60003 }}
+VERBOSE: connection.go:315: MainFlow Connection (127.0.0.1:1040 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientEstablished to Established.
+VERBOSE: connection.go:181: MainFlow Connection (127.0.0.1:1040 <-> 18-ffaa:1:d8a,127.0.0.1:60003): Successfully established!
+INFO: 
+INFO: MainFlow BLWV - 1 connection successful established!
+INFO: | IP Flow: 	 196.62.70.31:43884 <-> 10.7.0.9:60003
+INFO: | Net Flow: 	 127.0.0.1:1040 <-> 18-ffaa:1:d8a,127.0.0.1:60003
+INFO: | Quality: 	 12
+INFO: | Main Flow: 	 {{196.62.70.31 43884 } {10.7.0.9 60003 }}
+VERBOSE: client.go:95: Client Contact Network Endpoint (127.0.0.1:1041 -> 18-ffaa:1:d8a,127.0.0.1:9876): Established connection.
+VERBOSE: client.go:95: Client Traffic Network Endpoint (127.0.0.1:1042 -> 18-ffaa:1:d8a,127.0.0.1:60003): Established connection.
+VERBOSE: connection.go:315: SubFlow Connection (127.0.0.1:1042 <-> 18-ffaa:1:d8a,127.0.0.1:60003): State change from ClientReady to ClientEstablished.
+VERBOSE: client.go:107: Client Contact Network Endpoint (127.0.0.1:1041 -> 18-ffaa:1:d8a,127.0.0.1:9876): Got torn down.

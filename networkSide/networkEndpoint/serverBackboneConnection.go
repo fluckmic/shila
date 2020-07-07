@@ -57,6 +57,7 @@ func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddre
 
 	conn := conns.retrieve(shila.GetNetworkAddressKey(rAddress))
 	if conn == nil {
+		log.Verbose.Print("About to create a new Backbone connection for ", rAddress)
 		// Connection not yet exists, we first have to create a new one and add it to the mapping.
 		if conn = newBackboneConnection(rAddress, conns); conn == nil {
 			log.Error.Println(conn.server.Says("Failed to create a new backbone connection."))
