@@ -10,7 +10,7 @@ HOST_NAME=$(cat _hostName)
 HOST_ID=$(cat _hostId)
 
 sudo systemctl restart scionlab.target
-sleep 2
+sleep 3
 
 printf "Starting shila on the server side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 sudo ./_shila -config serverConfig.json >> "$LOG_FILE" 2>> "$ERR_FILE"

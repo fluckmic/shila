@@ -20,14 +20,15 @@ LOG_FILE="_iperfClientSide_""$LOG_FOLDER"".log"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh 0"
 ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
-  printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
-  exit 1
+    printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
 fi
 ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD"
- if [[ $? -ne 0 ]]; then
-   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
-   exit 1
- fi
+if [[ $? -ne 0 ]]; then
+    printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
+fi
+sleep 2
 ./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Start the shila instance on the server.
@@ -39,11 +40,12 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-sleep 2
+sleep 6
 ./waitForReturn.sh "$DST_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
+sleep 2
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Start the iperf instance on the server.
@@ -60,6 +62,7 @@ sleep 2
 if [[ $? -eq 1 ]]; then
   exit 1
 fi
+sleep 2
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
 ## Start the shila instance on the client.
@@ -71,7 +74,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-sleep 2
+sleep 6
 ./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 1 0   # No polling..
 if [[ $? -eq 1 ]]; then
   exit 1
@@ -121,9 +124,9 @@ cp "$OUTPUT_FOLDER""/""$LOG_FOLDER""/""$LOG_FILE" _latestExperiment.log
 
 ########################################################################################################################
 ## Clean up the clients involved.
-SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh"
-ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD" 0
-ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD" 0
-
-./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+#SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh"
+#ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD" 0
+#ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD" 0
+#
+#./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################

@@ -7,19 +7,21 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
-# Remove all builds as well.
-if [[ $1 -eq 1 ]]; then
-  rm -f _*
-fi
+pkill shila
+pkill iperf
+
+sleep 5
+
+# Delete all namespaces
+bash ../../helper/netnsClear.sh
 
 # Remove all log and error files.
 rm -f _*.log
 rm -f _*.err
 
-pkill shila
-pkill iperf
-
-# Delete all namespaces
-bash ../../helper/netnsClear.sh
+# Remove all builds as well.
+if [[ $1 -eq 1 ]]; then
+  rm -f _*
+fi
 
 exit 0
