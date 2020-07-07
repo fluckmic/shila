@@ -43,8 +43,8 @@ func (conns *ServerBackboneConnections) retrieve(rAddress shila.NetworkAddress) 
 }
 
 func (conns *ServerBackboneConnections) remove(key shila.NetworkAddressKey) {
-	conns.lock.Lock()
-	defer conns.lock.Unlock()
+	//conns.lock.Lock()
+	//defer conns.lock.Unlock()
 	delete(conns.connections, key)
 }
 
