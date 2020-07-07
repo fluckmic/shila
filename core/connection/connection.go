@@ -273,6 +273,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 
 	// set new state
 	conn.state.set(clientReady)
+	log.Verbose.Print(conn.Says(fmt.Sprint("Set state to ", clientReady)))
 
 	return nil
 }
