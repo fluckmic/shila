@@ -264,6 +264,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.setState(clientEstablished)
+			log.Verbose.Print(conn.Says(fmt.Sprint("Set state to ", clientEstablished)))
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
 			conn.lock.Unlock()
