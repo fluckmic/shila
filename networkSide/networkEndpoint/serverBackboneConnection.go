@@ -26,13 +26,19 @@ func NewBackboneConnections(server *Server) ServerBackboneConnections {
 	}
 }
 
-func (conns *ServerBackboneConnections) retrieve(key shila.NetworkAddressKey) *ServerBackboneConnection {
+func (conns *ServerBackboneConnections) retrieve(rAddress shila.NetworkAddress) *ServerBackboneConnection {
 	conns.lock.Lock()
 	defer conns.lock.Unlock()
-	if conn, ok := conns.connections[key]; ok {
+	if conn, ok := conns.connections[shila.GetNetworkAddressKey(rAddress)]; ok {
 		return conn
 	} else {
-		return nil
+		// Connection not yet exists, we first have to create a new one and add it to the mapping.
+		if conn = newBackboneConnection(rAddress, conns); conn == nil {
+			log.Error.Println(conn.server.Says("Failed to create a new backbone connection."))
+			return nil
+		}
+		conns.add(conn.keys[0], conn)
+		return conn
 	}
 }
 
@@ -55,15 +61,9 @@ func (conns *ServerBackboneConnections) TearDown() error {
 
 func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddress, buff []byte) {
 
-	conn := conns.retrieve(shila.GetNetworkAddressKey(rAddress))
+	conn := conns.retrieve(rAddress)
 	if conn == nil {
-		log.Verbose.Print("About to create a new Backbone connection for ", rAddress)
-		// Connection not yet exists, we first have to create a new one and add it to the mapping.
-		if conn = newBackboneConnection(rAddress, conns); conn == nil {
-			log.Error.Println(conn.server.Says("Failed to create a new backbone connection."))
-			return
-		}
-		conns.add(conn.keys[0], conn)
+		return
 	}
 
 	if err := conn.writeIngress(buff); err != nil {
@@ -75,7 +75,7 @@ func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddre
 func (conns *ServerBackboneConnections) WriteEgress(packet *shila.Packet) error {
 
 	// We try to send out the data if there exists a backbone connection.
-	if conn := conns.retrieve(shila.GetNetworkAddressKey(packet.Flow.NetFlow.Dst)); conn != nil {
+	if conn := conns.retrieve(packet.Flow.NetFlow.Dst); conn != nil {
 		return conn.writeEgress(packet.Payload)		// If writing fails, then because of an issue with the connection.
 	}
 
