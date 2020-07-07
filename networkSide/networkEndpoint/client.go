@@ -160,6 +160,9 @@ func (client *Client) sendPayloadMessage(payload []byte) error {
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(pyldMsg); err != nil {
 		return shila.PrependError(err, "Cannot encode payload message.")
 	}
+
+	log.Verbose.Print(client.Says("Sent payload message."))
+
 	return nil
 }
 
