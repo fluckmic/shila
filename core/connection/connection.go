@@ -77,8 +77,6 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
-	log.Verbose.Print(conn.Says("Process packet.."))
-
 	// From where was the packet received?
 	var err error
 	switch p.Entrypoint.Role() {
@@ -94,8 +92,6 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 		conn.Close(err)
 	}
 
-	log.Verbose.Print(conn.Says("Done with a packet."))
-
 	return err
 }
 
@@ -105,7 +101,6 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 
 	case clientReady:		p.Flow.NetFlow = conn.flow.NetFlow
 							// conn.touched = time.Now()
-							log.Verbose.Print(conn.Says(fmt.Sprint("Process packet in ", clientReady)))
 							conn.channels.Contacting.Egress <- p
 							return nil
 
@@ -266,6 +261,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		} else {
 			log.Verbose.Print(conn.Says(fmt.Sprint("Want to set the state to ", clientEstablished)))
 			conn.lock.Lock()
+			log.Verbose.Print(conn.Says(fmt.Sprint("Got across the lock to set the state to ", clientEstablished)))
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.setState(clientEstablished)
