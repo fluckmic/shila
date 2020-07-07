@@ -51,7 +51,7 @@ func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSi
 
 func (conn *Connection) Close(err error) {
 
-	conn.Says("Wants to be closed.")
+	log.Verbose.conn.Says("Wants to be closed.")
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
