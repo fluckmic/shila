@@ -6,8 +6,9 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
 
+mapfile -t CLIENTS < hostNames.data
+
 CLIENT_IDS=(2 3)
-CLIENTS=(mptcp-over-scion-vm-2 mptcp-over-scion-vm-3)
 N_REPETITIONS=2
 N_INTERFACES=(1 4 7 8)
 PATH_SELECTIONS=(0 1)
@@ -16,7 +17,7 @@ DURATION=120
 DURATION_BETWEEN=60
 PERCENTAGE_FAIL=(1/3)
 
-N_EXPERIMENTS=$((${#CLIENTS[@]} * (${#CLIENTS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
+N_EXPERIMENTS=$((${#CLIENT_IDS[@]} * (${#CLIENT_IDS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
 N_EXPERIMENTS=$(($N_EXPERIMENTS + $(($N_EXPERIMENTS * $PERCENTAGE_FAIL )) ))
 TOTAL_DURATION_M=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 60 ))
 TOTAL_DURATION_H=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
@@ -98,21 +99,22 @@ shuf _experiments.data | shuf -o _experiments.data
 SCRIPT_NAME="init"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
-for CLIENT in "${CLIENTS[@]}"; do
- ./printDebug.sh "Start initializing ""$CLIENT""." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
- ssh -tt scion@"$CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+for CLIENT_ID in "${CLIENT_IDS[@]}"; do
+ ./printDebug.sh "Start initializing ""${CLIENTS[$CLIENT_ID]}""." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+ ssh -tt scion@"${CLIENTS[$CLIENT_ID]}" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
  if [[ $? -ne 0 ]]; then
-  printf "Failure : Cannot connect to %s.\n" "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+  printf "Failure : Cannot connect to %s.\n" "${CLIENTS[$CLIENT_ID]}" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
  fi
 done
-for CLIENT in "${CLIENTS[@]}"; do
- ./waitForReturn.sh "$CLIENT" "$SCRIPT_NAME" 0 30   # Polling w/ timeout after 30 seconds.
+for CLIENT_ID in "${CLIENT_IDS[@]}"; do
+ ./waitForReturn.sh "${CLIENTS[$CLIENT_ID]}" "$SCRIPT_NAME" 0 30   # Polling w/ timeout after 30 seconds.
  if [[ $? -eq 1 ]]; then
    exit 1
  fi
- printf "Success : Initialization of %s.\n" "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+ printf "Success : Initialization of %s.\n" "${CLIENTS[$CLIENT_ID]}" | tee -a "$LOGFILE_EXPERIMENT"
 done
+
 ########################################################################################################################
 ## Run the experiment
 
