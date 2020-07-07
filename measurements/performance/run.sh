@@ -43,8 +43,8 @@ LOGFILE_EXPERIMENT="$OUTPUT_PATH""/experiment.log"
 printf "Starting %s:\n\n" "$EXPERIMENT_NAME" | tee -a "$LOGFILE_EXPERIMENT"
 
 printf "Clients:\t" | tee -a "$LOGFILE_EXPERIMENT"
-for CLIENT in "${CLIENTS[@]}"; do
-printf "%s " "$CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+for CLIENT_ID in "${CLIENT_IDS[@]}"; do
+printf "%s " "${CLIENTS[$CLIENT_ID]}" | tee -a "$LOGFILE_EXPERIMENT"
 done
 printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
 
