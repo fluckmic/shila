@@ -2,6 +2,8 @@
 
 PRINT_DEBUG=1
 
+DRY_RUN=$1
+
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
@@ -93,6 +95,10 @@ done
 
 # Create a random order
 shuf _experiments.data | shuf -o _experiments.data
+
+if [[ $DRY_RUN -eq 1 ]]; then
+  exit 0
+fi
 
 ########################################################################################################################
 ## Initialize the clients
