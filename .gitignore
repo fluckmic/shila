@@ -33,3 +33,4 @@ misc/snoopy/snoop
 
 # Logs
 log-*
+*.log
