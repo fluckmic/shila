@@ -260,7 +260,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.Close(err)
 		} else {
 			log.Verbose.Print(conn.Says(fmt.Sprint("Want to set the state to ", clientEstablished)))
-			conn.lock.Lock()
+			//conn.lock.Lock()
 			log.Verbose.Print(conn.Says(fmt.Sprint("Got across the lock to set the state to ", clientEstablished)))
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
@@ -268,7 +268,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			log.Verbose.Print(conn.Says(fmt.Sprint("Set state to ", clientEstablished)))
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
-			conn.lock.Unlock()
+			//conn.lock.Unlock()
 		}
 	}()
 
