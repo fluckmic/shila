@@ -180,6 +180,9 @@ func (client *Client) sendControlMessage() error {
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(ctrlMsg); err != nil {
 		return shila.PrependError(err, "Cannot encode control message.")
 	}
+
+	log.Verbose.Print(client.Says("Sent control message.\n"))
+
 	return nil
 }
 
