@@ -98,7 +98,7 @@ func (server *Server) Key() shila.NetworkAddressKey {
 
 func (server *Server) serveIngress(){
 
-	log.Verbose.Print(server.Says(fmt.Sprint("Serve ingress on ", server.lConnection)))
+	log.Verbose.Print(server.Says(fmt.Sprint("Serve ingress on ", server.lConnection.RemoteAddr())))
 
 	buffer := make([]byte, config.Config.NetworkEndpoint.SizeRawIngressStorage)
 	for {
