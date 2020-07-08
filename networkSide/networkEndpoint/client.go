@@ -145,8 +145,13 @@ func (client *Client) serveIngress() {
 }
 
 func (client *Client) serveEgress() {
+	first := true
 	for p := range client.Egress {
 		err := client.sendPayloadMessage(p.Payload)
+		if first {
+			log.Verbose.Print(client.Says("Sent first payload.\n"))
+			first = false
+		}
 		if err != nil {
 			go client.handleConnectionIssue(err)
 			return
