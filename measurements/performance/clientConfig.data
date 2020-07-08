@@ -1,11 +1,17 @@
 {
   "KernelSide"  :   { "NumberOfEgressInterfaces" : @1 },
   "Router"      :   { "PathSelection" : @2 },
-  "Config"      :   { "DumpConfig" : true,
-			          "ConfigDumpPath" : "_clientConfig.dump" },
-  "KernelEndpoint" : { "SizeIngressBuffer" : 500,
-                       "SizeEgressBuffer"  : 500 },
-  "NetworkEndpoint" : { "SizeIngressBuffer" : 500,
-                        "SizeEgressBuffer"  : 500,
-                        "SizeHoldingArea"   : 250 }
+  "Config"      :   {
+    "DumpConfig" : true,
+    "ConfigDumpPath" : "_clientConfig.dump"
+  },
+  "KernelEndpoint" : {
+    "SizeIngressBuffer" : 500,
+    "SizeEgressBuffer"  : 500
+  },
+  "NetworkEndpoint" : {
+    "SizeIngressBuffer" : 500,
+    "SizeEgressBuffer"  : 500,
+    "SizeHoldingArea"   : 250
+  }
 }
