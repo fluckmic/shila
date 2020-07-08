@@ -107,7 +107,7 @@ func (server *Server) serveIngress(){
 			return
 		}
 
-		log.Verbose.Print(server.Says(fmt.Sprint("Read ", n , "byte.")))
+		log.Verbose.Print(server.Says(fmt.Sprint("Read ", n , "byte from ", from, ".")))
 
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.
