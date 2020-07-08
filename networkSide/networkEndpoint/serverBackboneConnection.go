@@ -147,6 +147,7 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 	ctrlMsg, err := conn.retrieveControlMessage()
 	if err != nil {
 		log.Error.Println(conn.Says(err.Error()))
+		log.Error.Print(ctrlMsg)
 		conn.removeConnection()
 		return
 	}
