@@ -98,7 +98,6 @@ func (server *Server) Key() shila.NetworkAddressKey {
 
 func (server *Server) serveIngress(){
 
-	log.Verbose.Print(server.Says(fmt.Sprint("Serve ingress on ", server.lConnection.RemoteAddr())))
 
 	buffer := make([]byte, config.Config.NetworkEndpoint.SizeRawIngressStorage)
 	for {
@@ -107,6 +106,8 @@ func (server *Server) serveIngress(){
 			go server.handleConnectionIssue(err)
 			return
 		}
+
+		log.Verbose.Print(server.Says(fmt.Sprint("Read ingress from ", from)))
 
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.
