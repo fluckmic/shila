@@ -152,7 +152,7 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 		if err != nil {
 			log.Error.Println(conn.Says(err.Error()))
 		} else {
-			return
+			break
 		}
 	}
 
