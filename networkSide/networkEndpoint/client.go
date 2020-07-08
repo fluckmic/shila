@@ -67,6 +67,8 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 		return
 	}
 
+	time.Sleep(time.Second * 2)
+	
 	// Start the ingress and egress machinery.
 	go client.serveIngress()
 	go client.serveEgress()
@@ -145,13 +147,8 @@ func (client *Client) serveIngress() {
 }
 
 func (client *Client) serveEgress() {
-	first := true
 	for p := range client.Egress {
 		err := client.sendPayloadMessage(p.Payload)
-		if first {
-			log.Verbose.Print(client.Says("Sent first payload.\n"))
-			first = false
-		}
 		if err != nil {
 			go client.handleConnectionIssue(err)
 			return
