@@ -12,12 +12,13 @@ type Entry struct {
 }
 
 type Response struct {
-	Dst    			shila.NetworkAddress
-	Path   			shila.NetworkPath
-	FlowCategory	FlowCategory
-	MainIPFlow	 	shila.IPFlow
-	FlowCount		int
-	Quality			int					// For the moment this is the path metric, which is either length or mtu
+	Dst          shila.NetworkAddress
+	Path         shila.NetworkPath
+	FlowCategory FlowCategory
+	MainIPFlow   shila.IPFlow
+	FlowCount    int
+	RawMetrics   []int
+	Sharability  int
 }
 
 type FlowCategory uint8

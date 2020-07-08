@@ -15,6 +15,11 @@ LengthTest.topo
 2-ff00:0:220 sd:127.0.0.67:30255
 
 MTUTest.topo
-./scion.sh topology -c tpopology/MTUTest.topo
+./scion.sh topology -c topology/MTUTest.topo
 1-ff00:0:112 sd:127.0.0.19:30255
 2-ff00:0:220 sd:127.0.0.27:30255
+
+SharabilityTest.topo
+./scion.sh topology -c topology/SharabilityTest.topo
+1-ff00:0:112 sd:127.0.0.43:30255
+2-ff00:0:220 sd:127.0.0.67:30255

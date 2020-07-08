@@ -106,7 +106,7 @@ func defaultConfig() *structure.ConfigJSON {
 			SizeHoldingArea:                 		 	100,
 		},
 		Router: structure.RouterConfigJSON{
-			PathSelection: 								"shortest",
+			PathSelection: 								"mtu",
 		},
 		Config: structure.ConfigConfigJSON{
 			DumpConfig:									false,
