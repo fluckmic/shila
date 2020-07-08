@@ -67,8 +67,6 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 		return
 	}
 
-	time.Sleep(time.Second * 2)
-	
 	// Start the ingress and egress machinery.
 	go client.serveIngress()
 	go client.serveEgress()

@@ -169,6 +169,8 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 }
 
 func (conn *ServerBackboneConnection) retrieveControlMessage() (ctrlMsg controlMessage, err error) {
+
+
 	if err = gob.NewDecoder(conn.inReader).Decode(&ctrlMsg); err != nil {
 		err = shila.PrependError(ParsingError("Failed to decode control message."), err.Error())
 	}
@@ -244,6 +246,7 @@ func (conn *ServerBackboneConnection) removeConnection() {
 
 func (conn *ServerBackboneConnection) writeIngress(buff []byte) (err error) {
 	_, err = conn.inWriter.Write(buff)
+	log.Verbose.Print(conn.Says(fmt.Sprint(buff, "\n")))
 	return
 }
 
