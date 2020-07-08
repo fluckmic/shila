@@ -4,17 +4,19 @@ PRINT_DEBUG=1
 
 DRY_RUN=$1
 
+N_FAIL_REPS=2  # Just make the number big enough to run through all experiments...
+
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
 
 mapfile -t CLIENTS < hostNames.data
 
-CLIENT_IDS=(2 3)
+CLIENT_IDS=(0 1)
 N_REPETITIONS=2
 N_INTERFACES=(1 4 7 8)
-PATH_SELECTIONS=(0 1)
-DURATION=120
+PATH_SELECTIONS=(2)
+DURATION=15
 
 DURATION_BETWEEN=60
 PERCENTAGE_FAIL=(1/3)
@@ -124,21 +126,22 @@ done
 ########################################################################################################################
 ## Run the experiment
 
-rm _experiments.fail 2>/dev/null
+rm _*.fail 2>/dev/null
 
 N_EXPERIMENTS_DONE=0
 N_EXPERIMENTS_FAIL=0
+N_REPS=0
 
 ./printDebug.sh "Start doing experiments." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
 while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
+  FAIL_LOG="_experiments""$N_REPS"".fail"
+
   # Repeat until all experiments are finished. Repeat the ones failed.
   if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
-
     rm _experiments.data
-    cp _experiments.fail _experiments.data
-    rm _experiments.fail
+    cp "$FAIL_LOG" _experiments.data
   fi
   N_EXPERIMENTS_FAIL=0
 
@@ -151,14 +154,19 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
     bash doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT"
     if [[ $? -ne 0 ]]; then
-      echo "$EXPERIMENT" >> _experiments.fail
+      echo "$EXPERIMENT" >> "$FAIL_LOG"
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
       printf "Failure : Experiment %s failed.\n" "$EXPERIMENT" | tee -a "$LOGFILE_EXPERIMENT"
     else
       N_EXPERIMENTS_DONE=$(($N_EXPERIMENTS_DONE+1))
       printf "Success : Completed %d of %d experiments.\n" "$N_EXPERIMENTS_DONE" "$N_EXPERIMENTS" | tee -a "$LOGFILE_EXPERIMENT"
     fi
-
   done
+
+  N_REPS=$(($N_REPS+1))
+  if [[ $N_REPS -ge $N_FAIL_REPS ]]; then
+    N_EXPERIMENTS_DONE=$N_EXPERIMENTS
+  fi
+
 done
 ########################################################################################################################
