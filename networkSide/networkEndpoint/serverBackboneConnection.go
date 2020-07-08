@@ -151,6 +151,8 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 		return
 	}
 
+	log.Verbose.Print(conn.Says("Retrieved control msg."))
+
 	// Process the control message.
 	if err := conn.processControlMessage(ctrlMsg); err != nil {
 		log.Error.Println(conn.Says(err.Error()))
