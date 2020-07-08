@@ -246,7 +246,6 @@ func (conn *ServerBackboneConnection) removeConnection() {
 
 func (conn *ServerBackboneConnection) writeIngress(buff []byte) (err error) {
 	_, err = conn.inWriter.Write(buff)
-	log.Verbose.Print(conn.Says(fmt.Sprint(buff, "\n")))
 	return
 }
 
