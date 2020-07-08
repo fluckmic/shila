@@ -105,7 +105,7 @@ func (server *Server) serveIngress(){
 		if err != nil {
 			go server.handleConnectionIssue(err)
 			return
-		}	
+		}
 
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.

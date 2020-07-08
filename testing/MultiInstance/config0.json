@@ -2,6 +2,6 @@
   "Logging"     :   { "PrintVerbose" : false },
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress",
                       "IngressNamespace" : "shila-ingress",
-                      "NumberOfEgressInterfaces" : 1 },
+                      "NumberOfEgressInterfaces" : 3 },
   "Connection"  :   { "MaxTimeUntouched"  : 200}
 }
