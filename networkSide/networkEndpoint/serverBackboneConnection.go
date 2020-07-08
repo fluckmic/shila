@@ -144,12 +144,24 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 
 	// The first message should be a control message which contains
 	// all the information necessary to setup the backbone connection.
-	ctrlMsg, err := conn.retrieveControlMessage()
+
+	var ctrlMsg controlMessage
+	var err error
+	for {
+		ctrlMsg, err = conn.retrieveControlMessage()
+		if err != nil {
+			log.Error.Println(conn.Says(err.Error()))
+		} else {
+			return
+		}
+	}
+
+	/*
 	if err != nil {
-		log.Error.Println(conn.Says(err.Error()))
 		conn.removeConnection()
 		return
 	}
+	 */
 
 	// Process the control message.
 	if err := conn.processControlMessage(ctrlMsg); err != nil {
