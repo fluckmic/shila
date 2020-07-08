@@ -1,7 +1,7 @@
 #!/bin/bash
 SESSION=$USER
 
-SHILA_0_EXTERNAL=0
+SHILA_0_EXTERNAL=1
 
 if [[ "$SHILA_0_EXTERNAL" -ne 1 ]]; then
   bash ../../helper/netnsClear.sh

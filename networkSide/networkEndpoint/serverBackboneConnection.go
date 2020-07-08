@@ -26,19 +26,11 @@ func NewBackboneConnections(server *Server) ServerBackboneConnections {
 	}
 }
 
-func (conns *ServerBackboneConnections) retrieve(rAddress shila.NetworkAddress) *ServerBackboneConnection {
-	conns.lock.Lock()
-	defer conns.lock.Unlock()
-	if conn, ok := conns.connections[shila.GetNetworkAddressKey(rAddress)]; ok {
+func (conns *ServerBackboneConnections) retrieve(key shila.NetworkAddressKey) *ServerBackboneConnection {
+	if conn, ok := conns.connections[key]; ok {
 		return conn
 	} else {
-		// Connection not yet exists, we first have to create a new one and add it to the mapping.
-		if conn = newBackboneConnection(rAddress, conns); conn == nil {
-			log.Error.Println(conn.server.Says("Failed to create a new backbone connection."))
-			return nil
-		}
-		conns.add(conn.keys[0], conn)
-		return conn
+		return nil
 	}
 }
 
@@ -59,9 +51,17 @@ func (conns *ServerBackboneConnections) TearDown() error {
 
 func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddress, buff []byte) {
 
-	conn := conns.retrieve(rAddress)
+	conns.lock.Lock()
+	defer conns.lock.Unlock()
+
+	conn := conns.retrieve(shila.GetNetworkAddressKey(rAddress))
 	if conn == nil {
-		return
+		// Connection not yet exists, we first have to create a new one and add it to the mapping.
+		if conn = newBackboneConnection(rAddress, conns); conn == nil {
+			log.Error.Println(conn.server.Says("Failed to create a new backbone connection."))
+			return
+		}
+		conns.add(conn.keys[0], conn)
 	}
 
 	if err := conn.writeIngress(buff); err != nil {
@@ -72,8 +72,11 @@ func (conns *ServerBackboneConnections) WriteIngress(rAddress shila.NetworkAddre
 
 func (conns *ServerBackboneConnections) WriteEgress(packet *shila.Packet) error {
 
+	conns.lock.Lock()
+	defer conns.lock.Unlock()
+
 	// We try to send out the data if there exists a backbone connection.
-	if conn := conns.retrieve(packet.Flow.NetFlow.Dst); conn != nil {
+	if conn := conns.retrieve(shila.GetNetworkAddressKey(packet.Flow.NetFlow.Dst)); conn != nil {
 		return conn.writeEgress(packet.Payload)		// If writing fails, then because of an issue with the connection.
 	}
 
@@ -144,16 +147,12 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 		return
 	}
 
-	log.Verbose.Print(conn.Says("Retrieved control Message."))
-
 	// Process the control message.
 	if err := conn.processControlMessage(ctrlMsg); err != nil {
 		log.Error.Println(conn.Says(err.Error()))
 		conn.removeConnection()
 		return
 	}
-
-	log.Verbose.Print(conn.Says("Decoded control message."))
 
 	// Now we are ready to listen for and process payload.
 	for {
@@ -206,15 +205,13 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 		lAddrContactEndFull 	:= conn.netFlows.effective.Dst.(*snet.UDPAddr).Copy()
 		lAddrContactEndFull.Host = &ctrlMsg.LAddrContactEnd
 		conn.keys = append(conn.keys, shila.GetNetworkAddressKey(lAddrContactEndFull))
-		conn.connections.add(conn.keys[1], conn)
+		conn.connections.add(conn.keys[1], conn) // lock here?
 	}
 
 	return nil
 }
 
 func (conn *ServerBackboneConnection) processPayloadMessage() error {
-
-	log.Verbose.Print(conn.Says("Ready to process payload message."))
 
 	// Fetch the next payload message
 	var pyldMsg payloadMessage
@@ -223,10 +220,9 @@ func (conn *ServerBackboneConnection) processPayloadMessage() error {
 	}
 	if len(pyldMsg.Payload) == 0 {
 		// From time to to we get a zero payload packet...?
+		//log.Error.Println(conn.Says("Received zero payload packet."))
 		return nil
 	}
-
-	log.Verbose.Print(conn.Says("Processed payload message."))
 
 	conn.server.Ingress <- shila.NewPacketWithNetFlowAndKind(conn.server,
 													  		 conn.ipFlow.Swap(),
@@ -256,7 +252,6 @@ func (conn *ServerBackboneConnection) writeEgress(payload []byte) (err error){
 
 	_, err = conn.server.lConnection.WriteTo(buffer.Bytes(), conn.netFlows.effective.Dst.(*snet.UDPAddr))
 
-	log.Verbose.Print(conn.Says(fmt.Sprint("Sent payload to ", conn.netFlows.effective.Dst.(*snet.UDPAddr))))
 	return
 }
 

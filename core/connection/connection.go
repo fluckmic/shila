@@ -51,7 +51,6 @@ func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSi
 
 func (conn *Connection) Close(err error) {
 
-	log.Verbose.Print(conn.Says("Wants to be closed."))
 	conn.lock.Lock()
 	defer conn.lock.Unlock()
 
@@ -97,7 +96,6 @@ func (conn *Connection) ProcessPacket(p *shila.Packet) error {
 }
 
 func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
-	log.Verbose.Print(conn.Says("Process packet from kerep."))
 	switch conn.state.current {
 	case raw:				return conn.processPacketFromKerepStateRaw(p)
 
@@ -135,7 +133,6 @@ func (conn *Connection) processPacketFromKerep(p *shila.Packet) error {
 }
 
 func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) error {
-	log.Verbose.Print(conn.Says("Process packet from contacting endpoint."))
 	switch conn.state.current {
 
 	case raw:				return conn.processPacketFromContactingEndpointStateRaw(p)
@@ -162,7 +159,6 @@ func (conn *Connection) processPacketFromContactingEndpoint(p *shila.Packet) err
 }
 
 func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error {
-	log.Verbose.Print(conn.Says("Process packet from traffic endpoint."))
 	switch conn.state.current {
 
 	case raw:				return shila.CriticalError(fmt.Sprint("Invalid connection state ", conn.state.current, "."))
@@ -220,7 +216,6 @@ func (conn *Connection) printEstablishmentStatement() {
 }
 
 func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
-	log.Verbose.Print(conn.Says("Process packet from kerep state raw."))
 	// Assign the channels from the device through which the packet was received.
 	var ep interface{} = p.Entrypoint
 	if entryPoint, ok := ep.(*kernelEndpoint.Device); ok {
@@ -263,13 +258,10 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 		if trafficNetFlow, channels, err := conn.networkSide.EstablishNewTrafficClientEndpoint(conn.flow); err != nil {
 			conn.Close(err)
 		} else {
-			log.Verbose.Print(conn.Says(fmt.Sprint("Want to set the state to ", clientEstablished)))
 			conn.lock.Lock()
-			log.Verbose.Print(conn.Says(fmt.Sprint("Got across the lock to set the state to ", clientEstablished)))
 			conn.flow.NetFlow = trafficNetFlow
 			conn.channels.NetworkEndpoint = channels
 			conn.setState(clientEstablished)
-			log.Verbose.Print(conn.Says(fmt.Sprint("Set state to ", clientEstablished)))
 			// The contacting client endpoint is no longer needed.
 			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
 			conn.lock.Unlock()
@@ -283,7 +275,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 }
 
 func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Packet) error {
-	log.Verbose.Print(conn.Says("Process packet from contacting endpoint state raw."))
+
 
 	// Get the kernel endpoint from the kernel side manager
 	packetDstKey := p.Flow.IPFlow.DstIPKey()
@@ -304,7 +296,6 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 
 	// Request new incoming connection from network side.
 	// ! The receiving network endpoint is responsible to correctly set the destination network address! !
-	log.Verbose.Print(conn.Says(fmt.Sprint("Establish new traffic server endpoint ", conn.flow.NetFlow.Src)))
 	if channels, err := conn.networkSide.EstablishNewTrafficServerEndpoint(conn.flow.NetFlow.Src, conn.key); err != nil {
 		conn.state.set(closed)
 		return shila.TolerableError(fmt.Sprint("Unable to establish server endpoint.", err.Error()))

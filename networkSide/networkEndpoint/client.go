@@ -136,10 +136,11 @@ func (client *Client) serveIngress() {
 			return
 		}
 		if len(pyldMsg.Payload) == 0 {
-			log.Error.Println(client.Says("Received zero payload packet."))
+			// From time to to we get a zero payload packet...?
+			//log.Error.Println(client.Says("Received zero payload packet."))
 		}
 		client.Ingress <-  shila.NewPacket(client, client.ipFlow, pyldMsg.Payload)
-		log.Verbose.Print(client.Says("Received packet."))
+
 	}
 }
 
@@ -161,8 +162,6 @@ func (client *Client) sendPayloadMessage(payload []byte) error {
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(pyldMsg); err != nil {
 		return shila.PrependError(err, "Cannot encode payload message.")
 	}
-
-	log.Verbose.Print(client.Says("Sent payload message."))
 
 	return nil
 }
