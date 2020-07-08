@@ -105,6 +105,10 @@ type ServerBackboneConnection struct {
 
 func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneConnections) *ServerBackboneConnection {
 
+	log.Verbose.Print("New Backbone connection for: \n")
+	log.Verbose.Print("| rAddress: ", rAddress, "\n")
+	log.Verbose.Print("| Server: ", conns.server.Identifier(), "\n")
+
 	netFlow := shila.NetFlow{							// Net flow which is represented by this connection.
 		Src:  conns.server.lAddress.(*snet.UDPAddr),
 		Path: rAddress.(*snet.UDPAddr).Path,
