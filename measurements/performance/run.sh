@@ -136,14 +136,13 @@ N_REPS=0
 
 while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
 
-  FAIL_LOG="_experiments""$N_REPS"".fail"
-
   # Repeat until all experiments are finished. Repeat the ones failed.
   if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
     rm _experiments.data
     cp "$FAIL_LOG" _experiments.data
   fi
   N_EXPERIMENTS_FAIL=0
+  FAIL_LOG="_experiments""$N_REPS"".fail"
 
   EXPERIMENTS=()
   mapfile -t EXPERIMENTS < _experiments.data
