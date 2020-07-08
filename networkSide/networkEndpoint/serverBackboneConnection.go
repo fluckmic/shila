@@ -105,13 +105,13 @@ type ServerBackboneConnection struct {
 
 func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneConnections) *ServerBackboneConnection {
 
-	log.Verbose.Print("New Backbone connection for: \n")
-	log.Verbose.Print("| rAddress: ", rAddress, "\n")
-	log.Verbose.Print("| Server: ", conns.server.Identifier(), "\n")
+	//log.Verbose.Print("New Backbone connection for: \n")
+	//log.Verbose.Print("| rAddress: ", rAddress, "\n")
+	//log.Verbose.Print("| Server: ", conns.server.Identifier(), "\n")
 
 	netFlow := shila.NetFlow{							// Net flow which is represented by this connection.
-		Src:  conns.server.lAddress.(*snet.UDPAddr),
-		Path: rAddress.(*snet.UDPAddr).Path,
+		Src:  conns.server.lAddress.(*snet.UDPAddr).Copy(),
+		Path: rAddress.(*snet.UDPAddr).Path.Copy(),
 		Dst:  rAddress.(*snet.UDPAddr),
 	}
 
@@ -144,24 +144,12 @@ func (conn *ServerBackboneConnection) decodeIngress() {
 
 	// The first message should be a control message which contains
 	// all the information necessary to setup the backbone connection.
-
-	var ctrlMsg controlMessage
-	var err error
-	for {
-		ctrlMsg, err = conn.retrieveControlMessage()
-		if err != nil {
-			log.Error.Println(conn.Says(err.Error()))
-		} else {
-			break
-		}
-	}
-
-	/*
+	ctrlMsg, err := conn.retrieveControlMessage()
 	if err != nil {
+		log.Error.Println(conn.Says(err.Error()))
 		conn.removeConnection()
 		return
 	}
-	 */
 
 	// Process the control message.
 	if err := conn.processControlMessage(ctrlMsg); err != nil {

@@ -106,7 +106,7 @@ func (server *Server) serveIngress(){
 			go server.handleConnectionIssue(err)
 			return
 		}
-		
+
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.
 		server.backboneConnections.WriteIngress(from, buffer[:n])
