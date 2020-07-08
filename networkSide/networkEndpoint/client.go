@@ -181,7 +181,7 @@ func (client *Client) sendControlMessage() error {
 		return shila.PrependError(err, "Cannot encode control message.")
 	}
 
-	log.Verbose.Print(client.Says("Sent control message.\n"))
+	log.Verbose.Print(client.Says(fmt.Sprint("Sent control message: ", ctrlMsg, "\n")))
 
 	return nil
 }
