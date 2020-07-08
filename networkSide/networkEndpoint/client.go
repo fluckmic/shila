@@ -69,7 +69,7 @@ func (client *Client) SetupAndRun() (netFlow shila.NetFlow, err error) {
 
 	// Start the ingress and egress machinery.
 	go client.serveIngress()
-	//go client.serveEgress()
+	go client.serveEgress()
 
 	client.State.Set(shila.Running)
 

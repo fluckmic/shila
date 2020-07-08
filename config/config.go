@@ -100,7 +100,7 @@ func defaultConfig() *structure.ConfigJSON {
 		NetworkEndpoint: structure.NetworkEndpointConfigJSON{
 			SizeIngressBuffer:              		 	250,
 			SizeEgressBuffer:                		 	250,
-			SizeRawIngressStorage:           		 	2500,
+			SizeRawIngressStorage:           		 	5000,
 			WaitingTimeAfterConnectionIssue: 		 	2,
 			ServerResendInterval:            		 	2,
 			SizeHoldingArea:                 		 	100,
