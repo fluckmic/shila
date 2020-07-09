@@ -150,7 +150,11 @@ func (router *Router) routeMainFlow(packet *shila.Packet) (Response, error) {
 	if ok {
 		entry := router.insertAndReturnRoutingEntry(mainIPFlowKey, dstAddr)
 		pathWrapper, flowCount := entry.Paths.get(mainIPFlowKey)
-		log.Info.Println("Before return of the response.")
+
+		log.Info.Print(entry.Paths.sharability)
+
+		log.Info.Print("After print before response.")
+
 		return Response{
 			Dst:          entry.Dst,
 			FlowCategory: MainFlow,
