@@ -52,8 +52,7 @@ func pickSharabilityOptSubset(paths []PathWrapper, subsets pathSubsets) ([]PathW
 		return subsets.subsets[i].sharability < subsets.subsets[j].sharability
 	})
 
-	log.Verbose.Println("Sharability sorted subsets:")
-	log.Verbose.Println(subsets.subsets)
+	log.Info.Print("Number of sharability optimal subsets to choose from: ", subsets.nOfDiffSubsets, ".")
 
 	sharabilityOptSubset := make([]PathWrapper, 0)
 	for _, pathIndex := range subsets.subsets[0].pathIndices {
