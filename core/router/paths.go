@@ -1,9 +1,11 @@
 package router
 
 import (
+	"fmt"
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 	"github.com/scionproto/scion/go/lib/snet"
 	"shila/core/shila"
+	"shila/log"
 )
 
 type paths struct {
@@ -81,10 +83,10 @@ func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 		return nil
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
-		for _, path := range paths {
+		for i, path := range paths {
 			rawMetrics := []int{int(path.MTU()), len(path.Interfaces())}
 			pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetrics: rawMetrics })
-			//log.Verbose.Printf("[%2d] %s\n", i, fmt.Sprintf("%s", path))
+			log.Info.Printf("[%2d] %s\n", i, fmt.Sprintf("%s", path))
 		}
 		return pathsWrapped
 	}
