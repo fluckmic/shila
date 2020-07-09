@@ -25,6 +25,7 @@ func newPaths(dstAddr shila.NetworkAddress) (paths, error) {
 
 	scionPaths, err := fetchAndWrapSCIONPaths(dstAddr)
 	if err != nil {
+		log.Error.Print("Unable to fetch SCION paths. ", err.Error())
 		return paths{}, err
 	}
 
