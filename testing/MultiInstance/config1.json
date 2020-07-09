@@ -2,7 +2,7 @@
   "Logging"     :   { "PrintVerbose" : true },
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress",
                       "IngressNamespace" : "shila-ingress",
-                      "NumberOfEgressInterfaces" : 2 },
+                      "NumberOfEgressInterfaces" : 4 },
   "Connection"  :   { "MaxTimeUntouched"  : 200},
-  "Router"        :   { "PathSelection" :   "mtu" }
+  "Router"      :   { "PathSelection" :   "sharability" }
 }

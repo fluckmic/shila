@@ -38,16 +38,16 @@ func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 
 	log.Info.Println("Number of available paths: ", len(paths))
 
-	mergedSubsets 	 := createInitialPathSubsets(paths)
-	log.Info.Println("Size of initial subset: ", len(mergedSubsets.subsets))
-	for mergedSubsets.nOfDiffSubsets > 1 && mergedSubsets.sizeOfEachSubset < nPathsRequested {
-		log.Info.Print("Size of merged subset: ", mergedSubsets.nOfDiffSubsets)
-		mergedSubsets = mergeSubsets(paths, mergedSubsets)
+	expandedSubset := createInitialPathSubsets(paths)
+	log.Info.Println("Size of initial subset: ", len(expandedSubset.subsets))
+	for expandedSubset.nOfDiffSubsets > 1 && expandedSubset.sizeOfEachSubset < nPathsRequested {
+		expandedSubset = expandSubset(paths, expandedSubset)
+		log.Info.Print("Size of merged subset: ", expandedSubset.nOfDiffSubsets)
 	}
 
-	calculateSharabilityForPathSubsets(mergedSubsets)
+	calculateSharabilityForPathSubsets(expandedSubset)
 
-	return pickSharabilityOptSubset(paths, mergedSubsets)
+	return pickSharabilityOptSubset(paths, expandedSubset)
 }
 
 func pickSharabilityOptSubset(paths []PathWrapper, subsets pathSubsets) ([]PathWrapper, int) {
@@ -100,30 +100,29 @@ func calculateSharabilityForPaths(paths []PathWrapper) (sharabilityValue int) {
 	return
 }
 
-func mergeSubsets(paths []PathWrapper, currentSubsets pathSubsets) pathSubsets {
+func expandSubset(paths []PathWrapper, currentSubsets pathSubsets) pathSubsets {
 
 	nPathsAvailable := len(paths)
-	mergedSubsets 	:= make([]pathSubset, 0)
+	expandedSubsets := make([]pathSubset, 0)
 
 	for _, currentSubset := range currentSubsets.subsets {
 
 		highestIndexSoFar := currentSubset.pathIndices[len(currentSubset.pathIndices)-1]
 		newIndex		  := highestIndexSoFar + 1
 
-		if nPathsAvailable <= newIndex {
-			continue
+		for i := newIndex; i < nPathsAvailable; i++ {
+			expandedSubsets = append(expandedSubsets, pathSubset{
+				pathIndices: append(currentSubset.pathIndices, newIndex),
+				edgeIndices: append(currentSubset.edgeIndices, paths[newIndex].edgeIndices...),
+			})
 		}
 
-		mergedSubsets = append(mergedSubsets, pathSubset{
-			pathIndices: append(currentSubset.pathIndices, newIndex),
-			edgeIndices: append(currentSubset.edgeIndices, paths[newIndex].edgeIndices...),
-		})
 	}
 
 	return pathSubsets{
-		subsets:          mergedSubsets,
-		nOfDiffSubsets:   len(mergedSubsets),
-		sizeOfEachSubset: len(mergedSubsets[0].pathIndices),
+		subsets:          expandedSubsets,
+		nOfDiffSubsets:   len(expandedSubsets),
+		sizeOfEachSubset: len(expandedSubsets[0].pathIndices),
 	}
 }
 
