@@ -82,6 +82,7 @@ func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 	dstAddrIA := dstAddr.(*snet.UDPAddr).IA
 	if paths, err := appnet.QueryPaths(dstAddrIA); err != nil {
 		log.Error.Print(err)
+		return nil
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
