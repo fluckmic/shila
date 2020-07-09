@@ -81,7 +81,7 @@ func (p *paths) free(key shila.IPFlowKey) {
 func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 	dstAddrIA := dstAddr.(*snet.UDPAddr).IA
 	if paths, err := appnet.QueryPaths(dstAddrIA); err != nil {
-		return nil
+		log.Error.Print(err)
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
