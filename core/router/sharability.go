@@ -2,7 +2,6 @@ package router
 
 import (
 	"shila/config"
-	"shila/log"
 	"sort"
 )
 
@@ -21,9 +20,7 @@ type pathSubsets struct {
 }
 
 func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
-
-	log.Info.Println("Get sharability opt subset.")
-
+	
 	// If there is just one path available, (or none), we cannot choose..
 	if len(paths) < 2 {
 		return paths, 0
@@ -37,8 +34,6 @@ func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 	}
 
 	setEdgeIndices(paths)
-
-	log.Info.Println("Number of available paths: ", len(paths))
 
 	expandedSubset := createInitialPathSubsets(paths)
 
@@ -107,8 +102,6 @@ func expandSubset(paths []PathWrapper, currentSubsets pathSubsets) (subsets path
 	})
 
 	bestSubsetGreedy := currentSubsets.subsets[0]
-
-	log.Info.Print("Greedy best path subset w/ ", len(bestSubsetGreedy.pathIndices), " paths: ", bestSubsetGreedy.sharability, ".\n")
 
 	for newIndex := 0; newIndex < nPathsAvailable; newIndex++ {
 		expandedSubsets = append(expandedSubsets, pathSubset{
