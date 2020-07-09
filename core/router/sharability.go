@@ -22,6 +22,8 @@ type pathSubsets struct {
 
 func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 
+	log.Info.Println("Get sharability opt subset.")
+
 	// If there is just one path available, (or none), we cannot choose..
 	if len(paths) < 2 {
 		return paths, 0
