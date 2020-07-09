@@ -40,6 +40,7 @@ func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 
 	mergedSubsets 	 := createInitialPathSubsets(paths)
 	for mergedSubsets.nOfDiffSubsets > 1 && mergedSubsets.sizeOfEachSubset < nPathsRequested {
+		log.Info.Print("Size of merged subset: ", mergedSubsets.nOfDiffSubsets)
 		mergedSubsets = mergeSubsets(paths, mergedSubsets)
 	}
 
