@@ -15,4 +15,4 @@ go build -o _shila ../../
 mapfile -t DAEMONS < daemonAddresses.data
 DAEMON=${DAEMONS["$CLIENT_ID"]}
 export SCION_DAEMON_ADDRESS="$DAEMON"
-./_shila -config "$CONFIG_FILE"
+./_shila -config "$CONFIG_FILE" | tee -a "_""$CLIENT_ID""_output.log"

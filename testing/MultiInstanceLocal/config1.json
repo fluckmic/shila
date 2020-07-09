@@ -1,6 +1,7 @@
 {
-  "Logging"     :   { "PrintVerbose" : true },
+  "Logging"     :   { "PrintVerbose" : false },
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress-2",
                       "IngressNamespace" : "shila-ingress-2",
-                      "NumberOfEgressInterfaces" : 4 }
+                      "NumberOfEgressInterfaces" : 4 },
+  "Router"      :   {"PathSelection" :  "sharability" }
 }
