@@ -85,7 +85,7 @@ func (server *Server) Role() shila.EndpointRole {
 }
 
 func (server *Server) Identifier() string {
-	return fmt.Sprint("Server ", server.Role(), " (", server.lAddress, " <- *), (", server.key, ")")
+	return fmt.Sprint("Server ", server.Role(), " (", server.lAddress, " <- *)")
 }
 
 func (server *Server) Says(str string) string {
