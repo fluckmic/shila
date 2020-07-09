@@ -3,6 +3,7 @@ package connection
 
 import (
 	"fmt"
+	"github.com/scionproto/scion/go/lib/snet"
 	"shila/config"
 	"shila/core/router"
 	"shila/core/shila"
@@ -215,6 +216,7 @@ func (conn *Connection) printEstablishmentStatement() {
 	log.Info.Print("| Metrics: \t ", conn.rawMetrics[0], " (mtu) ", conn.rawMetrics[1], " (length)")
 	log.Info.Print("| Sharability: \t ", conn.sharability)
 	log.Info.Print("| Main Flow: \t ", conn.mainIpFlow)
+	log.Info.Printf("| %s\n", fmt.Sprintf("%s", conn.flow.NetFlow.Path.(snet.Path)))
 }
 
 func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
