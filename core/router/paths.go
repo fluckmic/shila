@@ -21,14 +21,12 @@ type PathWrapper struct {
 }
 
 // If there is any error in the creation of the paths we just do not specify any. This is oke.
-func newPaths(dstAddr shila.NetworkAddress) paths {
+func newPaths(dstAddr shila.NetworkAddress) (paths, error) {
 
-	scionPaths := fetchAndWrapSCIONPaths(dstAddr)
-	if scionPaths == nil {
-		return paths{}
+	scionPaths, err := fetchAndWrapSCIONPaths(dstAddr)
+	if err != nil {
+		return paths{}, err
 	}
-
-	log.Info.Println("Before select Path Algorithm")
 
 	sharabilityValue := -1
 	switch selectPathAlgorithm() {
@@ -41,14 +39,15 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 	case sharability:
 		scionPaths, sharabilityValue = getSharabilityOptSubset(scionPaths)
 	default:
-		return paths{}
+		log.Error.Print("Unknown path selection, using mtu.")
+		scionPaths, sharabilityValue = getMtuOptSubset(scionPaths)
 	}
 
 	return paths{
 		storage: 		scionPaths,
 		mapping: 		make(map[shila.IPFlowKey] int),
 		sharability: 	sharabilityValue,
-	}
+	}, nil
 }
 
 func (p *paths) get(key shila.IPFlowKey) (*PathWrapper, int) {
@@ -78,11 +77,10 @@ func (p *paths) free(key shila.IPFlowKey) {
 	}
 }
 
-func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
+func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) ([]PathWrapper, error) {
 	dstAddrIA := dstAddr.(*snet.UDPAddr).IA
 	if paths, err := appnet.QueryPaths(dstAddrIA); err != nil {
-		log.Error.Print(err)
-		return nil
+		return nil, err
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
@@ -90,6 +88,6 @@ func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) []PathWrapper {
 			pathsWrapped = append(pathsWrapped, PathWrapper{path: path, nUsed: 0, rawMetrics: rawMetrics })
 			//log.Info.Printf("[%2d] %s\n", i, fmt.Sprintf("%s", path))
 		}
-		return pathsWrapped
+		return pathsWrapped, nil
 	}
 }

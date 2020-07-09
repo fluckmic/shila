@@ -148,28 +148,24 @@ func (router *Router) routeMainFlow(packet *shila.Packet) (Response, error) {
 	}
 
 	if ok {
-		entry := router.insertAndReturnRoutingEntry(mainIPFlowKey, dstAddr)
-		pathWrapper, flowCount := entry.Paths.get(mainIPFlowKey)
 
+		if entry, err := router.insertAndReturnRoutingEntry(mainIPFlowKey, dstAddr); err != nil {
+			return Response{}, shila.PrependError(err, "Unable to route packet.")
 
-		log.Info.Println(entry.Dst)
-		log.Info.Println(packet.Flow.IPFlow)
-		log.Info.Println(flowCount)
-		log.Info.Println(pathWrapper.path)
-		log.Info.Println(pathWrapper.rawMetrics)
-		log.Info.Print(entry.Paths.sharability)
+		} else {
 
-		log.Info.Print("After print before response.")
+			pathWrapper, flowCount := entry.Paths.get(mainIPFlowKey)
 
-		return Response{
-			Dst:          entry.Dst,
-			FlowCategory: MainFlow,
-			MainIPFlow:   packet.Flow.IPFlow,
-			FlowCount:    flowCount,
-			Path:         pathWrapper.path,
-			RawMetrics:   pathWrapper.rawMetrics,
-			Sharability:  entry.Paths.sharability,
-		},nil
+			return Response{
+				Dst:          entry.Dst,
+				FlowCategory: MainFlow,
+				MainIPFlow:   packet.Flow.IPFlow,
+				FlowCount:    flowCount,
+				Path:         pathWrapper.path,
+				RawMetrics:   pathWrapper.rawMetrics,
+				Sharability:  entry.Paths.sharability,
+			},nil
+		}
 	}
 
 	return Response{}, shila.TolerableError("Unable to route packet. No routing information available.")
@@ -198,14 +194,15 @@ func (router *Router) routeSubFlow(packet *shila.Packet, ipFlow shila.IPFlow) (R
 	return Response{}, GeneralError("Unable to route sub flow.")
 }
 
-func (router *Router) insertAndReturnRoutingEntry(mainIPFlowKey shila.IPFlowKey, dstAddr shila.NetworkAddress) Entry {
-
+func (router *Router) insertAndReturnRoutingEntry(mainIPFlowKey shila.IPFlowKey, dstAddr shila.NetworkAddress) (Entry, error) {
 	// Create new entry and insert it into the routing table
-	newEntry := Entry{ Dst: dstAddr, Paths: newPaths(dstAddr)}
-	log.Info.Println("Created new entry")
-
-	router.entries[mainIPFlowKey] = &newEntry
-	return newEntry
+	if paths, err := newPaths(dstAddr); err != nil {
+		return Entry{}, err
+	} else {
+		newEntry := Entry{ Dst: dstAddr, Paths: paths}
+		router.entries[mainIPFlowKey] = &newEntry
+		return newEntry, nil
+	}
 }
 
 func (router *Router) getDestinationFromIPOptions(packet *shila.Packet) (shila.NetworkAddress, bool) {
