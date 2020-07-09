@@ -4,6 +4,7 @@ import (
 	"github.com/netsec-ethz/scion-apps/pkg/appnet"
 	"github.com/scionproto/scion/go/lib/snet"
 	"shila/core/shila"
+	"shila/log"
 )
 
 type paths struct {
@@ -26,6 +27,8 @@ func newPaths(dstAddr shila.NetworkAddress) paths {
 	if scionPaths == nil {
 		return paths{}
 	}
+
+	log.Info.Println("Before select Path Algorithm")
 
 	sharabilityValue := -1
 	switch selectPathAlgorithm() {

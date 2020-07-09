@@ -202,6 +202,8 @@ func (router *Router) insertAndReturnRoutingEntry(mainIPFlowKey shila.IPFlowKey,
 
 	// Create new entry and insert it into the routing table
 	newEntry := Entry{ Dst: dstAddr, Paths: newPaths(dstAddr)}
+	log.Info.Println("Created new entry")
+
 	router.entries[mainIPFlowKey] = &newEntry
 	return newEntry
 }
