@@ -3,5 +3,6 @@
   "KernelSide"  :   { "EgressNamespace"  : "shila-egress",
                       "IngressNamespace" : "shila-ingress",
                       "NumberOfEgressInterfaces" : 3 },
-  "Connection"  :   { "MaxTimeUntouched"  : 200}
+  "Connection"  :   { "MaxTimeUntouched"  : 200},
+  "Router"        :   { "PathSelection" :   "mtu" }
 }

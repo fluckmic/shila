@@ -2,6 +2,7 @@ package router
 
 import (
 	"shila/config"
+	"shila/log"
 	"sort"
 )
 
@@ -21,11 +22,17 @@ type pathSubsets struct {
 
 func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 
+	// If there is just one path available, (or none), we cannot choose..
 	if len(paths) < 2 {
 		return paths, 0
 	}
 
 	nPathsRequested := config.Config.KernelSide.NumberOfEgressInterfaces
+
+	// If there is one path requested, every path is optimal w.r.t. sharability
+	if nPathsRequested < 2 {
+		return paths, 0
+	}
 
 	setEdgeIndices(paths)
 
@@ -44,6 +51,9 @@ func pickSharabilityOptSubset(paths []PathWrapper, subsets pathSubsets) ([]PathW
 	sort.Slice(subsets.subsets, func(i, j int) bool {
 		return subsets.subsets[i].sharability < subsets.subsets[j].sharability
 	})
+
+	log.Verbose.Println("Sharability sorted subsets:")
+	log.Verbose.Println(subsets.subsets)
 
 	sharabilityOptSubset := make([]PathWrapper, 0)
 	for _, pathIndex := range subsets.subsets[0].pathIndices {
