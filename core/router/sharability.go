@@ -39,13 +39,10 @@ func getSharabilityOptSubset(paths []PathWrapper) ([]PathWrapper, int) {
 	log.Info.Println("Number of available paths: ", len(paths))
 
 	expandedSubset := createInitialPathSubsets(paths)
-	log.Info.Println("Size of initial subset: ", len(expandedSubset.subsets))
+
 	for expandedSubset.nOfDiffSubsets > 1 && expandedSubset.sizeOfEachSubset < nPathsRequested {
 		expandedSubset = expandSubset(paths, expandedSubset)
-		log.Info.Print("Size of merged subset: ", expandedSubset.nOfDiffSubsets)
 	}
-
-	calculateSharabilityForPathSubsets(expandedSubset)
 
 	return pickSharabilityOptSubset(paths, expandedSubset)
 }
@@ -55,8 +52,6 @@ func pickSharabilityOptSubset(paths []PathWrapper, subsets pathSubsets) ([]PathW
 	sort.Slice(subsets.subsets, func(i, j int) bool {
 		return subsets.subsets[i].sharability < subsets.subsets[j].sharability
 	})
-
-	log.Info.Print("Number of sharability optimal subsets to choose from: ", subsets.nOfDiffSubsets, ".")
 
 	sharabilityOptSubset := make([]PathWrapper, 0)
 	for _, pathIndex := range subsets.subsets[0].pathIndices {
@@ -100,33 +95,36 @@ func calculateSharabilityForPaths(paths []PathWrapper) (sharabilityValue int) {
 	return
 }
 
-func expandSubset(paths []PathWrapper, currentSubsets pathSubsets) pathSubsets {
+func expandSubset(paths []PathWrapper, currentSubsets pathSubsets) (subsets pathSubsets) {
 
 	nPathsAvailable := len(paths)
 	expandedSubsets := make([]pathSubset, 0)
 
-	for _, currentSubset := range currentSubsets.subsets {
+	sort.Slice(currentSubsets.subsets, func(i, j int) bool {
+		return currentSubsets.subsets[i].sharability < currentSubsets.subsets[j].sharability
+	})
 
-		highestIndexSoFar := currentSubset.pathIndices[len(currentSubset.pathIndices)-1]
-		newIndex		  := highestIndexSoFar + 1
+	bestSubsetGreedy := currentSubsets.subsets[0]
 
-		for i := newIndex; i < nPathsAvailable; i++ {
-			expandedSubsets = append(expandedSubsets, pathSubset{
-				pathIndices: append(currentSubset.pathIndices, newIndex),
-				edgeIndices: append(currentSubset.edgeIndices, paths[newIndex].edgeIndices...),
-			})
-		}
+	log.Info.Print("Greedy best path subset w/ ", len(bestSubsetGreedy.pathIndices), " paths: ", bestSubsetGreedy.sharability, ".\n")
 
+	for newIndex := 0; newIndex < nPathsAvailable; newIndex++ {
+		expandedSubsets = append(expandedSubsets, pathSubset{
+			pathIndices: append(bestSubsetGreedy.pathIndices, newIndex),
+			edgeIndices: append(bestSubsetGreedy.edgeIndices, paths[newIndex].edgeIndices...),
+		})
 	}
 
-	return pathSubsets{
+	subsets = pathSubsets{
 		subsets:          expandedSubsets,
 		nOfDiffSubsets:   len(expandedSubsets),
 		sizeOfEachSubset: len(expandedSubsets[0].pathIndices),
 	}
+	calculateSharabilityForPathSubsets(subsets)
+	return
 }
 
-func createInitialPathSubsets(paths []PathWrapper) pathSubsets {
+func createInitialPathSubsets(paths []PathWrapper) (subsets pathSubsets)  {
 	nPaths := len(paths)
 	initialSubsets := make([]pathSubset,0)
 	for i := 0; i < nPaths; i++ {
@@ -137,7 +135,9 @@ func createInitialPathSubsets(paths []PathWrapper) pathSubsets {
 			})
 		}
 	}
-	return pathSubsets{subsets: initialSubsets, sizeOfEachSubset: 2, nOfDiffSubsets: len(initialSubsets)}
+	subsets = pathSubsets{subsets: initialSubsets, sizeOfEachSubset: 2, nOfDiffSubsets: len(initialSubsets)}
+	calculateSharabilityForPathSubsets(subsets)
+	return
 }
 
 func setEdgeIndices(paths []PathWrapper) {
