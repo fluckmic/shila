@@ -27,6 +27,13 @@ func newPaths(dstAddr shila.NetworkAddress) (paths, error) {
 	if err != nil {
 		log.Error.Print("Unable to fetch SCION paths. ", err.Error())
 		return paths{}, err
+	} else if scionPaths == nil {
+		// Destination address is in the local IA
+		return paths{
+			storage: 		[]PathWrapper{{path: nil, rawMetrics: []int{0,0}}},
+			mapping: 		make(map[shila.IPFlowKey] int),
+			sharability: 	0,
+		}, nil
 	}
 
 	sharabilityValue := -1
@@ -82,6 +89,9 @@ func fetchAndWrapSCIONPaths(dstAddr shila.NetworkAddress) ([]PathWrapper, error)
 	dstAddrIA := dstAddr.(*snet.UDPAddr).IA
 	if paths, err := appnet.QueryPaths(dstAddrIA); err != nil {
 		return nil, err
+	} else if paths == nil {
+		// Destination address is in the local IA
+		return nil, nil
 	} else {
 		pathsWrapped := make([]PathWrapper, 0, len(paths))
 		for _, path := range paths {
