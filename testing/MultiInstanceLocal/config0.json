@@ -1,9 +1,48 @@
 {
-  "Logging"     :   { "PrintVerbose" : false },
-  "KernelSide"  :   { "EgressNamespace"  : "shila-egress-1",
-                      "IngressNamespace" : "shila-ingress-1",
-                      "NumberOfEgressInterfaces" : 3 },
-  "NetFlow"     :   { "Path" : "/home/scion/go/src/shila/testing/MultiInstanceLocal/routing.json" },
-  "Router"      :   {"PathSelection" :  "sharability" }
+  "WorkingSide": {
+    "NumberOfWorkerPerChannel": 1
+  },
+  "Connection": {
+    "VacuumInterval": 5,
+    "MaxTimeUntouched": 300,
+    "WaitingTimeTrafficConnEstablishment": 1
+  },
+  "NetFlow": {
+    "Path" : "/home/scion/go/src/shila/testing/MultiInstanceLocal/routing.json"
+  },
+  "KernelSide": {
+    "NumberOfEgressInterfaces": 5,
+    "EgressNamespace": "shila-egress-0",
+    "IngressNamespace": "shila-ingress-0",
+    "IngressIP": "10.7.0.9"
+  },
+  "KernelEndpoint": {
+    "SizeIngressBuffer": 500,
+    "SizeEgressBuffer": 500,
+    "SizeRawIngressBuffer": 500,
+    "SizeRawIngressStorage": 2500,
+    "ReadSizeRawIngress": 30,
+    "WaitingTimeUntilEscalation": 5
+  },
+  "Logging": {
+    "PrintVerbose": false
+  },
+  "NetworkSide": {
+    "ContactingServerPort": 9876
+  },
+  "NetworkEndpoint": {
+    "SizeIngressBuffer": 500,
+    "SizeEgressBuffer": 500,
+    "SizeRawIngressStorage": 2500,
+    "WaitingTimeAfterConnectionIssue": 2,
+    "ServerResendInterval": 2,
+    "SizeHoldingArea": 250
+  },
+  "Router": {
+    "PathSelection": "length"
+  },
+  "Config": {
+    "DumpConfig": false,
+    "ConfigDumpPath": "_config0.dump"
+  }
 }
-

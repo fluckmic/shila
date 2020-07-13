@@ -21,10 +21,10 @@ fi
 mapfile -t PORTS < iperfListeningPorts.data
 PORT=${PORTS["$DST_ID"]}
 
-mapfile -t EGRESS_NAMESPACES < egressNamespaces.data
-EGRESS_NAMESPACE=${EGRESS_NAMESPACES["$SRC_ID"]}
+NAMESPACE="shila-egress-""$SRC_ID"
 
-printf "Send for %s seconds from client %s to client %s (port %s).\n" "$DURATION" "$SRC_ID" "$DST_ID" "$PORT"
+clear
+printf "Send for %s seconds from Client %s to Client %s (port %s).\n" "$DURATION" "$SRC_ID" "$DST_ID" "$PORT"
 CMD="iperf3 -c ""$ADDRESS"" -p ""$PORT"" -t ""$DURATION"" -i ""$INTERVAL"" --get-server-output"
 echo "$CMD"
-sudo ip netns exec "$EGRESS_NAMESPACE" $CMD
+sudo ip netns exec "$NAMESPACE" $CMD

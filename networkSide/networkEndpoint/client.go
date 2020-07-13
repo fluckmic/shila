@@ -112,7 +112,7 @@ func (client *Client) Role() shila.EndpointRole {
 	return client.Base.Role
 }
 
-func (client *Client) Identifier() string {
+func (client *Client) 	Identifier() string {
 	return fmt.Sprint("Client ", client.Role(), " (", client.netFlow.Src, " -> ", client.netFlow.Dst, ")")
 }
 
@@ -133,6 +133,7 @@ func (client *Client) serveIngress() {
 		var pyldMsg payloadMessage
 		if err := gob.NewDecoder(client.rConn).Decode(&pyldMsg); err != nil {
 			go client.handleConnectionIssue(err)
+			// After an issue, we no longer serve ingress. Connection will shut down the client later.
 			return
 		}
 		if len(pyldMsg.Payload) == 0 {
@@ -149,6 +150,7 @@ func (client *Client) serveEgress() {
 		err := client.sendPayloadMessage(p.Payload)
 		if err != nil {
 			go client.handleConnectionIssue(err)
+			// After an issue, we no longer server egress. Connection will shut down the client later.
 			return
 		}
 	}
@@ -185,10 +187,15 @@ func (client *Client) sendControlMessage() error {
 }
 
 func (client *Client) handleConnectionIssue(err error) {
+
 	// Wait a little bit - maybe the client is going to die anyway.
 	time.Sleep(time.Second * time.Duration(config.Config.NetworkEndpoint.WaitingTimeAfterConnectionIssue))
 	if client.State.Is(shila.Running) {
-		log.Error.Println(client.Says(fmt.Sprint("Publishes issue - ", err.Error())))
+
+		if opErr, ok := err.(*snet.OpError); ok {
+			client.Issues <- shila.EndpointIssuePub{ Issuer: client, Key: client.Key(), Error: opErr }
+		}
+
 		client.Issues <- shila.EndpointIssuePub{ Issuer: client, Key: client.Key(), Error: ConnectionError(err.Error()) }
 	}
 }

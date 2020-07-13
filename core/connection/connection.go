@@ -71,7 +71,7 @@ func (conn *Connection) Close(err error) {
 
 	conn.setState(closed)
 
-	log.Verbose.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
+	log.Info.Print(conn.Says(shila.PrependError(err, "Closed.").Error()))
 }
 
 func (conn *Connection) ProcessPacket(p *shila.Packet) error {
