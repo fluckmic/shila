@@ -30,10 +30,10 @@ RET=$?
   exit 1
  fi
 
-printf "%s\n\n" "$CLIENT"
+printf "Client %d - Starting shila..\n\n" "$CLIENT" | tee -a "_""$CLIENT""_output.log"
 
 CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ./_shila -config ""$CONFIG_FILE"
-sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" | tee -a "_""$CLIENT""_output.log"
+sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" 2>&1 | tee -a "_""$CLIENT""_output.log"
  if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to initialize %s.\n" "$CLIENT"
   exit 1

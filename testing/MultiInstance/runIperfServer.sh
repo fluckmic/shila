@@ -18,6 +18,8 @@ else
   exit 1
 fi
 
+printf "Client %d - Starting iperf3..\n\n" "$CLIENT"
+
 CMD="sudo ip netns exec shila-ingress iperf3 -s -p""$PORT"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
 if [[ $? -ne 0 ]]; then

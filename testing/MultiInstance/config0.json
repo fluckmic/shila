@@ -1,8 +1,48 @@
 {
-  "Logging"     :   { "PrintVerbose" : true },
-  "KernelSide"  :   { "EgressNamespace"  : "shila-egress",
-                      "IngressNamespace" : "shila-ingress",
-                      "NumberOfEgressInterfaces" : 3 },
-  "Connection"    :   { "MaxTimeUntouched"  : 200},
-  "Router"        :   { "PathSelection" :   "sharability" }
+  "WorkingSide": {
+    "NumberOfWorkerPerChannel": 1
+  },
+  "Connection": {
+    "VacuumInterval": 5,
+    "MaxTimeUntouched": 300,
+    "WaitingTimeTrafficConnEstablishment": 1
+  },
+  "NetFlow": {
+    "Path": "routing.json"
+  },
+  "KernelSide": {
+    "NumberOfEgressInterfaces": 1,
+    "EgressNamespace": "shila-egress",
+    "IngressNamespace": "shila-ingress",
+    "IngressIP": "10.7.0.9"
+  },
+  "KernelEndpoint": {
+    "SizeIngressBuffer": 500,
+    "SizeEgressBuffer": 500,
+    "SizeRawIngressBuffer": 500,
+    "SizeRawIngressStorage": 2500,
+    "ReadSizeRawIngress": 30,
+    "WaitingTimeUntilEscalation": 5
+  },
+  "Logging": {
+    "PrintVerbose": false
+  },
+  "NetworkSide": {
+    "ContactingServerPort": 9876
+  },
+  "NetworkEndpoint": {
+    "SizeIngressBuffer": 500,
+    "SizeEgressBuffer": 500,
+    "SizeRawIngressStorage": 2500,
+    "WaitingTimeAfterConnectionIssue": 2,
+    "ServerResendInterval": 2,
+    "SizeHoldingArea": 250
+  },
+  "Router": {
+    "PathSelection": "mtu"
+  },
+  "Config": {
+    "DumpConfig": false,
+    "ConfigDumpPath": "_config0.dump"
+  }
 }
