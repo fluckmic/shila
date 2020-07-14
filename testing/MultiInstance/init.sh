@@ -1,9 +1,11 @@
 #!/bin/bash
 
+clear
+
 BASE_DIR=$(dirname "$0")
 cd "$BASE_DIR"
 
-printf "Doing init.\n"
+printf "Initialization..\n"
 
 # Kill running instances
 pkill shila

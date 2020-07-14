@@ -1,5 +1,7 @@
 #!/bin/bash
 
+clear
+
 ADDRESS="10.7.0.9"
 
 SRC_ID=0
@@ -26,11 +28,11 @@ DST_CLIENT=${CLIENTS["$DST_ID"]}
 
 PORT=${PORTS["$DST_ID"]}
 
-printf "Send for %s seconds from %s to %s (port %s).\n" "$DURATION" "$SRC_CLIENT" "$DST_CLIENT" "$PORT"
+printf "Send for %s seconds from Client %d to Client %d (port %s).\n" "$DURATION" "$SRC_ID" "$DST_ID" "$PORT"
 
 CMD="sudo ip netns exec shila-egress iperf3 -c ""$ADDRESS"" -p ""$PORT"" -t ""$DURATION"" -i ""$INTERVAL --get-server-output"
 echo "$CMD"
-sshpass -f client.password ssh -tt scion@"$SRC_CLIENT" -q "$CMD"
+sshpass -f client.password ssh -tt scion@"$SRC_CLIENT" -q "$CMD" 2>&1 | tee -a "_iperfClient""$SRC_ID"".log"
  if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to send.\n"
   exit 1

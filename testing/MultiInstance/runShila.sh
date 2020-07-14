@@ -4,19 +4,10 @@ clear
 
 PATH_TO_EXPERIMENT="~/go/src/shila/testing/MultiInstance"
 
-CLIENT=$1
+CLIENT_ID=$1
 
-if   [[ "$CLIENT" == "mptcp-over-scion-vm-0" ]]; then
-  CONFIG_FILE="config0.json"
-elif [[ "$CLIENT" == "mptcp-over-scion-vm-1" ]]; then
-  CONFIG_FILE="config1.json"
-elif [[ "$CLIENT" == "mptcp-over-scion-vm-2" ]]; then
-  CONFIG_FILE="config2.json"
-elif [[ "$CLIENT" == "mptcp-over-scion-vm-3" ]]; then
-  CONFIG_FILE="config3.json"
-else
-  exit 1
-fi
+CONFIG_FILE="config""$CLIENT_ID"".json"
+CLIENT="mptcp-over-scion-vm-""$CLIENT_ID"
 
 # Initialize
 SCRIPT_NAME="init"
@@ -26,15 +17,15 @@ sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD"
 #ssh -tt scion@"$CLIENT" -q "$CMD"
 RET=$?
  if [[ $RET -ne 0 ]]; then
-  printf "Failure : Unable to initialize %s. Error code: %d.\n" "$CLIENT" "$RET"
+  printf "Failure : Unable to initialize Client %d. Error code: %d.\n" "$CLIENT_ID" "$RET"
   exit 1
  fi
 
-printf "Client %d - Starting shila..\n\n" "$CLIENT" | tee -a "_""$CLIENT""_output.log"
+printf "Client %d - Starting shila..\n\n" "$CLIENT_ID" | tee -a "_shila""$CLIENT_ID"".log"
 
 CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ./_shila -config ""$CONFIG_FILE"
-sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" 2>&1 | tee -a "_""$CLIENT""_output.log"
+sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" 2>&1 | tee -a "_shila""$CLIENT_ID"".log"
  if [[ $? -ne 0 ]]; then
-  printf "Failure : Unable to initialize %s.\n" "$CLIENT"
+  printf "Failure : Unable to initialize Client %d.\n" "$CLIENT_ID"
   exit 1
  fi
