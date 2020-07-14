@@ -22,7 +22,7 @@ fi
 printf "Client %d - Starting iperf3..\n\n" "$CLIENT_ID"
 sleep 15
 
-CMD="sudo ip netns exec shila-ingress iperf -s -p""$PORT"
+CMD="sudo ip netns exec shila-ingress iperf3 -s -p""$PORT"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" 2>&1 | tee -a "_iperfServer""$CLIENT_ID"".log"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to start iperf server on Client %d.\n" "$CLIENT_ID"
