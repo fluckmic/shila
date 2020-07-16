@@ -4,8 +4,6 @@ PRINT_DEBUG=1
 
 DRY_RUN=$1
 
-N_FAIL_REPS=2  # Just make the number big enough to run through all experiments...
-
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
 EXPERIMENT_NAME="Performance measurement"
@@ -14,15 +12,13 @@ mapfile -t CLIENTS < hostNames.data
 
 CLIENT_IDS=(0 1 3)
 N_REPETITIONS=10
-N_INTERFACES=(1 4 7 8)
+N_INTERFACES=(1 2 4 7 8)
 PATH_SELECTIONS=(0 1 2)
-DURATION=20
+DURATION=25
 
 DURATION_BETWEEN=60
-PERCENTAGE_FAIL=(1/3)
 
 N_EXPERIMENTS=$((${#CLIENT_IDS[@]} * (${#CLIENT_IDS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
-N_EXPERIMENTS=$(($N_EXPERIMENTS + $(($N_EXPERIMENTS * $PERCENTAGE_FAIL )) ))
 TOTAL_DURATION_M=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 60 ))
 TOTAL_DURATION_H=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
@@ -77,7 +73,7 @@ printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DUR
 ## Create the experiments file
 ./printDebug.sh "Creating the experiments file." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
-rm -f _experiments.data
+rm -f _experiments_0.data
 
 for SRC_ID in "${CLIENT_IDS[@]}"; do
   for DST_ID in "${CLIENT_IDS[@]}"; do
@@ -86,7 +82,7 @@ for SRC_ID in "${CLIENT_IDS[@]}"; do
       for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
         COUNT=1
         while [[ "$COUNT" -le "$N_REPETITIONS" ]]; do
-          echo "$SRC_ID" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments.data
+          echo "$SRC_ID" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments_0.data
           COUNT=$(($COUNT+1))
         done
       done
@@ -96,7 +92,7 @@ for SRC_ID in "${CLIENT_IDS[@]}"; do
 done
 
 # Create a random order
-shuf _experiments.data | shuf -o _experiments.data
+shuf _experiments_0.data | shuf -o _experiments_0.data
 
 if [[ $DRY_RUN -eq 1 ]]; then
   exit 0
@@ -134,18 +130,17 @@ N_REPS=0
 
 ./printDebug.sh "Start doing experiments." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
-while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
+while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
 
   # Repeat until all experiments are finished. Repeat the ones failed.
   if [[ $N_EXPERIMENTS_FAIL -gt 0 ]]; then
-    rm _experiments.data
-    cp "$FAIL_LOG" _experiments.data
+    cp "$FAIL_LOG" "_experiments_""$N_REPS".data
   fi
   N_EXPERIMENTS_FAIL=0
-  FAIL_LOG="_experiments""$N_REPS"".fail"
+  FAIL_LOG="_experiments_""$N_REPS"".fail"
 
   EXPERIMENTS=()
-  mapfile -t EXPERIMENTS < _experiments.data
+  mapfile -t EXPERIMENTS < "_experiments_""$N_REPS"".data"
 
   for EXPERIMENT in "${EXPERIMENTS[@]}"; do
 
@@ -163,9 +158,6 @@ while [[ "$N_EXPERIMENTS_DONE" != "$N_EXPERIMENTS" ]]; do
   done
 
   N_REPS=$(($N_REPS+1))
-  if [[ $N_REPS -ge $N_FAIL_REPS ]]; then
-    N_EXPERIMENTS_DONE=$N_EXPERIMENTS
-  fi
 
 done
 ########################################################################################################################
