@@ -11,7 +11,7 @@ POLL=$3         # Does poll the the session until it terminates if == 0
 TIMEOUT=$4      # Just if polling is active, applies if > 0
 STEP=0
 if [[ "$TIMEOUT" -gt 0 ]]; then
-  STEP=3
+  STEP=10
 fi
 
 # Polls the session until it terminates.
