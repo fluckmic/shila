@@ -17,9 +17,9 @@
     "IngressIP": "10.7.0.9"
   },
   "KernelEndpoint": {
-    "SizeIngressBuffer": 500,
-    "SizeEgressBuffer": 500,
-    "SizeRawIngressBuffer": 500,
+    "SizeIngressBuffer": 1000,
+    "SizeEgressBuffer": 1000,
+    "SizeRawIngressBuffer": 1000,
     "SizeRawIngressStorage": 2500,
     "ReadSizeRawIngress": 30,
     "WaitingTimeUntilEscalation": 5
@@ -31,12 +31,12 @@
     "ContactingServerPort": 9876
   },
   "NetworkEndpoint": {
-    "SizeIngressBuffer": 500,
-    "SizeEgressBuffer": 500,
+    "SizeIngressBuffer": 1000,
+    "SizeEgressBuffer": 1000,
     "SizeRawIngressStorage": 2500,
     "WaitingTimeAfterConnectionIssue": 2,
-    "ServerResendInterval": 2,
-    "SizeHoldingArea": 250
+    "ServerResendInterval": 1,
+    "SizeHoldingArea": 1000
   },
   "Router": {
     "PathSelection": @2
