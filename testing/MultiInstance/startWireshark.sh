@@ -10,7 +10,7 @@ DST_CLIENT="mptcp-over-scion-vm-""$DST_ID"
 
 clear
 
-printf "Starting wireshark instances egress on Client %d and ingress on Client %d.\n" "$CLIENT_ID"
+printf "Starting wireshark instances egress on Client %d and ingress on Client %d.\n" "$SRC_ID" "$DST_ID"
 
 ssh scion@"$SRC_CLIENT" "sudo ip netns exec shila-egress sudo tcpdump -s 0 -w -" | wireshark -k -i - &
 ssh scion@"$DST_CLIENT" "sudo ip netns exec shila-ingress sudo tcpdump -s 0 -w -" | wireshark -k -i - &
