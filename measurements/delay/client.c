@@ -19,12 +19,10 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <netinet/tcp.h>
 
-/* buffer for reading from tun/tap interface, must be >= 1500 */
-#define BUFSIZE 2000
-#define CLIENT 0
-#define SERVER 1
 #define PORT 55555
+#define MSS_TCP 500
 
 int debug;
 char *progname;
@@ -121,16 +119,14 @@ void usage(void) {
 
 int main(int argc, char *argv[]) {
 
-  int tap_fd, option;
+  int option;
   uint16_t nwrite, plength, nread = 0;
-  char buffer[BUFSIZE];
+  char buffer[MSS_TCP];
   struct sockaddr_in local, remote;
   char remote_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
   int sock_fd, net_fd, optval = 1;
   socklen_t remotelen;
-  int cliserv = -1;    /* must be specified on cmd line */
-  unsigned long int tap2net = 0, net2tap = 0;
 
   progname = argv[0];
 
@@ -144,7 +140,6 @@ int main(int argc, char *argv[]) {
         usage();
         break;
       case 'c':
-        cliserv = CLIENT;
         strncpy(remote_ip,optarg,15);
         break;
       case 'p':
@@ -174,6 +169,13 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  /* set the maximum segment size */
+  optval = MSS_TCP;
+  if(setsockopt(sock_fd, IPPROTO_TCP, TCP_MAXSEG, (char *)&optval, sizeof(optval)) < 0) {
+    perror("setsockopt()");
+    exit(1);
+  }
+
   /* assign the destination address */
   memset(&remote, 0, sizeof(remote));
   remote.sin_family = AF_INET;
@@ -189,12 +191,29 @@ int main(int argc, char *argv[]) {
   net_fd = sock_fd;
   do_debug("CLIENT: Connected to server %s\n", inet_ntoa(remote.sin_addr));
 
-  while(1) {
+  int counter = 0;
+  while(counter < 100) {
+
+    counter++;
+    //sleep(2);
+
+    int index = 1;
+    for(int i = 0; i < MSS_TCP; i++) {
+      if(i < MSS_TCP - 9)
+      {
+        buffer[i] = 0;
+      }
+      else
+      {
+        buffer[i] = index;
+        index++;
+      }
+    }
 
     /* write length + packet */
-    plength = htons(nread);
-    nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
-    nwrite = cwrite(net_fd, buffer, nread);
+    //plength = htons(nread);
+    //nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
+    nwrite = cwrite(net_fd, buffer, sizeof(buffer));
 
   }
 

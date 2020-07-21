@@ -3,6 +3,8 @@
  *                                                                        *
  *************************************************************************/
 
+// https://gist.github.com/rlipscombe/0c0f6b6057f398df4e36
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,8 +22,7 @@
 #include <errno.h>
 #include <stdarg.h>
 
-/* buffer for reading from tun/tap interface, must be >= 1500 */
-#define BUFSIZE 2000
+#define MSS_TCP 500
 #define CLIENT 0
 #define SERVER 1
 #define PORT 55555
@@ -122,7 +123,7 @@ int main(int argc, char *argv[]) {
 
   int option, nBytesRead = 1;
   uint16_t nread, nwrite, plength;
-  char buffer[BUFSIZE];
+  char buffer[MSS_TCP];
   struct sockaddr_in local, remote;
   char remote_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
@@ -198,15 +199,26 @@ int main(int argc, char *argv[]) {
   while(1) {
 
     /* Read length */
-    nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-    if(nread == 0) {
+    // nread = read_n(net_fd, (char *)&plength, sizeof(plength));
+    // if(nread == 0) {
       /* ctrl-c at the other end */
-      break;
-    }
+    //  break;
+    //}
 
     /* read packet */
-    nread = read_n(net_fd, buffer, ntohs(plength));
+    nread = read_n(net_fd, buffer, sizeof(buffer));
 
+    /*
+    if(nread > 0)
+    {
+      do_debug("SERVER: Read %d bytes.\n", nread);
+      for(int i = 0; i < BUFSIZE; i++)
+      {
+        printf("%d ", buffer[i]);
+      }
+      printf("\n");
+    }
+    */
   }
 
   return(0);
