@@ -5,34 +5,34 @@ ASes:
     voting: true
     authoritative: true
     issuing: true
-  "1-ff00:0:113": # C
+  "1-ff00:0:113": # B
     core: true
     voting: true
     authoritative: true
     issuing: true
-  "1-ff00:0:114": # D
+  "1-ff00:0:114": # C
     core: true
     voting: true
     authoritative: true
     issuing: true
-  "2-ff00:0:220": # B
+  "2-ff00:0:220": # D
     core: true
     voting: true
     authoritative: true
     issuing: true
 links:
-  - {a: "1-ff00:0:112-A#1",    b: "1-ff00:0:113-C#1",    linkAtoB: CORE,  mtu: 400}
-  - {a: "1-ff00:0:112-A#2",    b: "1-ff00:0:113-C#2",    linkAtoB: CORE,  mtu: 800}
-  - {a: "1-ff00:0:112-A#3",    b: "1-ff00:0:113-C#3",    linkAtoB: CORE,  mtu: 1200}
-  - {a: "1-ff00:0:112-A#4",    b: "1-ff00:0:113-C#4",    linkAtoB: CORE,  mtu: 900}
-  - {a: "1-ff00:0:113-C#5",    b: "1-ff00:0:114-D#1",    linkAtoB: CORE,  mtu: 400}
-  - {a: "1-ff00:0:113-C#6",    b: "1-ff00:0:114-D#2",    linkAtoB: CORE,  mtu: 800}
-  - {a: "1-ff00:0:113-C#7",    b: "1-ff00:0:114-D#3",    linkAtoB: CORE,  mtu: 1200}
-  - {a: "1-ff00:0:113-C#8",    b: "1-ff00:0:114-D#4",    linkAtoB: CORE,  mtu: 900}
-  - {a: "1-ff00:0:114-D#5",    b: "2-ff00:0:220-B#1",    linkAtoB: CORE,  mtu: 400}
-  - {a: "1-ff00:0:114-D#6",    b: "2-ff00:0:220-B#2",    linkAtoB: CORE,  mtu: 800}
-  - {a: "1-ff00:0:114-D#7",    b: "2-ff00:0:220-B#3",    linkAtoB: CORE,  mtu: 1200}
-  - {a: "1-ff00:0:114-D#8",    b: "2-ff00:0:220-B#4",    linkAtoB: CORE,  mtu: 900}
+  - {a: "1-ff00:0:112-A#1",    b: "1-ff00:0:113-B#1",    linkAtoB: CORE,  mtu: 400}
+  - {a: "1-ff00:0:112-A#2",    b: "1-ff00:0:113-B#2",    linkAtoB: CORE,  mtu: 800}
+  - {a: "1-ff00:0:112-A#3",    b: "1-ff00:0:113-B#3",    linkAtoB: CORE,  mtu: 900}
+  - {a: "1-ff00:0:112-A#4",    b: "1-ff00:0:113-B#4",    linkAtoB: CORE,  mtu: 1200}
+  - {a: "1-ff00:0:113-B#5",    b: "1-ff00:0:114-C#1",    linkAtoB: CORE,  mtu: 400}
+  - {a: "1-ff00:0:113-B#6",    b: "1-ff00:0:114-C#2",    linkAtoB: CORE,  mtu: 800}
+  - {a: "1-ff00:0:113-B#7",    b: "1-ff00:0:114-C#3",    linkAtoB: CORE,  mtu: 900}
+  - {a: "1-ff00:0:113-B#8",    b: "1-ff00:0:114-C#4",    linkAtoB: CORE,  mtu: 1200}
+  - {a: "1-ff00:0:114-C#5",    b: "2-ff00:0:220-D#1",    linkAtoB: CORE,  mtu: 400}
+  - {a: "1-ff00:0:114-C#6",    b: "2-ff00:0:220-D#2",    linkAtoB: CORE,  mtu: 800}
+  - {a: "1-ff00:0:114-C#7",    b: "2-ff00:0:220-D#3",    linkAtoB: CORE,  mtu: 900}
+  - {a: "1-ff00:0:114-C#8",    b: "2-ff00:0:220-D#4",    linkAtoB: CORE,  mtu: 1200}
 
 CAs:
   CA1-1:
@@ -41,4 +41,3 @@ CAs:
   CA2-1:
     ISD: 2
     commonName: CA2-1
-

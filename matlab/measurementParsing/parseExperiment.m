@@ -4,7 +4,7 @@ clear
 close all
 
 clientDescription           = ["AP0", "AP1", "AP2", "AP3"];
-pathSelectionDescription    = ["MTU", "Length", "Disjointness"];
+pathSelectionDescription    = ["MTU", "Shortest path", "Sharability"];
 
 nData                       = 2; % transfer, bandwidth
 dataDescription             = ["Transfer", "Bandwidth"];
@@ -12,7 +12,7 @@ dataQuantity                = ["Bytes", "bits/sec"];
 
 sideDescription             = ["Client", "Server"];
 
-pathToExperiment = "~/go/src/shila/measurements/performance/";
+pathToExperiment = "~/shilaExperiments/";
 pathToExperiment = uigetdir(pathToExperiment);
 
 if ~isfile(fullfile(pathToExperiment,"experiment.mat"))
@@ -21,7 +21,7 @@ if ~isfile(fullfile(pathToExperiment,"experiment.mat"))
     [clients, nClients, interfaces, nInterfaceCounts, pathSelections, nPathSelections, duration, nRepetition] = parseExperimentInfo(fullfile(pathToExperiment, "experiment.log"));
 
     % Generate the data cubus
-    dataCubus = zeros(max(pathSelections), nClients, nClients, 2, max(interfaces), nRepetition, duration, nData); 
+    dataCubus = zeros(max(pathSelections), max(clients), max(clients), 2, max(interfaces), nRepetition, duration, nData); 
 
     % Parse the iperf Log files
     RepetitionList = dir(fullfile(pathToExperiment, "**", "_iperfClientSide*"));
@@ -45,7 +45,8 @@ if ~isfile(fullfile(pathToExperiment,"experiment.mat"))
     exp.dataQuantity                = dataQuantity;
     
     exp.nClients                    = nClients;
-    exp.clientDescription           = clientDescription(1:nClients);
+    exp.clients                     = clients;
+    exp.clientDescription           = clientDescription;
 
     exp.nInterfaceCounts            = nInterfaceCounts;
     exp.interfaces                  = interfaces;

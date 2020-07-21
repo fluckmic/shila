@@ -11,6 +11,8 @@ if fields{6} ~= "Bytes"
     switch fields{6}
         case "KBytes"
             transfer = 1024 * transfer;
+        case "MBytes"
+            transfer = 1024 * 1024 * transfer;
         otherwise
             throw(MException("parse:NoConvertion", "No convertion for %s.", fields{6}))
     end
@@ -23,7 +25,7 @@ if fields{8} ~= "bits/sec"
         case "Kbits/sec"
             bandwidth = 1024 * bandwidth;
         case "Mbits/sec"
-            bandwidth = 1048576 * bandwidth;
+            bandwidth = 1024 * 1024 * bandwidth;
         otherwise
             throw(MException("parse:NoConvertion", "No convertion for %s.", fields{8}))
     end
