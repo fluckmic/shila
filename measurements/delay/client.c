@@ -24,6 +24,15 @@
 #define PORT 55555
 #define MSS_TCP 500
 
+ struct ip_option_header
+ {
+   uint8_t type;
+   uint8_t length;
+   uint8_t pointer;
+   uint8_t padding;
+   uint8_t route_data[36];
+ } option_data;
+
 int debug;
 char *progname;
 
@@ -168,6 +177,16 @@ int main(int argc, char *argv[]) {
     perror("socket()");
     exit(1);
   }
+
+  bzero((char *)&option_data, sizeof(option_data));
+  option_data.type          = 68;
+  option_data.length        = 40;
+  option_data.pointer       = 5;
+
+  ret = setsockopt(fd_socket, IPPROTO_IP, IP_OPTIONS, (char *)&option_data, sizeof(option_data));
+  if(ret != 0) { printf("tcpclient.c - Setup of socket options failed: %s.\n", strerror(errno)); exit(0); }
+  else { printf("tcpclient.c - Setup of socket options successfull.\n"); }
+
 
   /* set the maximum segment size */
   optval = MSS_TCP;
