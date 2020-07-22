@@ -17,6 +17,7 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <netinet/tcp.h>
@@ -24,69 +25,14 @@
 #define PORT 55555
 #define MSS_TCP 500
 
- struct ip_option_header
- {
-   uint8_t type;
-   uint8_t length;
-   uint8_t pointer;
-   uint8_t padding;
-   uint8_t route_data[36];
- } option_data;
+#define MIN_TIME_BETWEEN_TWO_WRITES 1000
+#define N_WRITES 10000
 
 int debug;
 char *progname;
 
 /**************************************************************************
- * cread: read routine that checks for errors and exits if an error is    *
- *        returned.                                                       *
- **************************************************************************/
-int cread(int fd, char *buf, int n){
-
-  int nread;
-
-  if((nread=read(fd, buf, n)) < 0){
-    perror("Reading data");
-    exit(1);
-  }
-  return nread;
-}
-
-/**************************************************************************
- * cwrite: write routine that checks for errors and exits if an error is  *
- *         returned.                                                      *
- **************************************************************************/
-int cwrite(int fd, char *buf, int n){
-
-  int nwrite;
-
-  if((nwrite=write(fd, buf, n)) < 0){
-    perror("Writing data");
-    exit(1);
-  }
-  return nwrite;
-}
-
-/**************************************************************************
- * read_n: ensures we read exactly n bytes, and puts them into "buf".     *
- *         (unless EOF, of course)                                        *
- **************************************************************************/
-int read_n(int fd, char *buf, int n) {
-
-  int nread, left = n;
-
-  while(left > 0) {
-    if ((nread = cread(fd, buf, left)) == 0){
-      return 0 ;
-    }else {
-      left -= nread;
-      buf += nread;
-    }
-  }
-  return n;
-}
-
-/**************************************************************************
- * do_debug: prints debugging stuff (doh!)                                *
+ * do_debug: prints debugging stuff                                       *
  **************************************************************************/
 void do_debug(char *msg, ...){
 
@@ -112,6 +58,18 @@ void my_err(char *msg, ...) {
 }
 
 /**************************************************************************
+ * get_now: get current time                                              *
+ **************************************************************************/
+void get_now( struct timespec *time)
+{
+    if (clock_gettime(CLOCK_REALTIME, time) != 0 )
+    {
+      my_err("Can't get current time.\n");
+    }
+    return;
+}
+
+/**************************************************************************
  * usage: prints usage and exits.                                         *
  **************************************************************************/
 void usage(void) {
@@ -129,13 +87,12 @@ void usage(void) {
 int main(int argc, char *argv[]) {
 
   int option;
-  uint16_t nwrite, plength, nread = 0;
   char buffer[MSS_TCP];
-  struct sockaddr_in local, remote;
+  struct sockaddr_in remote;
   char remote_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
   int sock_fd, net_fd, optval = 1;
-  socklen_t remotelen;
+  struct timespec time_now;
 
   progname = argv[0];
 
@@ -178,16 +135,6 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  bzero((char *)&option_data, sizeof(option_data));
-  option_data.type          = 68;
-  option_data.length        = 40;
-  option_data.pointer       = 5;
-
-  ret = setsockopt(fd_socket, IPPROTO_IP, IP_OPTIONS, (char *)&option_data, sizeof(option_data));
-  if(ret != 0) { printf("tcpclient.c - Setup of socket options failed: %s.\n", strerror(errno)); exit(0); }
-  else { printf("tcpclient.c - Setup of socket options successfull.\n"); }
-
-
   /* set the maximum segment size */
   optval = MSS_TCP;
   if(setsockopt(sock_fd, IPPROTO_TCP, TCP_MAXSEG, (char *)&optval, sizeof(optval)) < 0) {
@@ -208,33 +155,54 @@ int main(int argc, char *argv[]) {
   }
 
   net_fd = sock_fd;
+
   do_debug("CLIENT: Connected to server %s\n", inet_ntoa(remote.sin_addr));
 
-  int counter = 0;
-  while(counter < 100) {
 
-    counter++;
-    //sleep(2);
+  int A = 0; int B = 0; int C = 0; int D = 0; int E = 0;
+  for(int writeCount = 0; writeCount < N_WRITES; writeCount++)
+  {
+    usleep(MIN_TIME_BETWEEN_TWO_WRITES);
 
-    int index = 1;
-    for(int i = 0; i < MSS_TCP; i++) {
-      if(i < MSS_TCP - 9)
+    A = writeCount % 256; if(A < 2) { A = 2; }
+    B = B % 256; if (B < 2) { B = 2; }
+    C = C % 256; if (C < 2) { C = 2; }
+    D = D % 256; if (D < 2) { D = 2; }
+    E = E % 256; if (E < 2) { E = 2; }
+
+    for(int i = 0; i < MSS_TCP; i++)
+    {
+      if(i == MSS_TCP / 2)
       {
-        buffer[i] = 0;
+        buffer[i-3] = 1;
+        buffer[i-2] = E;
+        buffer[i-1] = D;
+        buffer[i]   = C;
+        buffer[i+1] = B;
+        buffer[i+2] = A;
+        i = i + 2;
       }
       else
       {
-        buffer[i] = index;
-        index++;
+        buffer[i] = 0;
       }
     }
 
-    /* write length + packet */
-    //plength = htons(nread);
-    //nwrite = cwrite(net_fd, (char *)&plength, sizeof(plength));
-    nwrite = cwrite(net_fd, buffer, sizeof(buffer));
+    get_now(&time_now);
+
+    if(write(net_fd, buffer, sizeof(buffer)) < 0)
+    {
+      perror("Writing data");
+      exit(1);
+    }
+
+    printf("%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, E, D, C, B, A);
+
+    if(A == 255 && writeCount > 0) { B++; }
+    if(B == 255) { C++; }
+    if(C == 255) { D++; }
+    if(D == 255) { E++; }
 
   }
-
   return(0);
 }

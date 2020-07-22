@@ -198,22 +198,17 @@ int main(int argc, char *argv[]) {
 
   while(1) {
 
-    /* Read length */
-    // nread = read_n(net_fd, (char *)&plength, sizeof(plength));
-    // if(nread == 0) {
-      /* ctrl-c at the other end */
-    //  break;
-    //}
-
     /* read packet */
     nread = read_n(net_fd, buffer, sizeof(buffer));
 
-    /*
     if(nread > 0)
     {
-      do_debug("SERVER: Read %d bytes.\n", nread);
-      for(int i = 0; i < BUFSIZE; i++)
+      for(int i = 0; i < nread-3; i++)
       {
+        if(buffer[i] + 1 == buffer[i+1])
+        {
+
+        }
         printf("%d ", buffer[i]);
       }
       printf("\n");
