@@ -3,6 +3,8 @@ SESSION=$USER
 
 SHILA_0_EXTERNAL=0
 
+RUN_DELAY_MEASUREMENT=1
+
 if [[ "$SHILA_0_EXTERNAL" -ne 1 ]]; then
   bash ../../helper/netnsClear.sh
 fi
@@ -28,12 +30,22 @@ if [[ "$SHILA_0_EXTERNAL" -ne 1 ]]; then
   tmux send-keys "sudo bash runShila.sh 0" C-m
 fi
 
-tmux select-pane -t 3
-tmux send-keys "sudo bash runIperfServer.sh 0" C-m
 tmux select-pane -t 1
-tmux send-keys "sudo bash runShila.sh 2" C-m
+tmux send-keys "sudo bash runShila.sh 1" C-m
+
+tmux select-pane -t 3
+if [[ RUN_DELAY_MEASUREMENT -eq 1 ]]; then
+  tmux send-keys "sudo bash runDelayMeasurementServer.sh 0" C-m
+else
+  tmux send-keys "sudo bash runIperfServer.sh 0" C-m
+fi
+
 tmux select-pane -t 4
-tmux send-keys "sudo bash runIperfServer.sh 2" C-m
+if [[ RUN_DELAY_MEASUREMENT -eq 1 ]]; then
+  tmux send-keys "sudo bash runDelayMeasurementServer.sh 1" C-m
+else
+  tmux send-keys "sudo bash runIperfServer.sh 1" C-m
+fi
 
 tmux select-pane -t 2
 

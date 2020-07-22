@@ -47,6 +47,7 @@ type KernelEndpointConfigJSON struct {
 
 type LoggingConfigJSON struct {
 	PrintVerbose 						bool				// Print verbose messages.
+	DoEgressTimestamping				bool				// Generates and logs a timestamp before a packet is sent out (Just if packet has specific load.)
 }
 
 type ConfigConfigJSON struct {

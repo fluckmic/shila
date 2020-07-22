@@ -186,6 +186,8 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  do_debug("SERVER: Listening on port %d.\n", port);
+
   /* wait for connection request */
   remotelen = sizeof(remote);
   memset(&remote, 0, remotelen);
@@ -200,7 +202,7 @@ int main(int argc, char *argv[]) {
 
     /* read packet */
     nread = read_n(net_fd, buffer, sizeof(buffer));
-
+    /*
     if(nread > 0)
     {
       for(int i = 0; i < nread-3; i++)

@@ -11,6 +11,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/log"
+	"shila/measurements"
 	"time"
 )
 
@@ -157,16 +158,28 @@ func (client *Client) serveEgress() {
 }
 
 func (client *Client) sendPayloadMessage(payload []byte) error {
-	// Craft the payload message, encode and send it.
+
+	// Craft the payload message,..
 	pyldMsg := payloadMessage{
 		Payload: payload,
 	}
+
+	go func() {
+		// ...probably create a timestamp for it..
+		if config.Config.Logging.DoEgressTimestamping {
+			measurements.LogTimestamp(payload)
+		}
+	}()
+
+	//  ..and encode and send it.
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(pyldMsg); err != nil {
 		return shila.PrependError(err, "Cannot encode payload message.")
 	}
 
 	return nil
 }
+
+
 
 func (client *Client) sendControlMessage() error {
 

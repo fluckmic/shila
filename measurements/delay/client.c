@@ -26,7 +26,7 @@
 #define MSS_TCP 500
 
 #define MIN_TIME_BETWEEN_TWO_WRITES 1000
-#define N_WRITES 10000
+#define N_WRITES 100
 
 int debug;
 char *progname;
@@ -148,6 +148,8 @@ int main(int argc, char *argv[]) {
   remote.sin_addr.s_addr = inet_addr(remote_ip);
   remote.sin_port = htons(port);
 
+    do_debug("CLIENT: Try to connect to server %s\n", inet_ntoa(remote.sin_addr));
+
   /* connection request */
   if (connect(sock_fd, (struct sockaddr*) &remote, sizeof(remote)) < 0) {
     perror("connect()");
@@ -196,7 +198,7 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    printf("%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, E, D, C, B, A);
+    printf("%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, A, B, C, D, E);
 
     if(A == 255 && writeCount > 0) { B++; }
     if(B == 255) { C++; }

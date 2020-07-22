@@ -25,7 +25,8 @@
     "WaitingTimeUntilEscalation": 5
   },
   "Logging": {
-    "PrintVerbose": false
+    "PrintVerbose": false,
+    "DoEgressTimestamping" : true
   },
   "NetworkSide": {
     "ContactingServerPort": 9876
