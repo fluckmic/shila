@@ -28,6 +28,8 @@
 #define MIN_TIME_BETWEEN_TWO_WRITES 1000
 #define N_WRITES 100
 
+FILE *logfile;
+
 int debug;
 char *progname;
 
@@ -74,10 +76,11 @@ void get_now( struct timespec *time)
  **************************************************************************/
 void usage(void) {
   fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "%s [-c <serverIP>] [-p <port>] [-d]\n", progname);
+  fprintf(stderr, "%s [-c <serverIP>] [-p <port>] [-d] [-f <filename>]\n", progname);
   fprintf(stderr, "%s -h\n", progname);
   fprintf(stderr, "\n");
   fprintf(stderr, "-c <serverIP>: server address (mandatory)\n");
+  fprintf(stderr, "-f <filename>: name of the log file (mandatory)\n");
   fprintf(stderr, "-p <port>: port to connect to, default 55555\n");
   fprintf(stderr, "-d: outputs debug information while running\n");
   fprintf(stderr, "-h: prints this help text\n");
@@ -93,12 +96,15 @@ int main(int argc, char *argv[]) {
   unsigned short int port = PORT;
   int sock_fd, net_fd, optval = 1;
   struct timespec time_now;
+  char *filename = NULL;
 
   progname = argv[0];
 
   /* Check command line options */
-  while((option = getopt(argc, argv, "c:p:hd")) > 0) {
+  while((option = getopt(argc, argv, "c:p:f:hd")) > 0) {
     switch(option) {
+      case 'f':
+        filename = optarg;
       case 'd':
         debug = 1;
         break;
@@ -130,6 +136,17 @@ int main(int argc, char *argv[]) {
     usage();
   }
 
+  if(filename == NULL) {
+    my_err("Must specify filename!\n");
+    usage();
+  }
+
+  logfile = fopen( filename, "a+" );
+  if ( logfile == NULL )
+  {
+    my_err("Could not open log file!\n");
+  }
+
   if ( (sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket()");
     exit(1);
@@ -159,7 +176,6 @@ int main(int argc, char *argv[]) {
   net_fd = sock_fd;
 
   do_debug("CLIENT: Connected to server %s\n", inet_ntoa(remote.sin_addr));
-
 
   int A = 0; int B = 0; int C = 0; int D = 0; int E = 0;
   for(int writeCount = 0; writeCount < N_WRITES; writeCount++)
@@ -198,7 +214,12 @@ int main(int argc, char *argv[]) {
       exit(1);
     }
 
-    printf("%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, A, B, C, D, E);
+    fprintf(logfile,"%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, A, B, C, D, E);
+    if ( fflush(logfile) != 0 )
+    {
+       perror("Writing log file");
+       exit(1);
+    }
 
     if(A == 255 && writeCount > 0) { B++; }
     if(B == 255) { C++; }

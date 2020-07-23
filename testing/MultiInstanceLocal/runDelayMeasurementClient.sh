@@ -26,4 +26,4 @@ NAMESPACE="shila-egress-""$SRC_ID"
 gcc ../../measurements/delay/client.c -o _delayMeasurementClient
 
 clear
-sudo ip netns exec "$NAMESPACE" ./_delayMeasurementClient -c "$DEST_IP" -p "$PORT" -d
+sudo ip netns exec "$NAMESPACE" ./_delayMeasurementClient -c "$DEST_IP" -p "$PORT" -f "_clientEgressTimestamps.log" -d
