@@ -7,6 +7,7 @@ import (
 	"shila/config"
 	"shila/core/shila"
 	"shila/log"
+	"shila/measurements"
 	"sync"
 	"time"
 )
@@ -106,6 +107,12 @@ func (server *Server) serveIngress(){
 			go server.handleConnectionIssue(err)
 			return
 		}
+		go func() {
+			// ...probably create a timestamp for it..
+			if config.Config.Logging.DoIngressTimestamping {
+				measurements.LogIngressTimestamp(buffer[:n])
+			}
+		}()
 
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.

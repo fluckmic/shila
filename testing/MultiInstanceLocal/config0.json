@@ -26,7 +26,11 @@
   },
   "Logging": {
     "PrintVerbose": false,
-    "DoEgressTimestamping" : true
+    "DoEgressTimestamping": true,
+    "EgressTimestampLogPath" : "_shilaEgressTimestamps0.log",
+    "DoIngressTimestamping": true,
+    "IngressTimestampLogPath" : "_shilaIngressTimestamps0.log",
+    "TimestampFlushInterval": 10
   },
   "NetworkSide": {
     "ContactingServerPort": 9876

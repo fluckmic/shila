@@ -22,15 +22,68 @@ int get_now( long* sec, long* nsec)
 */
 import "C"
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"shila/config"
 	"shila/log"
+	"time"
 )
 
 const (
 	NPayloadBytesSkipped = 80
 )
 
-func LogTimestamp(payload []byte) {
+var (
+	egressTimestampWriter *bufio.Writer
+	ingressTimestampWriter *bufio.Writer
+)
+
+func init() {
+
+	if config.Config.Logging.DoEgressTimestamping {
+		file, err := os.Create(config.Config.Logging.EgressTimestampLogPath)
+		if err == nil {
+
+			egressTimestampWriter = bufio.NewWriter(file)
+
+			go func() {
+				for {
+					time.Sleep(time.Duration(config.Config.Logging.TimestampFlushInterval) * time.Second)
+					egressTimestampWriter.Flush()
+				}
+			}()
+
+		}
+	}
+
+	if config.Config.Logging.DoIngressTimestamping {
+		file, err := os.Create(config.Config.Logging.IngressTimestampLogPath)
+		if err == nil {
+
+			ingressTimestampWriter = bufio.NewWriter(file)
+
+			go func() {
+				for {
+					time.Sleep(time.Duration(config.Config.Logging.TimestampFlushInterval) * time.Second)
+					ingressTimestampWriter.Flush()
+				}
+			}()
+
+		}
+	}
+
+}
+
+func LogIngressTimestamp(payload []byte) {
+	logTimestamp(payload, ingressTimestampWriter)
+}
+
+func LogEgressTimestamp(payload []byte) {
+	logTimestamp(payload, egressTimestampWriter)
+}
+
+func logTimestamp(payload []byte, writer *bufio.Writer) {
 
 	sec, nSec, err := getNow()
 	if err != nil {
@@ -44,7 +97,7 @@ func LogTimestamp(payload []byte) {
 		return
 	}
 
-	fmt.Printf("%v, %v, %v, %v, %v, %v, %v\n", sec, nSec, A, B, C, D, E)
+	_, _ = writer.WriteString(fmt.Sprintf("%v, %v, %v, %v, %v, %v, %v\n", sec, nSec, A, B, C, D, E))
 
 }
 

@@ -94,6 +94,8 @@ func defaultConfig() *structure.ConfigJSON {
 		Logging:         structure.LoggingConfigJSON{
 			PrintVerbose: 								false,
 			DoEgressTimestamping: 						true,
+			DoIngressTimestamping:						true,
+			TimestampFlushInterval:						10,
 		},
 		NetworkSide:     structure.NetworkSideConfigJSON{
 			ContactingServerPort: 						9876,

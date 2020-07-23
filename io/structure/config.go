@@ -48,6 +48,10 @@ type KernelEndpointConfigJSON struct {
 type LoggingConfigJSON struct {
 	PrintVerbose 						bool				// Print verbose messages.
 	DoEgressTimestamping				bool				// Generates and logs a timestamp before a packet is sent out (Just if packet has specific load.)
+	DoIngressTimestamping				bool 				// Generates and logs a timestamp right after a packet was received (Just if packet has specific load.)
+	TimestampFlushInterval				int					// The timestamp logs are flushed to file at least in this interval (or when the buffer is full)
+	EgressTimestampLogPath				string				// Where to dump the log files for the egress timestamps.
+	IngressTimestampLogPath				string				// Where to dump the log files for the ingress timestamps.
 }
 
 type ConfigConfigJSON struct {

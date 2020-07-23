@@ -167,7 +167,7 @@ func (client *Client) sendPayloadMessage(payload []byte) error {
 	go func() {
 		// ...probably create a timestamp for it..
 		if config.Config.Logging.DoEgressTimestamping {
-			measurements.LogTimestamp(payload)
+			measurements.LogEgressTimestamp(payload)
 		}
 	}()
 
