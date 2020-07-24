@@ -19,13 +19,16 @@
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <time.h>
 #include <errno.h>
 #include <stdarg.h>
 
+#define N_PAYLOAD_BYTES_SKIPPED 80
+
 #define MSS_TCP 500
-#define CLIENT 0
-#define SERVER 1
 #define PORT 55555
+
+FILE *logfile;
 
 int debug;
 char *progname;
@@ -43,21 +46,6 @@ int cread(int fd, char *buf, int n){
     exit(1);
   }
   return nread;
-}
-
-/**************************************************************************
- * cwrite: write routine that checks for errors and exits if an error is  *
- *         returned.                                                      *
- **************************************************************************/
-int cwrite(int fd, char *buf, int n){
-
-  int nwrite;
-
-  if((nwrite=write(fd, buf, n)) < 0){
-    perror("Writing data");
-    exit(1);
-  }
-  return nwrite;
 }
 
 /**************************************************************************
@@ -106,11 +94,25 @@ void my_err(char *msg, ...) {
 }
 
 /**************************************************************************
+ * get_now: get current time                                              *
+ **************************************************************************/
+void get_now( struct timespec *time)
+{
+    if (clock_gettime(CLOCK_REALTIME, time) != 0 )
+    {
+      my_err("Can't get current time.\n");
+    }
+    return;
+}
+
+/**************************************************************************
  * usage: prints usage and exits.                                         *
  **************************************************************************/
 void usage(void) {
   fprintf(stderr, "Usage:\n");
   fprintf(stderr, "%s [-p <port>] [-d]\n", progname);
+  fprintf(stderr, "-f <filename>: name of the log file (mandatory)\n");
+  fprintf(stderr, "-a <additionalLogLine>: additional line which is written to the log file\n");
   fprintf(stderr, "%s -h\n", progname);
   fprintf(stderr, "\n");
   fprintf(stderr, "-p <port>: port to listen on, default 55555\n");
@@ -121,21 +123,30 @@ void usage(void) {
 
 int main(int argc, char *argv[]) {
 
-  int option, nBytesRead = 1;
-  uint16_t nread, nwrite, plength;
+  int option;
+  uint16_t nread, nwrite;
   char buffer[MSS_TCP];
   struct sockaddr_in local, remote;
   char remote_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
   int net_fd, sock_fd, optval = 1;
   socklen_t remotelen;
-  int cliserv = -1;    /* must be specified on cmd line */
+  struct timespec time_now;
+
+  char *filename          = NULL;
+  char *additionalLogLine = NULL;
 
   progname = argv[0];
 
   /* Check command line options */
-  while((option = getopt(argc, argv, "p:dh")) > 0) {
+  while((option = getopt(argc, argv, "p:f:a:dh")) > 0) {
     switch(option) {
+      case 'a':
+        additionalLogLine = optarg;
+        break;
+      case 'f':
+        filename = optarg;
+        break;
       case 'd':
         debug = 1;
         break;
@@ -163,6 +174,28 @@ int main(int argc, char *argv[]) {
     perror("socket()");
     exit(1);
   }
+
+  if(filename == NULL) {
+    my_err("Must specify filename!\n");
+    usage();
+  }
+
+  logfile = fopen( filename, "a+" );
+  if ( logfile == NULL )
+  {
+    my_err("Could not open log file!\n");
+  }
+
+  if ( additionalLogLine != NULL )
+  {
+    fprintf(logfile,"%s\n", additionalLogLine);
+      if ( fflush(logfile) != 0 )
+      {
+         perror("Writing log file");
+         exit(1);
+      }
+  }
+
 
   /* Server, wait for connections */
 
@@ -198,24 +231,37 @@ int main(int argc, char *argv[]) {
 
   do_debug("SERVER: Client connected from %s\n", inet_ntoa(remote.sin_addr));
 
+  int A = 0; int B = 0; int C = 0; int D = 0; int E = 0;
   while(1) {
 
     /* read packet */
     nread = read_n(net_fd, buffer, sizeof(buffer));
-    /*
+
+    get_now(&time_now);
+
     if(nread > 0)
     {
-      for(int i = 0; i < nread-3; i++)
+      for(int i = N_PAYLOAD_BYTES_SKIPPED; i < nread - 5; i++)
       {
-        if(buffer[i] + 1 == buffer[i+1])
+        if ( buffer[i] == 1 )
         {
+            A = buffer[i + 5];
+            B = buffer[i + 4];
+            C = buffer[i + 3];
+            D = buffer[i + 2];
+            E = buffer[i + 1];
 
+            fprintf(logfile,"%ld, %ld, %d, %d, %d, %d, %d\n", time_now.tv_sec, time_now.tv_nsec, A, B, C, D, E);
+
+            if ( fflush(logfile) != 0 )
+            {
+                perror("Writing log file");
+                exit(1);
+            }
         }
-        printf("%d ", buffer[i]);
       }
-      printf("\n");
     }
-    */
+
   }
 
   return(0);

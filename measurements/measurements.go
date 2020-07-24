@@ -47,6 +47,11 @@ func init() {
 
 			egressTimestampWriter = bufio.NewWriter(file)
 
+			if config.Config.Logging.EgressTimestampLogAdditionalLine != "" {
+				_, _ = egressTimestampWriter.WriteString(fmt.Sprintf("%s\n", config.Config.Logging.EgressTimestampLogAdditionalLine))
+				egressTimestampWriter.Flush()
+			}
+
 			go func() {
 				for {
 					time.Sleep(time.Duration(config.Config.Logging.TimestampFlushInterval) * time.Second)
@@ -62,6 +67,11 @@ func init() {
 		if err == nil {
 
 			ingressTimestampWriter = bufio.NewWriter(file)
+
+			if config.Config.Logging.IngressTimestampLogAdditionalLine != "" {
+				_, _ = ingressTimestampWriter.WriteString(fmt.Sprintf("%s\n", config.Config.Logging.IngressTimestampLogAdditionalLine))
+				ingressTimestampWriter.Flush()
+			}
 
 			go func() {
 				for {

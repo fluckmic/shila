@@ -25,8 +25,8 @@
 #define PORT 55555
 #define MSS_TCP 500
 
-#define MIN_TIME_BETWEEN_TWO_WRITES 1000
-#define N_WRITES 100
+#define MIN_TIME_BETWEEN_TWO_WRITES_NS 500
+#define N_WRITES_DEFAULT 1000
 
 FILE *logfile;
 
@@ -76,11 +76,13 @@ void get_now( struct timespec *time)
  **************************************************************************/
 void usage(void) {
   fprintf(stderr, "Usage:\n");
-  fprintf(stderr, "%s [-c <serverIP>] [-p <port>] [-d] [-f <filename>]\n", progname);
+  fprintf(stderr, "%s [-c <serverIP>] [-n <nOfWrites>] [-p <port>] [-d] [-f <filename>] [-a <additionalLogLine>]\n", progname);
   fprintf(stderr, "%s -h\n", progname);
   fprintf(stderr, "\n");
   fprintf(stderr, "-c <serverIP>: server address (mandatory)\n");
   fprintf(stderr, "-f <filename>: name of the log file (mandatory)\n");
+  fprintf(stderr, "-n <nOfWrites>: number of writes to do, default 1000\n");
+  fprintf(stderr, "-a <additionalLogLine>: additional line which is written to the log file\n");
   fprintf(stderr, "-p <port>: port to connect to, default 55555\n");
   fprintf(stderr, "-d: outputs debug information while running\n");
   fprintf(stderr, "-h: prints this help text\n");
@@ -89,22 +91,28 @@ void usage(void) {
 
 int main(int argc, char *argv[]) {
 
-  int option;
+  int option, nOfWrites = N_WRITES_DEFAULT;
   char buffer[MSS_TCP];
   struct sockaddr_in remote;
   char remote_ip[16] = "";            /* dotted quad IP string */
   unsigned short int port = PORT;
   int sock_fd, net_fd, optval = 1;
   struct timespec time_now;
-  char *filename = NULL;
+
+  char *filename          = NULL;
+  char *additionalLogLine = NULL;
 
   progname = argv[0];
 
   /* Check command line options */
-  while((option = getopt(argc, argv, "c:p:f:hd")) > 0) {
+  while((option = getopt(argc, argv, "c:p:f:n:a:hd")) > 0) {
     switch(option) {
+      case 'a':
+        additionalLogLine = optarg;
+        break;
       case 'f':
         filename = optarg;
+        break;
       case 'd':
         debug = 1;
         break;
@@ -113,6 +121,9 @@ int main(int argc, char *argv[]) {
         break;
       case 'c':
         strncpy(remote_ip,optarg,15);
+        break;
+      case 'n':
+        nOfWrites = atoi(optarg);
         break;
       case 'p':
         port = atoi(optarg);
@@ -147,6 +158,16 @@ int main(int argc, char *argv[]) {
     my_err("Could not open log file!\n");
   }
 
+  if ( additionalLogLine != NULL )
+  {
+    fprintf(logfile,"%s\n", additionalLogLine);
+      if ( fflush(logfile) != 0 )
+      {
+         perror("Writing log file");
+         exit(1);
+      }
+  }
+
   if ( (sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket()");
     exit(1);
@@ -178,9 +199,9 @@ int main(int argc, char *argv[]) {
   do_debug("CLIENT: Connected to server %s\n", inet_ntoa(remote.sin_addr));
 
   int A = 0; int B = 0; int C = 0; int D = 0; int E = 0;
-  for(int writeCount = 0; writeCount < N_WRITES; writeCount++)
+  for(int writeCount = 0; writeCount < nOfWrites; writeCount++)
   {
-    usleep(MIN_TIME_BETWEEN_TWO_WRITES);
+    usleep(MIN_TIME_BETWEEN_TWO_WRITES_NS);
 
     A = writeCount % 256; if(A < 2) { A = 2; }
     B = B % 256; if (B < 2) { B = 2; }

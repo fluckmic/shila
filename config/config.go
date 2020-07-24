@@ -95,6 +95,7 @@ func defaultConfig() *structure.ConfigJSON {
 			PrintVerbose: 								false,
 			DoEgressTimestamping: 						true,
 			DoIngressTimestamping:						true,
+			EgressTimestampLogAdditionalLine:			"Egress",
 			TimestampFlushInterval:						10,
 		},
 		NetworkSide:     structure.NetworkSideConfigJSON{

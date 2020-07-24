@@ -52,6 +52,8 @@ type LoggingConfigJSON struct {
 	TimestampFlushInterval				int					// The timestamp logs are flushed to file at least in this interval (or when the buffer is full)
 	EgressTimestampLogPath				string				// Where to dump the log files for the egress timestamps.
 	IngressTimestampLogPath				string				// Where to dump the log files for the ingress timestamps.
+	EgressTimestampLogAdditionalLine	string				// Additional line which is added to the egress timestamp log.
+	IngressTimestampLogAdditionalLine	string				// Additional line which is added to the ingress timestamp log.
 }
 
 type ConfigConfigJSON struct {
