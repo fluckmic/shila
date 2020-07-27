@@ -86,14 +86,22 @@ func init() {
 }
 
 func LogIngressTimestamp(payload []byte) {
-	logTimestamp(payload, ingressTimestampWriter)
+	if ingressTimestampWriter != nil {
+		logTimestamp(payload, ingressTimestampWriter)
+	}
 }
 
 func LogEgressTimestamp(payload []byte) {
-	logTimestamp(payload, egressTimestampWriter)
+	if egressTimestampWriter != nil {
+		logTimestamp(payload, egressTimestampWriter)
+	}
 }
 
 func logTimestamp(payload []byte, writer *bufio.Writer) {
+
+	if writer == nil {
+		return
+	}
 
 	sec, nSec, err := getNow()
 	if err != nil {
