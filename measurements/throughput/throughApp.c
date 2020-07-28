@@ -25,7 +25,7 @@
 #define PORT 55555
 #define MB_TO_WRITE 25
 #define BYTES_PER_MB 1000000
-#define MSS_TCP 512
+#define MSS_TCP 500
 
 #define BUFFER_SIZE 1000000  // 0.1 MByte
 
