@@ -26,9 +26,9 @@ tmux send-keys "sudo bash runShila.sh 0" C-m
 tmux select-pane -t 1
 tmux send-keys "sudo bash runShila.sh 1" C-m
 tmux select-pane -t 3
-tmux send-keys "sudo bash runIperfServer.sh 0" C-m
+#tmux send-keys "sudo bash runIperfServer.sh 0" C-m
 tmux select-pane -t 4
-tmux send-keys "sudo bash runIperfServer.sh 3" C-m
+#tmux send-keys "sudo bash runIperfServer.sh 3" C-m
 
 tmux select-pane -t 2
 
