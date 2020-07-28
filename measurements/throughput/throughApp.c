@@ -292,6 +292,7 @@ int main(int argc, char *argv[])
         while(1)
         {
             nBytesRead = read_n(netFd, buffer, sizeof(buffer));
+            /*
             if(nBytesRead > 0)
             {
                 nBytesReadTotal += nBytesRead;
@@ -306,6 +307,7 @@ int main(int argc, char *argv[])
                     exit(0);
                  }
             }
+            */
         }
   }
   else

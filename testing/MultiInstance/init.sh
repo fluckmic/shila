@@ -22,5 +22,7 @@ export PATH=$PATH:/usr/local/go/bin
 # shila
 go build -o _shila ../../
 
+gcc ../../measurements/throughput/throughApp.c -o _throughApp
+
 sudo systemctl restart scionlab.target
 sleep 2
