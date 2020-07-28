@@ -294,7 +294,7 @@ int main(int argc, char *argv[])
 
   if(isReceiver)
   {
-        printf("%s as %s started listening..\n", identifier, role);
+        printf("%s as %s started receiving..\n", identifier, role);
 
         int nBytesReadTotal = 0;
         int nMBytesReceived = 0;
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
         while(1)
         {
             nBytesRead = read_n(netFd, buffer, sizeof(buffer));
-            if(nBytesRead < 0)
+            if(nBytesRead == 0)
             {
                 printf("%s as %s done.\n", identifier, role);
                 exit(0);
