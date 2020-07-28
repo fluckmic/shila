@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
   socklen_t remoteLen;
 
   char remoteIP[16] = "";
-
+  char role[9] = "";
   char identifier[7] = "";
 
   struct sockaddr_in remoteAddr;
@@ -163,6 +163,8 @@ int main(int argc, char *argv[])
   struct timespec timeSendingEnd;
 
   progname = argv[0];
+
+  strncpy(role,"sender",6);
 
   /* Check command line options */
   while((option = getopt(argc, argv, "sc:p:n:r")) > 0)
@@ -189,6 +191,7 @@ int main(int argc, char *argv[])
         break;
       case 'r':
         isReceiver = 1;
+        strncpy(role,"receiver",8);
         break;
       default:
         my_err("Unknown option %c\n", option);
@@ -247,7 +250,7 @@ int main(int argc, char *argv[])
         }
 
         netFd = sockFd;
-        do_debug("Client: Connected to server %s\n", inet_ntoa(remoteAddr.sin_addr));
+        printf("%s as %s connected to server %s.\n", identifier, role, inet_ntoa(remoteAddr.sin_addr));
   }
   else
   {
@@ -275,7 +278,7 @@ int main(int argc, char *argv[])
           exit(1);
         }
 
-        printf("Server: Listening on port %d.\n", port);
+        printf("%s as %s started listening on port %d.\n", identifier, role, port);
 
         /* wait for connection request */
         remoteLen = sizeof(remoteAddr);
@@ -286,12 +289,12 @@ int main(int argc, char *argv[])
           exit(1);
         }
 
-        printf("Server: Client connected from %s\n", inet_ntoa(remoteAddr.sin_addr));
+        printf("%s as %s accepted client connected from %s.\n", identifier, role, inet_ntoa(remoteAddr.sin_addr));
   }
 
   if(isReceiver)
   {
-        printf("%s as receiver started listening..\n", identifier);
+        printf("%s as %s started listening..\n", identifier, role);
 
         int nBytesReadTotal = 0;
         int nMBytesReceived = 0;
@@ -299,6 +302,11 @@ int main(int argc, char *argv[])
         while(1)
         {
             nBytesRead = read_n(netFd, buffer, sizeof(buffer));
+            if(nBytesRead < 0)
+            {
+                printf("%s as %s done.\n", identifier, role);
+                exit(0);
+            }
             /*
             if(nBytesRead > 0)
             {
@@ -316,8 +324,6 @@ int main(int argc, char *argv[])
             }
             */
         }
-
-        printf("%s as receiver done.\n", identifier);
   }
   else
   {
@@ -330,7 +336,7 @@ int main(int argc, char *argv[])
         int nBytesWrittenTotal = 0;
         int nMBytesWritten = 0;
 
-        printf("%s as sender starts sending %d MBytes..\n", identifier, mbToWrite);
+        printf("%s as %s starts sending %d MBytes..\n", identifier, role, mbToWrite);
 
         get_now(&timeSendingStart);
 
@@ -368,7 +374,7 @@ int main(int argc, char *argv[])
 
         printf("%f MB/s\n", goodput);
 
-        printf("%s as sender done.\n", identifier);
+        printf("%s as %s done.\n", identifier, role);
   }
 
   return(0);
