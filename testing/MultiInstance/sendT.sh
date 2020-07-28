@@ -32,7 +32,7 @@ PORT=${PORTS["$DST_ID"]}
 
 printf "Send %s MBytes from Client %d to Client %d (port %s).\n" "$DATA_TRANSFER" "$SRC_ID" "$DST_ID" "$PORT"
 
-CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ip netns exec shila-egress ./_throughApp -c ""$ADDRESS"" -p ""$PORT"" -n ""$DURATION"
+CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ip netns exec shila-egress ./_throughApp -c ""$ADDRESS"" -p ""$PORT"" -n ""$DATA_TRANSFER"
 echo "$CMD"
 sshpass -f client.password ssh -tt scion@"$SRC_CLIENT" -q "$CMD" 2>&1 | tee -a "_sThroughAppClient""$SRC_ID"".log"
  if [[ $? -ne 0 ]]; then
