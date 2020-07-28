@@ -32,7 +32,7 @@
 #define CLIENT 0
 #define SERVER 1
 
-#define DEBUG 1
+#define DEBUG 0
 
 char *progname;
 
@@ -321,6 +321,7 @@ int main(int argc, char *argv[])
         int nBytesWrittenTotal = 0;
         int nMBytesWritten = 0;
 
+        printf("Start sending %d MBytes..\n", mbToWrite);
         get_now(&timeSendingStart);
 
         while(nMBytesWritten < mbToWrite)
@@ -340,6 +341,8 @@ int main(int argc, char *argv[])
         }
 
         get_now(&timeSendingEnd);
+
+        close(netFd);
 
         printf("%ld, %ld, %ld, %ld, %d\n",
             timeSendingStart.tv_sec, timeSendingStart.tv_nsec,
