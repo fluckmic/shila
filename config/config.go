@@ -86,7 +86,7 @@ func defaultConfig() *structure.ConfigJSON {
 		KernelEndpoint:  structure.KernelEndpointConfigJSON{
 			SizeIngressBuffer:          				250,
 			SizeEgressBuffer:           				250,
-			SizeRawIngressBuffer:       				500,
+			SizeRawIngressBuffer:       				2500,
 			SizeRawIngressStorage:      				2500,
 			ReadSizeRawIngress:         				30,
 			WaitingTimeUntilEscalation: 				5,
