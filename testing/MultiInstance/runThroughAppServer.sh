@@ -24,7 +24,7 @@ fi
 printf "Client %d - Starting ThroughApp..\n\n" "$CLIENT_ID"
 sleep 15
 
-CMD="cd ""$PATH_TO_EXPERIMENT""sudo ip netns exec shila-ingress ./_throughApp -s -p""$PORT"" -r"
+CMD="cd ""$PATH_TO_EXPERIMENT""; sudo ip netns exec shila-ingress ./_throughApp -s -p""$PORT"" -r"
 sshpass -f client.password ssh -tt scion@"$CLIENT" -q "$CMD" 2>&1 | tee -a "_rThroughAppServer""$CLIENT_ID"".log"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Unable to start receiving ThroughApp server on Client %d.\n" "$CLIENT_ID"
