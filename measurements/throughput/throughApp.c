@@ -150,6 +150,8 @@ int main(int argc, char *argv[])
 
   char remoteIP[16] = "";
 
+  char identifier[7] = "";
+
   struct sockaddr_in remoteAddr;
   struct sockaddr_in localAddr;
 
@@ -173,9 +175,11 @@ int main(int argc, char *argv[])
       case 'c':
         clientOrServer = CLIENT;
         strncpy(remoteIP,optarg,15);
+        strncpy(identifier,"Client",6);
         break;
       case 's':
         clientOrServer = SERVER;
+        strncpy(identifier,"Server",6);
         break;
       case 'n':
         mbToWrite = atoi(optarg);
@@ -220,6 +224,7 @@ int main(int argc, char *argv[])
 
   if(clientOrServer == CLIENT)
   {
+
         /* set the maximum segment size */
         optionValue = MSS_TCP;
         if(setsockopt(sockFd, IPPROTO_TCP, TCP_MAXSEG, (char *)&optionValue, sizeof(optionValue)) < 0)
@@ -270,7 +275,7 @@ int main(int argc, char *argv[])
           exit(1);
         }
 
-        do_debug("Server: Listening on port %d.\n", port);
+        printf("Server: Listening on port %d.\n", port);
 
         /* wait for connection request */
         remoteLen = sizeof(remoteAddr);
@@ -281,11 +286,13 @@ int main(int argc, char *argv[])
           exit(1);
         }
 
-        do_debug("Server: Client connected from %s\n", inet_ntoa(remoteAddr.sin_addr));
+        printf("Server: Client connected from %s\n", inet_ntoa(remoteAddr.sin_addr));
   }
 
   if(isReceiver)
   {
+        printf("%s as receiver started listening..\n", identifier);
+
         int nBytesReadTotal = 0;
         int nMBytesReceived = 0;
         int nBytesRead;
@@ -309,6 +316,8 @@ int main(int argc, char *argv[])
             }
             */
         }
+
+        printf("%s as receiver done.\n", identifier);
   }
   else
   {
@@ -321,7 +330,8 @@ int main(int argc, char *argv[])
         int nBytesWrittenTotal = 0;
         int nMBytesWritten = 0;
 
-        printf("Start sending %d MBytes..\n", mbToWrite);
+        printf("%s as sender starts sending %d MBytes..\n", identifier, mbToWrite);
+
         get_now(&timeSendingStart);
 
         while(nMBytesWritten < mbToWrite)
@@ -357,6 +367,8 @@ int main(int argc, char *argv[])
         float goodput = nMBytesWritten / deltaTime;
 
         printf("%f MB/s\n", goodput);
+
+        printf("%s as sender done.\n", identifier);
   }
 
   return(0);
