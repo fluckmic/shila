@@ -183,9 +183,11 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
 
     if [[ $MODE -eq $DURATION_MODE ]]; then
       VALUE=$DURATION
+      TIMEOUT=$(($DURATION * 2))
     fi
     if [[ $MODE -eq $TRANSFER_MODE ]]; then
       VALUE=$TRANSFER
+      TIMEOUT=$(($DURATION * 3))
     fi
     bash runExperiment.sh $EXPERIMENT "$VALUE" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE"
     if [[ $? -ne 0 ]]; then

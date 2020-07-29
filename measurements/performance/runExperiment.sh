@@ -5,7 +5,7 @@ PRINT_DEBUG=1
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 
-SRC_ID=$1; DST_ID=$2; DIRECTION=$3; N_INTERFACE=$4; PATH_SELECT=$5; REPETITION=$6; VALUE=$7; OUTPUT_FOLDER=$8; LOGFILE_EXPERIMENT=$9; MODE=$10
+SRC_ID=$1; DST_ID=$2; DIRECTION=$3; N_INTERFACE=$4; PATH_SELECT=$5; REPETITION=$6; VALUE=$7; OUTPUT_FOLDER=$8; LOGFILE_EXPERIMENT=$9; MODE=$10, TIMEOUT=$11
 
 mapfile -t CLIENTS < hostNames.data
 
@@ -92,7 +92,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 $((2 * $DURATION))   # With polling, times out after 2x experiment duration.
+./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 $TIMEOUT   # With polling, times out after certain time.
 if [[ $? -eq 1 ]]; then
   ERROR_DATE=$(date +%F-%H-%M-%S)
   ERROR_FOLDER="$OUTPUT_FOLDER""/""$LOG_FOLDER""_""$ERROR_DATE"
