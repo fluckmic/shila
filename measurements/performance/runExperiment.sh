@@ -104,11 +104,6 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$CLIENT_RUNNING_TSHARK" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-sleep 2
-./waitForReturn.sh "$CLIENT_RUNNING_TSHARK" "$SCRIPT_NAME" 1 0   # No polling..
-if [[ $? -eq 1 ]]; then
-  exit 1
-fi
 
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
