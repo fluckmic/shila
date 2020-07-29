@@ -189,7 +189,7 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
       VALUE=$TRANSFER
       TIMEOUT=$(($DURATION * 3))
     fi
-    bash runExperiment.sh $EXPERIMENT "$VALUE" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE" "$TIMEOUT"
+    bash runExperiment.sh $EXPERIMENT $VALUE "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" $MODE $TIMEOUT
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> "$FAIL_LOG"
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
