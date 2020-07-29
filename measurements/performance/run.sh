@@ -1,24 +1,50 @@
 #!/bin/bash
 
+# sudo sysctl net.mptcp.mptcp_scheduler=default
+# sudo sysctl net.ipv4.tcp_congestion_control=lia
+# sudo sysctl net.ipv4.tcp_congestion_control=cubic
+
 PRINT_DEBUG=1
 
 DRY_RUN=$1
 
 PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 
-EXPERIMENT_NAME="Performance measurement"
+EXPERIMENT_NAME="performance measurement"
 
 mapfile -t CLIENTS < hostNames.data
 
-CLIENT_IDS=(0 1 3)
-N_REPETITIONS=10
-N_INTERFACES=(1 2 4 7 8)
-PATH_SELECTIONS=(0 1 2)
-DURATION=25
+CLIENT_IDS=(0 1 )
+N_REPETITIONS=2
+N_INTERFACES=(2)
+PATH_SELECTIONS=(1)
+DIRECTIONS=(0 1)    # 0: client -> server
+                    # 1: server -> client
 
-DURATION_BETWEEN=60
+DURATION=25   # How long to send data
+TRANSFER=10   # Amount of data (in MByte) to send
 
-N_EXPERIMENTS=$((${#CLIENT_IDS[@]} * (${#CLIENT_IDS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]}))
+DURATION_MODE=1
+TRANSFER_MODE=2
+
+MODE=$DURATION_MODE
+
+if [[ $MODE -eq $DURATION_MODE ]]; then
+  MODE_DESC="duration"
+fi
+if [[ $MODE -eq $TRANSFER_MODE ]]; then
+  MODE_DESC="transfer"
+fi
+
+DURATION_BETWEEN=60   # For estimating the duration of the experiment (Seconds).
+APPROX_THROUGHPUT=1   # For estimating the duration of the experiment (MByte/s).
+
+if [[ $MODE -eq $TRANSFER_MODE ]]; then
+  DURATION=$(($TRANSFER / $APPROX_THROUGHPUT))
+fi
+
+# Factor two because of bi-direction tests client -> server, and client <- server
+N_EXPERIMENTS=$((${#CLIENT_IDS[@]} * (${#CLIENT_IDS[@]} - 1) * $N_REPETITIONS * ${#N_INTERFACES[@]} * ${#PATH_SELECTIONS[@]} * 2))
 TOTAL_DURATION_M=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 60 ))
 TOTAL_DURATION_H=$(((($DURATION + $DURATION_BETWEEN) * $N_EXPERIMENTS) / 3600 ))
 
@@ -38,7 +64,7 @@ mkdir "$OUTPUT_PATH"
 
 LOGFILE_EXPERIMENT="$OUTPUT_PATH""/experiment.log"
 
-printf "Starting %s:\n\n" "$EXPERIMENT_NAME" | tee -a "$LOGFILE_EXPERIMENT"
+printf "Starting %s:\n\n" "$EXPERIMENT_NAME"" in ""$MODE_DESC"" mode" | tee -a "$LOGFILE_EXPERIMENT"
 
 printf "Clients:\t" | tee -a "$LOGFILE_EXPERIMENT"
 for CLIENT_ID in "${CLIENT_IDS[@]}"; do
@@ -66,7 +92,14 @@ printf "\n" | tee -a "$LOGFILE_EXPERIMENT"
 
 printf "Repetitions:\t%s\n" "$N_REPETITIONS" | tee -a "$LOGFILE_EXPERIMENT"
 
-printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
+if [[ $MODE -eq $DURATION_MODE ]]; then
+  printf "Duration:\t%s\n" "$DURATION" | tee -a "$LOGFILE_EXPERIMENT"
+fi
+
+if [[ $MODE -eq $TRANSFER_MODE ]]; then
+  printf "Transfer:\t%s\n" "$TRANSFER" | tee -a "$LOGFILE_EXPERIMENT"
+fi
+
 printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
@@ -78,12 +111,14 @@ rm -f _experiments_0.data
 for SRC_ID in "${CLIENT_IDS[@]}"; do
   for DST_ID in "${CLIENT_IDS[@]}"; do
   if [[ $SRC_ID != $DST_ID ]]; then
-    for N_INTERFACE in "${N_INTERFACES[@]}"; do
-      for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
-        COUNT=1
-        while [[ "$COUNT" -le "$N_REPETITIONS" ]]; do
-          echo "$SRC_ID" "$DST_ID" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments_0.data
-          COUNT=$(($COUNT+1))
+    for DIRECTION in "${DIRECTIONS[@]}"; do
+      for N_INTERFACE in "${N_INTERFACES[@]}"; do
+        for PATH_SELECT in "${PATH_SELECTIONS[@]}"; do
+          COUNT=1
+          while [[ "$COUNT" -le "$N_REPETITIONS" ]]; do
+            echo "$SRC_ID" "$DST_ID" "$DIRECTION" "$N_INTERFACE" "$PATH_SELECT" "$COUNT" >> _experiments_0.data
+            COUNT=$(($COUNT+1))
+          done
         done
       done
     done
@@ -146,7 +181,13 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
 
     printf "Start with experiment %s.\n" "$EXPERIMENT" | tee -a "$LOGFILE_EXPERIMENT"
 
-    bash doExperiment.sh $EXPERIMENT "$DURATION" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT"
+    if [[ $MODE -eq $DURATION_MODE ]]; then
+      VALUE=$DURATION
+    fi
+    if [[ $MODE -eq $TRANSFER_MODE ]]; then
+      VALUE=$TRANSFER
+    fi
+    bash runExperimentDuration.sh $EXPERIMENT "$VALUE" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE"
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> "$FAIL_LOG"
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
