@@ -36,8 +36,7 @@ fi
 
 printf "HostID RemoteID Address Port Repetition PathSelect %s Interval nInterfaces Direction\n" "$VALUE_DESC" >> "$LOG_FILE"
 printf "%s %s %s %s %s %s %s %s %s %s.\n" "$HOST_ID" "$REMOTE_ID" "$ADDRESS" "$PORT" "$REPETITION" "$PATH_SELECT" "$VALUE" "$INTERVAL" "$N_INTERFACE" "$DIRECTION" >> "$LOG_FILE"
-IPERF_ARG=" -c ""$ADDRESS"" -p ""$PORT"" --get-server-output -M ""$MSS"" ""$DYN_ARG"
-printf "sudo ip netns exec shila-egress iperf3 %s\n" "$IPERF_ARG"
-sudo ip netns exec shila-egress iperf3 "$IPERF_ARG" >> "$LOG_FILE" 2>> "$ERR_FILE"
+CMD="iperf3 -c ""$ADDRESS"" -p ""$PORT"" --get-server-output -M ""$MSS"" ""$DYN_ARG"
+sudo ip netns exec shila-egress "$CMD" >> "$LOG_FILE" 2>> "$ERR_FILE"
 
 exit 0
