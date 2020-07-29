@@ -92,7 +92,7 @@ if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
-./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 $TIMEOUT   # With polling, times out after certain time.
+./waitForReturn.sh "$SRC_CLIENT" "$SCRIPT_NAME" 0 "$TIMEOUT"   # With polling, times out after certain time.
 if [[ $? -eq 1 ]]; then
   ERROR_DATE=$(date +%F-%H-%M-%S)
   ERROR_FOLDER="$OUTPUT_FOLDER""/""$LOG_FOLDER""_""$ERROR_DATE"
