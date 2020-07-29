@@ -17,4 +17,4 @@ sudo chmod o=rw
 sleep 1
 
 printf "Starting tshark on the receiving side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
-sudo tshark -i eth0 -w "$TSHARK_DUMP_FILENAME" -F pcap >> "$LOG_FILE" 2>> "$ERR_FILE"
+sudo /usr/bin/tshark -i eth0 -w "$TSHARK_DUMP_FILENAME" -F pcap >> "$LOG_FILE" 2>> "$ERR_FILE"
