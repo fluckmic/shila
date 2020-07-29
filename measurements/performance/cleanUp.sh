@@ -9,8 +9,9 @@ cd "$BASE_DIR"
 
 pkill shila
 pkill iperf
+pkill tshark
 
-sleep 5
+sleep 3
 
 # Delete all namespaces
 bash ../../helper/netnsClear.sh

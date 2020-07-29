@@ -84,6 +84,34 @@ fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 sleep 10
 ########################################################################################################################
+## Start tshark on the data receiving side.
+SCRIPT_NAME="tsharkReceivingSide"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+
+# client -> server, hence log traffic on server side
+if [[ $DIRECTION -eq 0 ]]; then
+  CLIENT_RUNNING_TSHARK="$DST_CLIENT"
+  ./printDebug.sh "Start tshark on the data server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+fi
+# client <- server, hence log traffic on client side
+if [[ $DIRECTION -eq 1 ]]; then
+  CLIENT_RUNNING_TSHARK="$SRC_CLIENT"
+  ./printDebug.sh "Start tshark on the data client side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+fi
+
+ssh -tt scion@"$CLIENT_RUNNING_TSHARK" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+  printf "Failure : Cannot connect to %s.\n" "$CLIENT_RUNNING_TSHARK" | tee -a "$LOGFILE_EXPERIMENT"
+  exit 1
+fi
+sleep 2
+./waitForReturn.sh "$CLIENT_RUNNING_TSHARK" "$SCRIPT_NAME" 1 0   # No polling..
+if [[ $? -eq 1 ]]; then
+  exit 1
+fi
+
+./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+########################################################################################################################
 ## Start the iperf instance on the client.
 ./printDebug.sh "Starting iperf instance on the client." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 SCRIPT_NAME="iperfClientSide"
@@ -106,7 +134,7 @@ if [[ $? -eq 1 ]]; then
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
-
+  scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.pcap" "$ERROR_FOLDER"
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
@@ -123,9 +151,25 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaClientSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_clientConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_shilaServerSide.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_serverConfig.dump"   "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
+########################################################################################################################
+## Clean up the clients involved.
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/cleanUp.sh 0"
+ssh -tt scion@"$SRC_CLIENT" -q "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+    printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
+fi
+ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+    printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
+fi
+./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+########################################################################################################################
