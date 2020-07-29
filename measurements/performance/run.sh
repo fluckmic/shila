@@ -200,8 +200,6 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
     fi
   done
 
-  exit 0
-
   N_REPS=$(($N_REPS+1))
 
 done

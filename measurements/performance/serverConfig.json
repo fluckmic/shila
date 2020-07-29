@@ -43,6 +43,6 @@
   },
   "Config": {
     "DumpConfig": true,
-    "ConfigDumpPath": "_config.dump"
+    "ConfigDumpPath": "_serverConfig.dump"
   }
 }
