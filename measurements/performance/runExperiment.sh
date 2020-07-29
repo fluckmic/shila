@@ -12,7 +12,7 @@ mapfile -t CLIENTS < hostNames.data
 SRC_CLIENT="${CLIENTS["$SRC_ID"]}"
 DST_CLIENT="${CLIENTS["$DST_ID"]}"
 
-LOG_FOLDER="$SRC_ID""_""$DST_ID""_""$N_DIRECTION""_""$N_INTERFACE""_""$PATH_SELECT""_""$REPETITION"
+LOG_FOLDER="$SRC_ID""_""$DST_ID""_""$DIRECTION""_""$N_INTERFACE""_""$PATH_SELECT""_""$REPETITION"
 LOG_FILE="_iperfClientSide_""$LOG_FOLDER"".log"
 
 ########################################################################################################################
