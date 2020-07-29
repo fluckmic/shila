@@ -15,7 +15,7 @@ EXPERIMENT_NAME="performance measurement"
 mapfile -t CLIENTS < hostNames.data
 
 CLIENT_IDS=(0 1 )
-N_REPETITIONS=2
+N_REPETITIONS=1
 N_INTERFACES=(2)
 PATH_SELECTIONS=(1)
 DIRECTIONS=(0 1)    # 0: client -> server
@@ -36,8 +36,8 @@ if [[ $MODE -eq $TRANSFER_MODE ]]; then
   MODE_DESC="transfer"
 fi
 
-DURATION_BETWEEN=60   # For estimating the duration of the experiment (Seconds).
-APPROX_THROUGHPUT=1   # For estimating the duration of the experiment (MByte/s).
+DURATION_BETWEEN=60      # For estimating the duration of the experiment (Seconds).
+APPROX_THROUGHPUT=0.5    # For estimating the duration of the experiment (MByte/s).
 
 if [[ $MODE -eq $TRANSFER_MODE ]]; then
   DURATION=$(($TRANSFER / $APPROX_THROUGHPUT))
@@ -187,7 +187,7 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
     fi
     if [[ $MODE -eq $TRANSFER_MODE ]]; then
       VALUE=$TRANSFER
-      TIMEOUT=$(($DURATION * 3))
+      TIMEOUT=$(($DURATION * 2))
     fi
     bash runExperiment.sh $EXPERIMENT $VALUE "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE" "$TIMEOUT"
     if [[ $? -ne 0 ]]; then

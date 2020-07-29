@@ -15,9 +15,12 @@ sleep 5
 # Delete all namespaces
 bash ../../helper/netnsClear.sh
 
-# Remove all log and error files.
+# Remove all log, error, dump and config files.
 rm -f _*.log
 rm -f _*.err
+rm -f _*.dump
+rm -f _*.json
+
 
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then
