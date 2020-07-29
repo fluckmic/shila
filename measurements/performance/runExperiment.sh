@@ -6,7 +6,7 @@ PATH_TO_EXPERIMENT="~/go/src/shila/measurements/performance"
 START_SESSION="bash ~/go/src/shila/measurements/sessionScripts/startSession.sh"
 
 SRC_ID=$1; DST_ID=$2; DIRECTION=$3; N_INTERFACE=$4; PATH_SELECT=$5; REPETITION=$6
-VALUE=$7; OUTPUT_FOLDER=$8; LOGFILE_EXPERIMENT=$9; MODE=$10; TIMEOUT=$11
+VALUE=$7; OUTPUT_FOLDER=$8; LOGFILE_EXPERIMENT=$9; MODE=${10}; TIMEOUT=${11}
 
 mapfile -t CLIENTS < hostNames.data
 
@@ -88,7 +88,7 @@ sleep 10
 ./printDebug.sh "Starting iperf instance on the client." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 SCRIPT_NAME="iperfClientSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
-ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$DST_ID" "$DIRECTION" "$N_INTERFACE" "$PATH_SELECT" "$REPETITION" "$VALUE" $MODE
+ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$DST_ID" "$DIRECTION" "$N_INTERFACE" "$PATH_SELECT" "$REPETITION" "$VALUE" "$MODE"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
