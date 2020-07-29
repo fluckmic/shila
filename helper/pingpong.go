@@ -23,7 +23,6 @@ import (
 	"encoding/gob"
 	"flag"
 	"fmt"
-	quic "github.com/scionproto/scion/bazel-scion/external/com_github_lucas_clemente_quic_go"
 	"io"
 	"io/ioutil"
 	"net"
