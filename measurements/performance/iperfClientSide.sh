@@ -19,6 +19,8 @@ INTERVAL=1
 LOG_FILE="_iperfClientSide_""$HOST_ID""_""$REMOTE_ID""_""$DIRECTION""_""$N_INTERFACE""_""$PATH_SELECT""_""$REPETITION"".log"
 ERR_FILE="_iperfClientSide.err"
 
+echo $MODE >> "$LOG_FILE"
+
 mapfile -t PORTS < IperfListeningPorts.data
 PORT=${PORTS["$REMOTE_ID"]}
 
