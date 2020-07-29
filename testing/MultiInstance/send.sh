@@ -46,7 +46,7 @@ fi
 if [[ SEND_FOR_SIZE -eq 1 ]]; then
 
   printf "Send %s MByte from Client %d to Client %d (port %s).\n" "$TRANSFER_VALUE" "$SRC_ID" "$DST_ID" "$PORT"
-  CMD="sudo ip netns exec shila-egress iperf3 -c ""$ADDRESS"" -p ""$PORT"" -n ""$TRANSFER_VALUE""K  -i ""$INTERVAL --get-server-output -M 500"
+  CMD="sudo ip netns exec shila-egress iperf3 -c ""$ADDRESS"" -p ""$PORT"" -n ""$TRANSFER_VALUE""M  -i ""$INTERVAL --get-server-output -M 500"
   echo "$CMD"
   sshpass -f client.password ssh -tt scion@"$SRC_CLIENT" -q "$CMD" 2>&1 | tee -a "_iperfClient""$SRC_ID"".log"
     if [[ $? -ne 0 ]]; then
