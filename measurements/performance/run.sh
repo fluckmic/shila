@@ -187,7 +187,7 @@ while [[ $N_EXPERIMENTS_DONE -lt $N_EXPERIMENTS ]]; do
     if [[ $MODE -eq $TRANSFER_MODE ]]; then
       VALUE=$TRANSFER
     fi
-    bash runExperimentDuration.sh $EXPERIMENT "$VALUE" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE"
+    bash runExperiment.sh $EXPERIMENT "$VALUE" "$OUTPUT_PATH" "$LOGFILE_EXPERIMENT" "$MODE"
     if [[ $? -ne 0 ]]; then
       echo "$EXPERIMENT" >> "$FAIL_LOG"
       N_EXPERIMENTS_FAIL=$(($N_EXPERIMENTS_FAIL+1))
