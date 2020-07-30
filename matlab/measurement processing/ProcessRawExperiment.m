@@ -57,6 +57,12 @@ for i = 1:length(RepetitionList)
     % Parse the shila client log files
     [avgMtu, avgLen, avgShar] = parseSingleShilaRepetition(fullfile(RepetitionList(i).folder, "_shilaClientSide.log"));
     dataCubusShila(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) =  [avgMtu, avgLen, avgShar];
+    
+    % Parse the scion data traffic captured with tshark
+    [avgThroughput, duration] = parseSingleSCIONTrafficRepetition(fullfile(RepetitionList(i).folder, "_tsharkSCIONTraffic.csv"));
+    %avgThroughput
+    %duration
+    dataCubusTSharkSCION(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) = avgThroughput;
 end
 
     
