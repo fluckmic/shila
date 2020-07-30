@@ -31,7 +31,7 @@ if [[ $? -ne 0 ]]; then
 fi
 sleep 1 #2
 ./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
-sleep 4 #10
+sleep 10 #10
 ########################################################################################################################
 ## Start the shila instance on the server.
 ./printDebug.sh "Starting shila instance on the server." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
@@ -84,24 +84,36 @@ fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 sleep 10
 ########################################################################################################################
-## Start tshark on the data receiving side.
+## Start tshark to capture SCION traffic on the data receiving side.
 SCRIPT_NAME="tsharkSCIONTraffic"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 # client -> server, hence log traffic on server side
 if [[ $DIRECTION -eq 0 ]]; then
   CLIENT_RUNNING_TSHARK="$DST_CLIENT"
-  ./printDebug.sh "Start tshark on the data server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+  ./printDebug.sh "Start tshark capturing SCION traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 fi
 # client <- server, hence log traffic on client side
 if [[ $DIRECTION -eq 1 ]]; then
   CLIENT_RUNNING_TSHARK="$SRC_CLIENT"
-  ./printDebug.sh "Start tshark on the data client side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+  ./printDebug.sh "Start tshark capturing SCION traffic on client side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 fi
 
 ssh -tt scion@"$CLIENT_RUNNING_TSHARK" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$CLIENT_RUNNING_TSHARK" | tee -a "$LOGFILE_EXPERIMENT"
+  exit 1
+fi
+
+./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+########################################################################################################################
+## Start tshark to capture MPTCP traffic on the server (ingress interface).
+SCRIPT_NAME="tsharkMPTCPTraffic"
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
+./printDebug.sh "Start tshark capturing MPTCP traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+  printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
 
@@ -129,16 +141,22 @@ if [[ $? -eq 1 ]]; then
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
-  #scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.pcap" "$ERROR_FOLDER"
+  scp scion@"$CLIENT_RUNNING_TSHARK":"$DST_CLIENT""/_tsharkMPTCPTraffic.pcap" "$ERROR_FOLDER"
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
-## Post process pcap
+## Post process pcap files
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/tsharkSCIONTrafficPost.sh"
 ssh -tt scion@"$CLIENT_RUNNING_TSHARK" -q "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
     printf "Failure : Cannot connect to %s.\n" "$CLIENT_RUNNING_TSHARK" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
+fi
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/tsharkMPTCPTrafficPost.sh"
+ssh -tt scion@"$DST_CLIENT" -q "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+    printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
     exit 1
 fi
 ########################################################################################################################
@@ -158,6 +176,7 @@ scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ########################################################################################################################

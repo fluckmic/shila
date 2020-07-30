@@ -16,7 +16,7 @@ sudo chmod o=rw "$SCION_TRAFFIC_PCAP_DUMP_FILENAME"
 
 CAPTURE_FILTER="udp dst port 50000"
 
-printf "Starting tshark on the receiving side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
+printf "Starting capturing SCION traffic on the receiving side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 tshark -i eth0 -f "$CAPTURE_FILTER" -w "$SCION_TRAFFIC_PCAP_DUMP_FILENAME" -F pcap > "$LOG_FILE" 2> "$ERR_FILE"
 
 sleep 1
