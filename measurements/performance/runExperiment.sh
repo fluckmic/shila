@@ -29,9 +29,9 @@ if [[ $? -ne 0 ]]; then
     printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
     exit 1
 fi
-sleep 2
+sleep 1 #2
 ./printDebug.sh "Cleaned up the involved clients." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
-sleep 10
+sleep 4 #10
 ########################################################################################################################
 ## Start the shila instance on the server.
 ./printDebug.sh "Starting shila instance on the server." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
@@ -85,7 +85,7 @@ fi
 sleep 10
 ########################################################################################################################
 ## Start tshark on the data receiving side.
-SCRIPT_NAME="tsharkReceivingSide"
+SCRIPT_NAME="tsharkSCIONTraffic"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 # client -> server, hence log traffic on server side
@@ -129,10 +129,18 @@ if [[ $? -eq 1 ]]; then
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
-  scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.pcap" "$ERROR_FOLDER"
+  #scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.pcap" "$ERROR_FOLDER"
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+########################################################################################################################
+## Post process pcap
+SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/tsharkSCIONTrafficPost.sh"
+ssh -tt scion@"$CLIENT_RUNNING_TSHARK" -q "$SCRIPT_CMD"
+if [[ $? -ne 0 ]]; then
+    printf "Failure : Cannot connect to %s.\n" "$CLIENT_RUNNING_TSHARK" | tee -a "$LOGFILE_EXPERIMENT"
+    exit 1
+fi
 ########################################################################################################################
 ## Copy back the measurements
 
