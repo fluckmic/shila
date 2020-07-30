@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# sudo sysctl net.mptcp.mptcp_scheduler=default
-# sudo sysctl net.ipv4.tcp_congestion_control=lia
-# sudo sysctl net.ipv4.tcp_congestion_control=cubic
-
 PRINT_DEBUG=1
 
 DRY_RUN=$1
@@ -24,10 +20,12 @@ DIRECTIONS=(0 1)    # 0: client -> server
 DURATION=25   # How long to send data
 TRANSFER=10   # Amount of data (in MByte) to send
 
-DURATION_MODE=1
-TRANSFER_MODE=2
-
+DURATION_MODE=1; TRANSFER_MODE=2
 MODE=$DURATION_MODE
+
+# set the congestion control
+# cubic, lia, balia, olia, wvegas
+CONGESTION_CONTROL="cubic"
 
 if [[ $MODE -eq $DURATION_MODE ]]; then
   MODE_DESC="duration"
@@ -100,6 +98,8 @@ if [[ $MODE -eq $TRANSFER_MODE ]]; then
   printf "Transfer:\t%s\n" "$TRANSFER" | tee -a "$LOGFILE_EXPERIMENT"
 fi
 
+printf "Cong. control:\t%s\n" "$CONGESTION_CONTROL"
+
 printf "\nTotal number of experiments:\t%d\n" "$N_EXPERIMENTS" | tee -a "$LOGFILE_EXPERIMENT"
 printf "Estimated duration:\t\t%dmin (%d h)\n\n" "$TOTAL_DURATION_M" "$TOTAL_DURATION_H" | tee -a "$LOGFILE_EXPERIMENT"
 ########################################################################################################################
@@ -140,7 +140,7 @@ SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 
 for CLIENT_ID in "${CLIENT_IDS[@]}"; do
  ./printDebug.sh "Start initializing ""${CLIENTS[$CLIENT_ID]}""." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
- ssh -tt scion@"${CLIENTS[$CLIENT_ID]}" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+ ssh -tt scion@"${CLIENTS[$CLIENT_ID]}" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$CONGESTION_CONTROL"
  if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "${CLIENTS[$CLIENT_ID]}" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1

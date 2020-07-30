@@ -23,6 +23,8 @@ fi
 echo "$HOST_ID" > _hostId
 echo "$HOST_NAME" > _hostName
 
+CONGESTION_CONTROL=$1
+
 ## Update the repo
 git pull > _init.log 2> _init.err
 if [[ $? -ne 0 ]]; then
@@ -36,6 +38,12 @@ export PATH=$PATH:/usr/local/go/bin
 go build -o _shila ../../
 
 sleep 1
+
+# Configure MPTCP and the congestion control algorithm
+sudo sysctl net.mptcp.mptcp_scheduler=default
+sudo sysctl net.mptcp.mptcp_path_manager=fullmesh
+
+sudo sysctl net.ipv4.tcp_congestion_control="$CONGESTION_CONTROL"
 
 printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
 exit 0
