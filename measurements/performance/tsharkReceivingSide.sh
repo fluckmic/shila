@@ -17,6 +17,6 @@ CAPTURE_FILTER="udp dst port 50000"
 #sudo chmod o=rw "$TSHARK_DUMP_FILENAME"
 
 printf "Starting tshark on the receiving side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
-tshark -i eth0 -w -f "$CAPTURE_FILTER" "$TSHARK_DUMP_FILENAME" -F pcap > "$LOG_FILE" 2> "$ERR_FILE"
+tshark -i eth0 -f "$CAPTURE_FILTER" -w "$TSHARK_DUMP_FILENAME" -F pcap > "$LOG_FILE" 2> "$ERR_FILE"
 
 sleep 1
