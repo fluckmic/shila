@@ -174,10 +174,13 @@ fi
 
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+#scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+
+scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ########################################################################################################################
 ## Clean up the clients involved.
