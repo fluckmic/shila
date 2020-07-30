@@ -22,7 +22,8 @@ rm -f _*.log
 rm -f _*.err
 rm -f _*.dump
 rm -f _*.json
-
+rm -f _*.csv
+rm -f _*.pcap
 
 # Remove all builds as well.
 if [[ $1 -eq 1 ]]; then

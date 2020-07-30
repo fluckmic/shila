@@ -17,6 +17,6 @@ sudo chmod o=rw "$MPTCP_TRAFFIC_PCAP_DUMP_FILENAME"
 CAPTURE_FILTER=""
 
 printf "Starting capturing MPTCP traffic on the receiving side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
-sudo ip netns exec shila-ingress tshark -i tun1 -w "$MPTCP_TRAFFIC_MPTCP_DUMP_FILENAME" -F pcap > "$LOG_FILE" 2> "$ERR_FILE"
+sudo ip netns exec shila-ingress tshark -i tun1 -w "$MPTCP_TRAFFIC_PCAP_DUMP_FILENAME" -F pcap > "$LOG_FILE" 2> "$ERR_FILE"
 
 sleep 1

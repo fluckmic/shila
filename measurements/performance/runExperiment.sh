@@ -91,12 +91,12 @@ SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 # client -> server, hence log traffic on server side
 if [[ $DIRECTION -eq 0 ]]; then
   CLIENT_RUNNING_TSHARK="$DST_CLIENT"
-  ./printDebug.sh "Start tshark capturing SCION traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+  ./printDebug.sh "Starting tshark capturing SCION traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 fi
 # client <- server, hence log traffic on client side
 if [[ $DIRECTION -eq 1 ]]; then
   CLIENT_RUNNING_TSHARK="$SRC_CLIENT"
-  ./printDebug.sh "Start tshark capturing SCION traffic on client side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+  ./printDebug.sh "Starting tshark capturing SCION traffic on client side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 fi
 
 ssh -tt scion@"$CLIENT_RUNNING_TSHARK" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
@@ -110,7 +110,7 @@ fi
 ## Start tshark to capture MPTCP traffic on the server (ingress interface).
 SCRIPT_NAME="tsharkMPTCPTraffic"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
-./printDebug.sh "Start tshark capturing MPTCP traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
+./printDebug.sh "Starting tshark capturing MPTCP traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
@@ -176,7 +176,7 @@ scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*MPTCPTraffic*.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ########################################################################################################################
