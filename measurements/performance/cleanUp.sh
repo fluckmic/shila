@@ -7,9 +7,10 @@ cd "$BASE_DIR"
 
 ## Reset everything to be ready for a new repetition.
 
+pkill tshark
 pkill shila
 pkill iperf
-pkill tshark
+
 
 sleep 3
 
