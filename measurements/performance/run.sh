@@ -16,8 +16,8 @@ mapfile -t CLIENTS < hostNames.data
 
 CLIENT_IDS=(0 1 )
 N_REPETITIONS=1
-N_INTERFACES=(2)
-PATH_SELECTIONS=(1)
+N_INTERFACES=(1 2 4)
+PATH_SELECTIONS=(1 2)
 DIRECTIONS=(0 1)    # 0: client -> server
                     # 1: server -> client
 
