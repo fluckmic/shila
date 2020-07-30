@@ -111,9 +111,9 @@ fi
 SCRIPT_NAME="tsharkMPTCPTraffic"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
 ./printDebug.sh "Starting tshark capturing MPTCP traffic on server side." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
-ssh -tt scion@"$SRC_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
+ssh -tt scion@"$DST_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD"
 if [[ $? -ne 0 ]]; then
-  printf "Failure : Cannot connect to %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
+  printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
 fi
 
@@ -141,7 +141,7 @@ if [[ $? -eq 1 ]]; then
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.err" "$ERROR_FOLDER"
   scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$ERROR_FOLDER"
-  scp scion@"$CLIENT_RUNNING_TSHARK":"$DST_CLIENT""/_tsharkMPTCPTraffic.pcap" "$ERROR_FOLDER"
+  #scp scion@"$CLIENT_RUNNING_TSHARK":"$DST_CLIENT""/_tsharkMPTCPTraffic.pcap" "$ERROR_FOLDER"
   exit 1
 fi
 ./printDebug.sh "Done." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
@@ -176,7 +176,7 @@ scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*MPTCPTraffic*.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
+scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_tsharkMPTCPTraffic.pcap" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_*.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ########################################################################################################################
