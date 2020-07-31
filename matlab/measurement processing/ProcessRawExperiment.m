@@ -45,9 +45,17 @@ dataCubusShila          = zeros(max(pathSelections), max(clients), max(clients),
                             % path selection | client | server | sending direction | interface | repetition | measurement value
 dataCubusTSharkSCION    = zeros(max(pathSelections), max(clients), max(clients), 2, max(interfaces), nRepetition, nDataTSharkSCION);
 
+%% Create GUI for convenience
+
+f = uifigure;
+d = uiprogressdlg(f,'Title','Processing the raw data..','Message','folder name');
+
 % Parse the log files
 RepetitionList = dir(fullfile(pathToExperiment, "/successful/", "**", "/_iperfClientSide*"));
 for i = 1:length(RepetitionList)
+    
+    d.Value = i / length(RepetitionList);
+    d.Message = RepetitionList(i).name;
     
     % Parse the iperf client log files
     [measurementsClient, measurementsServer, pathSelection, hostID, remoteID, sendDir, nInterface, repetition] = parseSingleIperfRepetition(fullfile(RepetitionList(i).folder, RepetitionList(i).name));
@@ -59,9 +67,9 @@ for i = 1:length(RepetitionList)
     dataCubusShila(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) =  [avgMtu, avgLen, avgShar];
     
     % Parse the scion data traffic captured with tshark
-    [avgThroughput, duration] = parseSingleSCIONTrafficRepetition(fullfile(RepetitionList(i).folder, "_tsharkSCIONTraffic.csv"));
+    [avgThroughput, durationCaptured] = parseSingleSCIONTrafficRepetition(fullfile(RepetitionList(i).folder, "_tsharkSCIONTraffic.csv"));
     %avgThroughput
-    %duration
+    %durationCaptured
     dataCubusTSharkSCION(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) = avgThroughput;
 end
 
