@@ -40,7 +40,7 @@ go build -o _shila ../../
 sleep 1
 
 # Configure MPTCP and the congestion control algorithm
-sudo sysctl net.mptcp.mptcp_scheduler=default
+sudo sysctl net.mptcp.mptcp_scheduler=roundrobin
 sudo sysctl net.mptcp.mptcp_path_manager=fullmesh
 
 sudo sysctl net.ipv4.tcp_congestion_control="$CONGESTION_CONTROL"
