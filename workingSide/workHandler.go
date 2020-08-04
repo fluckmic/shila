@@ -35,7 +35,7 @@ func (manager *Manager) processPacketChannel(p *shila.Packet) {
 	// Any error leads inevitably to the closing of the connection.
 	// All later packet that are processed by the same connection are silently dropped.
 	// The closed connection is removed after a while; after its removal a packet is might
-	// abel to use the packet without any error.
+	// abel to use the connection without any error.
 
 	if err, ok := err.(shila.TolerableError); ok {
 		log.Error.Print(shila.PrependError(err, color.Yellow("Tolerable error in packet processing.")))
