@@ -15,10 +15,10 @@ N_REPETITIONS=10
 DIRECTIONS=(0 1)    # 0: client -> server
                     # 1: server -> client
 
-TRANSFER=30              # Amount of data (in MByte) to send
+TRANSFER=50              # Amount of data (in MByte) to send
 
 DURATION_BETWEEN=60      # For estimating the duration of the experiment (Seconds).
-DURATION=$(($TRANSFER * 2 ))  # For estimating the duration of the experiment (MByte/s). Assume 0.5 MByte/s throughput..
+DURATION=$(($TRANSFER))  # For estimating the duration of the experiment (MByte/s). Assume 1 MByte/s throughput..
 
 # Factor two because of bi-direction tests client -> server, and client <- server
 N_EXPERIMENTS=$((${#CLIENT_IDS[@]} * (${#CLIENT_IDS[@]} - 1) * $N_REPETITIONS * 2))
