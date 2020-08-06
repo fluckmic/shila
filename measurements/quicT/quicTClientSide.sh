@@ -26,8 +26,8 @@ SRC_ADDR="${ADDRESSES["$HOST_ID"]}"
 DST_ADDR="${ADDRESSES["$REMOTE_ID"]}"
 
 printf "Starting quicT on the client side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
-printf "HostID RemoteID Repetition Direction Transfer\n"  >> "$LOG_FILE"
-printf "%s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$REPETITION" "$TRANSFER" "$DIRECTION"
+printf "HostID RemoteID Direction Repetition Transfer\n"  >> "$LOG_FILE"
+printf "%s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$DIRECTION" "$REPETITION" "$TRANSFER"  >> "$LOG_FILE"
 
 if [[ $DIRECTION -eq 1 ]]; then
   ./_quicT -mode client -remote "$DST_ADDR" -local "$SRC_ADDR" -n "$TRANSFER" -R >> "$LOG_FILE" 2>> "$ERR_FILE"

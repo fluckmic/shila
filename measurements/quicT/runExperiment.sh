@@ -111,18 +111,8 @@ mkdir "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ./printDebug.sh "Start copying back the experiment data." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT"/"$LOG_FILE" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-if [[ $? -ne 0 ]]; then
-  printf "Failure : Unable to copy back the result from %s.\n" "$SRC_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
-  exit 1
-fi
-
 scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$SRC_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-
 scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.log" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-scp scion@"$DST_CLIENT":"$PATH_TO_EXPERIMENT""/_*.dump" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
-
 scp scion@"$CLIENT_RUNNING_TSHARK":"$PATH_TO_EXPERIMENT""/_tsharkSCIONTraffic.csv" "$OUTPUT_FOLDER""/""$LOG_FOLDER"
 
 ########################################################################################################################
