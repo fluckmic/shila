@@ -37,7 +37,7 @@ sleep 10 #10
 ./printDebug.sh "Starting quicT instance on the server." "$PRINT_DEBUG" "$LOGFILE_EXPERIMENT"
 SCRIPT_NAME="quicTServerSide"
 SCRIPT_CMD="sudo bash ""$PATH_TO_EXPERIMENT""/""$SCRIPT_NAME"".sh"
-ssh -tt scion@"$DST_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$DST_ID" "$DIRECTION" "$REPETITION" "$TRANSFER"
+ssh -tt scion@"$DST_CLIENT" -q "$START_SESSION" "$SCRIPT_NAME" "$SCRIPT_CMD" "$SRC_ID" "$DIRECTION" "$REPETITION" "$TRANSFER"
 if [[ $? -ne 0 ]]; then
   printf "Failure : Cannot connect to %s.\n" "$DST_CLIENT" | tee -a "$LOGFILE_EXPERIMENT"
   exit 1
