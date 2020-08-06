@@ -27,7 +27,7 @@ SRC_ADDR="${ADDRESSES["$HOST_ID"]}"
 
 printf "Starting quicT on the server side %s.\n" "$HOST_NAME" >> "$LOG_FILE"
 printf "HostID RemoteID Repetition Direction Transfer\n"  >> "$LOG_FILE"
-printf "%s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$REPETITION" "$TRANSFER" "$DIRECTION"
+printf "%s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$REPETITION" "$TRANSFER" "$DIRECTION" >> "$LOG_FILE"
 
 if [[ $DIRECTION -eq 1 ]]; then
   ./_quicT -mode server -local "$SRC_ADDR" -R >> "$LOG_FILE" 2>> "$ERR_FILE"

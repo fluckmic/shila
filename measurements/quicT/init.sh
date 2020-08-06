@@ -32,10 +32,10 @@ go build -o _quicT quicT.go
 cd ~/go/src/shila/measurements/quicT/
 cp ~/go/src/github.com/scionproto/scion/go/examples/pingpong/_quicT .
 
-sleep 1
 sudo systemctl stop scionlab.target
 sleep 1
 sudo systemctl start scionlab.target
+sleep 1
 
 printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
 
