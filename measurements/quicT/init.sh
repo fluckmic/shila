@@ -26,9 +26,11 @@ echo "$HOST_NAME" > _hostName
 ## Build the latest version of all software required
 export PATH=$PATH:/usr/local/go/bin
 
-cp quicT.go ../../../github.com/scionproto/scion/go/examples/pingpong/quicT.go
-
-#cp ../../../github.com/scionproto/scion/go/examples/pingpong/_quicT .
+cp quicT.go ~/go/src/github.com/scionproto/scion/go/examples/pingpong/quicT.go
+cd ~/go/src/github.com/scionproto/scion/go/examples/pingpong/
+go build -o _quicT quicT.go
+cd ~/go/src/shila/measurements/quicT/
+cp ~/go/src/github.com/scionproto/scion/go/examples/pingpong/_quicT .
 
 sleep 1
 
