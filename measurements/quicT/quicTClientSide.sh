@@ -30,11 +30,11 @@ printf "HostID RemoteID Repetition Direction Transfer\n"  >> "$LOG_FILE"
 printf "%s %s %s %s %s\n" "$HOST_ID" "$REMOTE_ID" "$REPETITION" "$TRANSFER" "$DIRECTION"
 
 if [[ $DIRECTION -eq 1 ]]; then
-  ./quicT -mode client -remote "$DST_ADDR" -local "$SRC_ADDR" -n "$TRANSFER" -R >> "$LOG_FILE" 2>> "$ERR_FILE"
+  ./_quicT -mode client -remote "$DST_ADDR" -local "$SRC_ADDR" -n "$TRANSFER" -R >> "$LOG_FILE" 2>> "$ERR_FILE"
 fi
 
 if [[ $DIRECTION -eq 0 ]]; then
-  ./quicT -mode client -remote "$DST_ADDR" -local "$SRC_ADDR" -n "$TRANSFER" >> "$LOG_FILE" 2>> "$ERR_FILE"
+  ./_quicT -mode client -remote "$DST_ADDR" -local "$SRC_ADDR" -n "$TRANSFER" >> "$LOG_FILE" 2>> "$ERR_FILE"
 fi
 
 exit 0
