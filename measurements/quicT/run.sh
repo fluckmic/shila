@@ -15,7 +15,7 @@ N_REPETITIONS=10
 DIRECTIONS=(0 1)    # 0: client -> server
                     # 1: server -> client
 
-TRANSFER=50              # Amount of data (in MByte) to send
+TRANSFER=100             # Amount of data (in MByte) to send
 
 DURATION_BETWEEN=60      # For estimating the duration of the experiment (Seconds).
 DURATION=$(($TRANSFER))  # For estimating the duration of the experiment (MByte/s). Assume 1 MByte/s throughput..
