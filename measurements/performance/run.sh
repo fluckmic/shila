@@ -13,7 +13,7 @@ mapfile -t CLIENTS < hostNames.data
 CLIENT_IDS=(0 1 3)
 N_REPETITIONS=10
 N_INTERFACES=(1 2 4 6 8)
-PATH_SELECTIONS=(0 1 2)
+PATH_SELECTIONS=(1)
 DIRECTIONS=(0 1)    # 0: client -> server
                     # 1: server -> client
 
@@ -25,7 +25,7 @@ MODE=$DURATION_MODE
 
 # set the congestion control
 # cubic, lia, balia, olia, wvegas
-CONGESTION_CONTROL="cubic"
+CONGESTION_CONTROL="lia"
 
 if [[ $MODE -eq $DURATION_MODE ]]; then
   MODE_DESC="duration"
