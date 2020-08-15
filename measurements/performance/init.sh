@@ -43,6 +43,11 @@ sleep 1
 sudo sysctl net.mptcp.mptcp_scheduler=default
 sudo sysctl net.mptcp.mptcp_path_manager=fullmesh
 
+sudo /sbin/modprobe mptcp_coupled
+sudo /sbin/modprobe mptcp_balia
+sudo /sbin/modprobe mptcp_olia
+sudo /sbin/modprobe mptcp_wvegas
+
 sudo sysctl net.ipv4.tcp_congestion_control="$CONGESTION_CONTROL"
 
 printf "Initialization of %s done.\n" "$HOST_NAME" > _init.log
