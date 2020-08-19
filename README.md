@@ -17,3 +17,12 @@ This repository contains all relevant data of Michael A. Flückiger's master the
 
 ### Abstract
 
+
+
+### Shila
+
+Shila could very well be the name of the female lead role in a thrilling crime novel. However, in the context of this work Shila is the abbreviation of Shim Layer. It appropriately names the implementation which, by mediating between the two technologies, enables the use of MPTCP via SCION.
+
+##### Setup
+
+##### Usage
