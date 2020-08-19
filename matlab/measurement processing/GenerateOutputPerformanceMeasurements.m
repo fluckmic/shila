@@ -1,10 +1,15 @@
 %% Measurement output generation
 %  Creates output from an experiment struct.
 
+addpath outputSubfunctions/
+addpath parsingSubfunctions/
+
 clear
 close all
 
-dbstop if error
+export = 1;
+
+%dbstop if error
 
 %% Preample
 
@@ -17,9 +22,10 @@ exp = load(fullfile(pathToExperimentStruct, filenameExperimentStruct));
 
 %% Generate output
 
+pathToReportFolder = "~/pCloudDrive/NonCrypto Folder/02-shila/Report";
 
 % Performance measurement data table 1 & 2 (PMDataTable1, PMDataTable2)
-% +++++++++++++++++++++++++++++++++++++++++++++++++++
+% +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 % Create table holding goodput and throughput for differet number of 
 % paths and the different path selection metrics 
@@ -29,5 +35,8 @@ exp = load(fullfile(pathToExperimentStruct, filenameExperimentStruct));
 
 [PMDataTable1, PMDataTable2] = createPMDataTable12(exp);
 
-plotPMDataTable1(PMDataTable1, exp.pathSelectionDescription);
-plotPMDataTable2(PMDataTable2, exp.clients, exp.clientDescription, exp.pathSelectionDescription);
+%plotPMDataTable1(PMDataTable1, exp.pathSelectionDescription, pathToReportFolder, export);
+%plotPMDataTable2(PMDataTable2, exp.clients, exp.clientDescription, exp.pathSelectionDescription, pathToReportFolder, export);
+%plotPMDataTable3(PMDataTable2, exp.clients, exp.clientDescription, exp.pathSelectionDescription, pathToReportFolder, export);
+
+outputAvgDeviationFromOpt(exp, pathToReportFolder, export)

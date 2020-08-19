@@ -117,13 +117,26 @@ func (server *Server) serveIngress(){
 		// Does not return any error. Problems in the pipeline are handled internally.
 		// In the worst case the input data is just dropped.
 		server.backboneConnections.WriteIngress(from, buffer[:n])
+
+		// Server upon reception of data:
+		// 1. Determine scion address of sender
+		// 2. Check if there is an existing backbone connection?
+		// 		If not, create backbone connection:
+		//		2.1 Fetch control message and finalize setup of backbone connection
+		//		If contact server endpoint:
+		// 			Set receiving in port to the one it will be for the traffic server endpoint.
+		//			This info is required to find the right server in egress processing.
+		//		If traffic server endpoint:
+		//			Make backbone this backbone connection also findable for traffic coming
+		//			from the client contacting endpoint.
+		//			This info is required to find the right backbone connection.
+		// 3. Hand data to corresponding backbone connection
+		// 4.
 	}
 }
 
 func (server *Server) serveEgress() {
 	for p := range server.Egress {
-
-
 		err := server.backboneConnections.WriteEgress(p)
 		if err != nil {
 			go server.handleConnectionIssue(err)

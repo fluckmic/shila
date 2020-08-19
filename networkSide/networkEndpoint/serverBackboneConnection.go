@@ -206,7 +206,7 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 		conn.netFlows.represented.Src.(*snet.UDPAddr).Host.Port = conn.ipFlow.Src.Port
 	}
 
-	// If the backbone connect is part of a traffic serer network endpoint, then the connection
+	// If the backbone connect is part of a traffic server network endpoint, then the connection
 	// has to be found by messages send along the corresponding contact backbone connection as well.
 	if conn.server.Role() == shila.TrafficNetworkEndpoint {
 

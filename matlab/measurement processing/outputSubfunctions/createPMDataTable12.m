@@ -30,17 +30,22 @@ function [PMDataTable1, PMDataTable2] = createPMDataTable12(exp)
                 % Goodput
                 % +++++++
                 % Get all measurements taken at the server when sending from client to server
-                goodputClientServerPairCS = exp.dataCubusIperf(pathSelectionId, clientHostId, serverHostId, 2, 1, :, :, 2);
+                % path selection | client | server | measurement side | sending direction | interface | repetition | time | measurement value
+                goodputClientServerPairCS = exp.dataCubusIperf(pathSelectionId, clientHostId, serverHostId, 2, 1, :, :, :, 2);
                 goodputClientServerPairCS = reshape(goodputClientServerPairCS, size(goodputClientServerPairCS,6:8));
+                goodputClientServerPairCS = mean(goodputClientServerPairCS, 3);
                 goodputClientServerPairCS = goodputClientServerPairCS(exp.interfaces, :);
+               
                 % Get all measurements taken at the client when sending from server to client
-                goodputClientServerPairSC = exp.dataCubusIperf(pathSelectionId, clientHostId, serverHostId, 1, 2, :, :, 2);
+                goodputClientServerPairSC = exp.dataCubusIperf(pathSelectionId, clientHostId, serverHostId, 1, 2, :, :, :, 2);
                 goodputClientServerPairSC = reshape(goodputClientServerPairSC, size(goodputClientServerPairSC,6:8));
+                goodputClientServerPairSC = mean(goodputClientServerPairSC, 3);
                 goodputClientServerPairSC = goodputClientServerPairSC(exp.interfaces, :);
 
                 % Combine them
-                goodputClientServerPair   = [goodputClientServerPairCS goodputClientServerPairSC];
-
+                goodputClientServerPair   = [goodputClientServerPairCS];
+                %goodputClientServerPair   = [goodputClientServerPairCS goodputClientServerPairSC];
+                
                 % Take average and std (over repetitions, per sending direction)
                 avgGoodputClientServerPairCS = mean(goodputClientServerPairCS, 2);
                 stdGoodputClientServerPairCS = std(goodputClientServerPairCS, 1, 2);

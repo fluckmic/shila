@@ -1,12 +1,12 @@
-%% Raw measurement processing
-%  Processes a raw measurement and generates a struct holding all 
+%% Raw measurement processing (for performance)
+%  Processes a raw measurement and generates a struct holding all
 %  the data in a condensed and nice way usable for further processing.
-%
-%  Additionally for each measurement a struct holding the beautyfied
-%  MPTCP traffic dump obtained from tshark is created.
 
 clear
 close all
+
+addpath outputSubfunctions/
+addpath parsingSubfunctions/
 
 dbstop if error
 
@@ -33,16 +33,16 @@ dataQuantityTSharkSCION     = ["bits/sec"];
 sideDescription             = ["Client", "Server"];
 
 %% Parsing
-    
+
 % Load the experiment log to retreive necessary informations
 [clients, nClients, interfaces, nInterfaceCounts, pathSelections, nPathSelections, duration, nRepetition] = parseExperimentInfo(fullfile(pathToExperiment, "experiment.log"));
 
 % Allocate the different cubus data cubus
-                            % path selection | client | server | measurement side | sending direction | interface | repetition | time | measurement value
-dataCubusIperf          = zeros(max(pathSelections), max(clients), max(clients), 2, 2, max(interfaces), nRepetition, duration, nDataIperf); 
-                            % path selection | client | server | sending direction | interface | repetition | measurement value
-dataCubusShila          = zeros(max(pathSelections), max(clients), max(clients), 2, max(interfaces), nRepetition, nDataShila);  
-                            % path selection | client | server | sending direction | interface | repetition | measurement value
+% path selection | client | server | measurement side | sending direction | interface | repetition | time | measurement value
+dataCubusIperf          = zeros(max(pathSelections), max(clients), max(clients), 2, 2, max(interfaces), nRepetition, duration, nDataIperf);
+% path selection | client | server | sending direction | interface | repetition | measurement value
+dataCubusShila          = zeros(max(pathSelections), max(clients), max(clients), 2, max(interfaces), nRepetition, nDataShila);
+% path selection | client | server | sending direction | interface | repetition | measurement value
 dataCubusTSharkSCION    = zeros(max(pathSelections), max(clients), max(clients), 2, max(interfaces), nRepetition, nDataTSharkSCION);
 
 %% Create GUI for convenience
@@ -61,7 +61,7 @@ for i = 1:length(RepetitionList)
     [measurementsClient, measurementsServer, pathSelection, hostID, remoteID, sendDir, nInterface, repetition] = parseSingleIperfRepetition(fullfile(RepetitionList(i).folder, RepetitionList(i).name));
     dataCubusIperf(pathSelection, hostID, remoteID, 1, sendDir, nInterface, repetition, :, :) = measurementsClient;
     dataCubusIperf(pathSelection, hostID, remoteID, 2, sendDir, nInterface, repetition, :, :) = measurementsServer;
-
+    
     % Parse the shila client log files
     [avgMtu, avgLen, avgShar] = parseSingleShilaRepetition(fullfile(RepetitionList(i).folder, "_shilaClientSide.log"));
     dataCubusShila(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) =  [avgMtu, avgLen, avgShar];
@@ -73,7 +73,7 @@ for i = 1:length(RepetitionList)
     dataCubusTSharkSCION(pathSelection, hostID, remoteID, sendDir, nInterface, repetition, :) = avgThroughput;
 end
 
-    
+
 %% Create the experiment struct
 
 exp.nPathSelections             = nPathSelections;
@@ -101,7 +101,7 @@ exp.clientDescription           = clientDescription;
 
 exp.nInterfaceCounts            = nInterfaceCounts;
 exp.interfaces                  = interfaces;
-    
+
 exp.nRepetition                 = nRepetition;
 exp.duration                    = duration;
 

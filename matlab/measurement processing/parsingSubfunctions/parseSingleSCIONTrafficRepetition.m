@@ -38,7 +38,7 @@ end
 canditates = find(perSecond > 0.25 * max(perSecond));
 perSecond = perSecond(canditates(1):canditates(end));
 
-avgThroughput = mean(perSecond);
+avgThroughput = mean(perSecond) .* 8;       % conversion to bits
 duration      = size(perSecond, 1);
 end
 

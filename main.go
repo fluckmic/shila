@@ -36,12 +36,12 @@ func realMain() int {
 
 	log.Verbose.Println("Setup started...")
 
-	// Create the channel used to announce new traffic channels and possible issues within endpoints.
+	// This channel is used by the kernel and the network side to announce new packet channels, either to
+	// the ingress or the egress working side. (traffic channel publications)
 	trafficChannelPubs := shila.PacketChannelPubChannels{
 		Ingress: make(shila.PacketChannelPubChannel),
 		Egress:	 make(shila.PacketChannelPubChannel),
 	}
-
 	endpointIssues := shila.EndpointIssuePubChannels{
 		Ingress: make(shila.EndpointIssuePubChannel),
 		Egress:  make(shila.EndpointIssuePubChannel),
@@ -66,6 +66,7 @@ func realMain() int {
 	defer networkSide.CleanUp()
 
 	// Setup the ingress working side
+	// The ingress working side handles all traffic which was initiated by the network side.
 	workingSideIngress := workingSide.New(connection.NewMapping(kernelSide, networkSide, router.New()),
 		trafficChannelPubs.Ingress, endpointIssues.Ingress, workingSide.Ingress)
 	if err := workingSideIngress.Setup(); err != nil {
@@ -75,6 +76,7 @@ func realMain() int {
 	defer workingSideIngress.CleanUp()
 
 	// Setup the egress working side
+	// The egress working side handles all the traffic which was initiated by the client side.
 	workingSideEgress := workingSide.New(connection.NewMapping(kernelSide, networkSide, router.New()),
 		trafficChannelPubs.Egress, endpointIssues.Egress, workingSide.Egress)
 	if err := workingSideEgress.Setup(); err != nil {

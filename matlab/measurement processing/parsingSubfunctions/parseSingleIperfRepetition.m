@@ -12,17 +12,17 @@ firstLineWithServerData         = 0;
 lastLineWithServerData          = 0;
 
 fid = fopen(path);
-while ~feof(fid) 
+while ~feof(fid)
     
     currentLine = fgetl(fid); % read one line
-   
-    currentLineIndex = currentLineIndex + 1;
-
-    if ismember(currentLineIndex, linesToDiscard) 
-        continue
-    end 
     
-     %parse experiment info
+    currentLineIndex = currentLineIndex + 1;
+    
+    if ismember(currentLineIndex, linesToDiscard)
+        continue
+    end
+    
+    %parse experiment info
     if currentLineIndex == lineWithExperimentInfo
         [pathSelection, hostID, remoteID, nInterface, repetition, duration, sendDir] = parseSingleIperfInfo(currentLine);
         
@@ -30,16 +30,16 @@ while ~feof(fid)
         lastLineWithClientData  = firstLineWithClientData + duration - 1;
         firstLineWithServerData = lastLineWithClientData + linesBetweenClientAndServerData + 1;
         lastLineWithServerData  = firstLineWithServerData + duration - 1;
-       
+        
         measurementsClient = zeros(duration,2);
         measurementsServer = zeros(duration,2);
     end
-   
+    
     %parse client data
     if currentLineIndex >= firstLineWithClientData && currentLineIndex <= lastLineWithClientData
         [~, transfer, bandwidth] = parseSingleIperfLogLine(currentLine);
         time = currentLineIndex - firstLineWithClientData + 1;
-        measurementsClient(time, :, :) = [transfer, bandwidth];  
+        measurementsClient(time, :, :) = [transfer, bandwidth];
     end
     
     %parse server data

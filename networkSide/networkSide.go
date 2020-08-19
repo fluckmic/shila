@@ -60,7 +60,7 @@ func (manager *Manager) Start() error {
 		return shila.PrependError(err, "Unable to establish contacting server.")
 	}
 
-	// Announce the traffic channels to the working side
+	// Announce the traffic channels to the ingress working side
 	manager.trafficChannelPubs.Ingress <- shila.PacketChannelPub{
 										Publisher: manager.contactServer,
 										Channel:   manager.contactServer.TrafficChannels().Ingress,
