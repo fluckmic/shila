@@ -26,7 +26,6 @@ _*
 *.m~
 
 misc/scion/intro/intro
-misc/snoopy/snoop
 
 # GoLand folders
 .idea/
@@ -34,3 +33,14 @@ misc/snoopy/snoop
 # Logs
 log-*
 *.log
+
+# Report
+report/content/writing/*.aux
+report/content/writing/*.bbl
+report/content/writing/*.blg
+report/content/writing/*.log
+report/content/writing/*.out
+report/content/writing/*.gz
+report/content/writing/*.thm
+report/content/writing/*.toc
+report/content/writing/*.pdf
