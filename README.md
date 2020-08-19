@@ -1,12 +1,6 @@
 ## Implementing and Evaluating MPTCP on the SCION Future Internet Architecture
 
-This repository contains all relevant data of Michael A. Flückiger's master thesis (conducted from March to August 2020). 
-
-
-
-### Abstract
-
-
+This repository contains all relevant data of Michael A. Flückiger's master thesis (March to August 2020). 
 
 ### Content
 
@@ -18,3 +12,8 @@ This repository contains all relevant data of Michael A. Flückiger's master the
   - *post* - Scripts for post-processing the raw results (evaluation and plotting).
 
   
+
+  
+
+### Abstract
+
