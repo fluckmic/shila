@@ -6,20 +6,46 @@ The final report can be found [here](https://github.com/fluckmic/shila/blob/hand
 
 ### Content
 
+(Note: The **bold** words correspond to terms that are used in the report. )
+
 ##### Implementation
+
+- *config/config.go* - Holds the default configuration of Shila.
+- *core/*
+  - *connection/* - Contains the implementation of the **Shila-Connection**.
+  - *router/* - Contains the implementation of the **Router** and the **Path Selection** functionality.
+  - *shila/* - Contains implementation of core concepts like the **Shila-Packet**, the **TCP-Flow** and the **Net-Flow**.
+- *io/structure/* 
+  - *config.go* - Defines and describes all configurable parameters.
+- *kernelSide/*
+  - *kernelSide.go* - Implementation of the **Kernel-Side**.
+  - *kernelEndpoint/* - Contains the implementation of the **Kernel-Endpoint**.
+- *layer/* - Contains the parsing functionality required to parse the IP and the TCP/MPTCP packets.
+- *log/logging.go* - Contains the implementation of the logging functionality.
+- *networkSide/* 
+  - *networkEndpoint/* - Contains the implementation of the **Client-Endpoint**, the **Server-Endpoint** and the **Backbone-Connection**.
+  - *networkSide.go* - Implementation of the **Network-Side** (supplemented by networkSideSpecific.go).
+- *shutdown/shutdown.go* - Implementation of the termination functionality.
+- *workingSide/* - Implementation of the **Working-Side**.
+- *config.json* - Optional file holding configuration parameters specified by the user.
+- *main.go* - Entry point of Shila.
 
 ##### Additional material
 
-- *measurements* - Everything related to the measurements performed.
+- *report/* - The final report and all the raw material and drawings.
+- *presentation/* - The final presentation and all its raw content.
 
-  - *performance* - Scripts for the Shila Measurement.
-  - *quicT* - Scripts for the Quic Measurement.
-  - *sessionScripts* - General helper scripts.
-  - *post* - Scripts for post-processing the raw results (evaluation and plotting).
+- *testing/* - Scripts facilitating testing, mainly by setting up the difference instances.
+  - *local/* - For local testing.
+  - *SCIONLab/* - For testing withing the SCIONLab network using the custom ASes.
 
-  
-
-  
+- *measurements/* - Everything related to the measurements performed.
+  - *performance/* - Scripts for the Shila Measurement.
+  - *quicT/* - Scripts for the Quic Measurement.
+  - *sessionScripts/* - General helper scripts.
+  - *post/* - Scripts for post-processing the raw results (evaluation and plotting).
+  - *results/* - The raw unprocessed data gathered in the measurements.
+- *helper/netnsClear.sh* - Helper script to clean up networks namespaces used during debugging.
 
 ### Abstract
 
@@ -36,5 +62,7 @@ With the finally presented approaches to improve Shila, such as integrating its 
 ### Shila
 
 ##### Setup
+
+##### Configuration
 
 ##### Usage
