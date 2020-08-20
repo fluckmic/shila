@@ -48,7 +48,7 @@ Scalability, Control and Isolation on next-generation Networks or SCION for shor
 
 \section{Shila}
 
-\subsubsection{Functionality}
+\subsection*{Functionality}
 
 Shila is the abbreviation for Shim Layer and is the main contribution of this work. It acts as a mediating layer and enables the use of MPTCP in the SCION internet architecture; illustrated in Figure \ref{fig:IntroRoleOfShila}. 
 
@@ -63,7 +63,7 @@ Shila is the abbreviation for Shim Layer and is the main contribution of this wo
 
 Upon startup, Shila creates and monitors a user-selectable number of virtual network interfaces. A virtual interface is a fake connection to a network, which is perceived by the computer as a real one. If now someone visits his favorite homepage, Multipath TCP tries to connect to the server via these virtual interfaces. Shila detects this connection establishment and redirects the data flow.  For every sub connection created by MPTCP, the Shila instance creates a connection over SCION to the Shila instance running on the server and forwards the respective data traffic. The shim layer on the server side receives the data and distributes it through the MPTCP functionality to the server application.
 
-\subsubsection{Benefit}
+\subsection*{Benefit}
 
 The new Internet architecture SCION offers great advantages over the existing Internet in terms of security and reliability. However, the transfer from such an established infrastructure as the current Internet to new technology is a big challenge. Applications rely on established interfaces and protocols and are programmed accordingly. A re-implementation of all software so that it can be used in a new architecture seems utopian. For the deployment of SCION, it is therefore of great importance that existing applications can be used in the new network with as little effort as possible. The implementation of Shila enables exactly this. All applications that use TCP for their communications can be operated via SCION without the need for internal changes. With Shila, your favorite TCP application can be run over SCION without much effort - a good reason to try the new infrastructure.
 
