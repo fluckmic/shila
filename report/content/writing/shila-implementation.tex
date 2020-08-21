@@ -160,7 +160,7 @@ To perform its function of providing translations between a TCP-Flow and a Net-F
 
 \paragraph{Setup of Namespaces}
 
-The manager on the kernel side creates the two network namespaces \cite{LinuxNetworkNamespacesUbuntuManual,LinuxNetworkNamespacesIntroduction}, the ingress and the egress namespace, in a first step. System resources, like network devices or IP routing tables, associated with networking and assigned to different namespaces are isolated from each other. This simplifies the development and setup of the kernel side but on the downside requires the TCP applications to be started within the corresponding namespaces. An implementation without namespaces is discussed in Chapter \ref{chap:FutureWork}.
+The manager on the kernel side creates the two network namespaces \cite{LinuxNetworkNamespacesUbuntuManual,LinuxNetworkNamespacesIntroduction}, the ingress and the egress namespace, in a first step. System resources, like network devices or IP routing tables, associated with networking and assigned to different namespaces are isolated from each other. This simplifies the development and setup of the kernel side but on the downside requires the TCP applications to be started within the corresponding namespaces. For further discussions with regard to namespaces see Chapter \ref{chap:FutureWork}.
 
 \paragraph{Creation of Kernel-Endpoints hosting virtual Interfaces}
 
