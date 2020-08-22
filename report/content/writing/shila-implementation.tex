@@ -221,8 +221,8 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 		\end{figure}
 	\end{landscape}
 \begin{description}		
-	\item[M-15] The IP datagram containing the answer from the iPerf3 server instance, a TCP-SYN/ACK, arrives at the Kernel-Endpoint at Host 2. From there the answer travels in a Shila-Packet, using its TCP-Flow$^{5}$, through the Working-Site to the corresponding Shila-Connection.
-	\item[M-16] The Shila-Connection assigns its Net-Flow to the Shila-Packet and forwards it via traffic channel to the corresponding Traffic-Server-Endpoint. From there the TCP-SYN/ACK data finds its way through the Traffic-Backbone-Connection to the corresponding client part. 
+	\item[M-15] The IP datagram containing the answer from the iPerf3 server instance, a TCP-SYN+ACK, arrives at the Kernel-Endpoint at Host 2. From there the answer travels in a Shila-Packet, using its TCP-Flow$^{5}$, through the Working-Site to the corresponding Shila-Connection.
+	\item[M-16] The Shila-Connection assigns its Net-Flow to the Shila-Packet and forwards it via traffic channel to the corresponding Traffic-Server-Endpoint. From there the TCP-SYN+ACK data finds its way through the Traffic-Backbone-Connection to the corresponding client part. 
 	\item[M-17] The reception of the first data from the Traffic-Client-Endpoint on Host 1 concludes the connection establishment. The first response from the Iperf3 Server instance reaches the Shila-Connection, where the Main-Flow-Identifier is extracted. This identifier is used to update the Router accordingly such that Sub-Flows created later can be assigned to their Main-Flow. The response, holding the TCP-SYN+ACK, is then sent along the traffic channel toward the client instance of iPerf3.
 	\item[M-18] The Contact-Backbone-Connection is no longer needed and can therefore be removed, together with its corresponding Network-Endpoints.
 \end{description}

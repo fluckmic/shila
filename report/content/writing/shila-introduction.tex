@@ -131,7 +131,7 @@ The creation of a connection itself can be divided into two parts. The establish
 \textbf{Main-Flow Establishment}
 
 \begin{description}
-	\item[M-1] On Host 2, the server instance of iPerf3 starts listening for incoming TCP connections. It therefore binds to the virtual interface in the shila ingress namespace on the TCP address 10.7.0.9:27041. This step is not recognized by Shila.
+	\item[M-1] On Host 2, the server instance of iPerf3 starts listening for incoming TCP connections. It therefore binds to the virtual interface in the Shila ingress namespace on the TCP address 10.7.0.9:27041. This step is not recognized by Shila.
 	\item[M-2] On Host 1, the client instance of iPerf3 tries to connect to its server counterpart on TCP address 10.7.0.9:27041. For the connection establishment an IP datagram, containing the TCP-SYN, is sent via one of the virtual interfaces in the egress namespace where it is intercepted by Shila.
 	\item[M-3] Shila extracts the destination TCP address from this datagram and looks up the corresponding SCION address in the Routing-Information. For the example, this is 2-ff00:0:220,127.0.0.1, the SCION address of Host 2. 
 	\item[M-4] A Contact-Client-Endpoint is created. It establishes a backbone connection, called Contact-Backbone-Connection, over SCION to the Contact-Server-Endpoint listening on Host 2, SCION port 7654.
