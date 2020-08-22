@@ -599,7 +599,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.70710678"
-     inkscape:cx="1105.1054"
+     inkscape:cx="854.08249"
      inkscape:cy="173.02994"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -631,7 +631,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -1506,7 +1506,7 @@
          x="187.48073"
          y="708.54681"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332"
-         id="tspan8395-1">Subflow connection level</tspan></text>
+         id="tspan8395-1">Sub-flow connection level</tspan></text>
     <rect
        style="opacity:1;fill:#e6e6e6;fill-opacity:1;stroke:none;stroke-width:0.82717025;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect7168-6-5"
