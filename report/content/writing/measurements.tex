@@ -10,11 +10,11 @@ The evaluation presented in this chapter aims to find answers about the performa
 
 {\small \begin{enumerate}
 	\item How does the performance behave in relation to the number of paths used for a connection?
-	\item How does the path selection algorithm influence the performance?
-	\item How well does Shila compared to QUIC over SCION \cite{bibid}?
+	\item How does the path selection algorithm influence performance?
+	\item How well does Shila compare to QUIC over SCION?
 \end{enumerate}}
 
-For the first two questions, we use the goodput as a measure. For the third question, we additionally compare throughput. Upcoming we present the setup used to gather these performance metrics.
+For the first two questions, we use the goodput\footnote{Goodput is the throughput on application-level, i.e. the amount of useful data exchanged per unit of time.} as a measure. For the third question, we additionally compare throughput. Upcoming, we present the setup used to gather these performance metrics.
 
 \section{Setup}
 \label{subsec:Setup}
@@ -31,7 +31,6 @@ Data exchange is performed between all distinct pairs of the involved ASes in bo
 
 \begin{table} [H]
 	\centering
-	\caption{Parameters of the setup used for the Shila Measurement.}
 	\begin{tabular}{lll} 
 		\toprule
 		\textbf{Custom ASes} 		& \multicolumn{2}{l}{mptcp-over-scion-as-0 connected to ETHZ-AP}				\\
@@ -50,15 +49,15 @@ Data exchange is performed between all distinct pairs of the involved ASes in bo
 		\bottomrule
 	\end{tabular}
 	\label{tab:ParameterShilaMeasurement}
+	\caption{Parameters of the setup used for the Shila Measurement.}
 \end{table}
 
 \subsection*{Setup Quic Measurement}
 
-With the hereafter presented setup, we measure again goodput and throughput between two hosts doing a data exchange. This time a sending host uses a custom implementation to send a fixed amount of 50 MBytes using QUIC over SCION. By measuring the time it takes for the data transfer we are able to calculate the goodput. The throughput is determined in the same way as with Shila Measurement. Also identical is the network infrastructure and its topology. Every experiment, i.e. every data exchange between a pair of hosts is repeated ten times. The order of the experiments is chosen at random. The complete set of parameters is listed in Table \ref{tab:ParameterQuicMeasurement}.
+With the hereafter presented setup, we measure again goodput and throughput between two hosts doing a data exchange. This time a sending host uses a custom implementation to send a fixed amount of 50 MBytes using QUIC over SCION. By measuring the time it takes for the data transfer we can calculate the goodput. The throughput is determined in the same way as with Shila Measurement. Also identical is the network infrastructure and its topology. Every experiment, i.e. every data exchange between a pair of hosts is repeated ten times. The order of the experiments is chosen at random. The complete set of parameters is listed in Table \ref{tab:ParameterQuicMeasurement}.
 
 \begin{table} [H]
 	\centering
-	\caption{Parameters of the setup used for the Shila Measurement.}
 	\begin{tabular}{lll} 
 		\toprule
 		\textbf{Custom ASes} 		& \multicolumn{2}{l}{mptcp-over-scion-as-0 connected to ETHZ-AP}				\\
@@ -70,6 +69,7 @@ With the hereafter presented setup, we measure again goodput and throughput betw
 		\bottomrule
 	\end{tabular}
 	\label{tab:ParameterQuicMeasurement}
+	\caption{Parameters of the setup used for the Shila Measurement.}
 \end{table}
 
 \subsection*{Remark}
@@ -96,7 +96,7 @@ Figure \ref{fig:GoodputWrtToNOfPathsForShortestPath} shows the goodput obtained 
 \subsection*{Influence of Path Selection}
 \label{subsec:InfluencePathSelection}
 
-Table \ref{tab:InfluenceOfPathSelection} shows the goodput obtained for the Shila Measurement for all three path selection criteria. The criterion chosen has no influence on the achieved performance. Reasons for this can be found in the topology of the SCIONLab network. Table \ref{tab:DiffFromOptimal}  shows for each path selection algorithm the percentage deviation to the optimal value of the other metrics. The optimal value of a certain metric corresponds hereby to the value obtained by optimization with the corresponding path selection algorithm. 
+Table \ref{tab:InfluenceOfPathSelection} shows the goodput obtained for the Shila Measurement for all three path selection criteria. The chosen criterion does not influence the achieved performance. Reasons for this can be found in the topology of the SCIONLab network. Table \ref{tab:DiffFromOptimal}  shows for each path selection algorithm the percentage deviation to the optimal value of the other metrics. The optimal value of a certain metric corresponds hereby to the value obtained by optimization with the corresponding path selection algorithm. 
 
 \begin{table}
 	\begin{center}
@@ -109,7 +109,7 @@ Table \ref{tab:InfluenceOfPathSelection} shows the goodput obtained for the Shil
 			6  & 12.45 {\small $\pm$ 5.32} & 12.68 {\small $\pm$ 5.08} & 12.75 {\small $\pm$ 5.37} \\
 			8  & 12.63 {\small $\pm$ 5.37} & 12.74 {\small $\pm$ 5.53} & 12.46 {\small $\pm$ 5.72} \\\bottomrule
 		\end{tabular}
-		\caption{Listing of the achieved goodput in MBits/sec for different numbers of paths and path selection criteria. The algorithm used for path selection has no influence on the performance.}
+		\caption{Listing of the achieved goodput in MBits/sec for different numbers of paths and path selection criteria. The algorithm used for path selection does not influence performance.}
 		\label{tab:InfluenceOfPathSelection}
 	\end{center}
 \end{table}
@@ -139,31 +139,32 @@ Table \ref{tab:InfluenceOfPathSelection} shows the goodput obtained for the Shil
 			6  	& 0 & 0.16 {\small $\pm$ 0.07} & - \\
 			8  	& 0 & 0.16 {\small $\pm$  0.07} & - \\\bottomrule
 		\end{tabular}
-		\caption{Listing showing for each path selection the percentage deviation to the optimal value of the other metrics.}
+		\caption{Listing showing for each path selection the percentage deviation
+			to the optimal value of the other metrics. Note that the Sharability for a single path is always zero. As an example of how to read the table: If the path selection is done using Sharability, the average length for two and four paths increases by 21\% compared to the optimal length. The optimal length is determined by the path selection using path length as an optimization criterion.}
 		\label{tab:DiffFromOptimal}
 	\end{center}
 \end{table}
 
-For all possible paths in the network the same value for the MTU was obtained, irrespective of what metric for the selection was used. A possible positive effect of choosing paths with a higher MTU could therefore not be recognized at all. 
+For all possible paths in the network, the same value for the MTU was obtained, irrespective of what metric for the selection was used. A possible positive effect of choosing paths with a higher MTU could therefore not be recognized at all. 
 
-Comparing the average length of the paths, obtained when optimized for minimal path length and obtained when optimized for maximal MTU, no deviation is found. A possible negative effect of longer paths when using MTU instead of path length could therefore also not be observed. If we now bring the Sharability into play, we notice that an optimization by MTU or path length leads to a deterioration of the Sharability value. However, this has no negative impact on the good output achieved. Such a negative effect could especially then be observed,  if bottlenecks in the network can be avoided by choosing the most different paths. If all shared links have sufficient capacity, this doesn't matter. We can therefore assume, that there were no capacity bottlenecks in the used links at the time the measurement was conducted. 
+Comparing the average length of the paths, obtained when optimized for minimal path length and maximal MTU, no deviation is found. A possible negative effect of longer paths when using MTU instead of path length could therefore also not be observed. If we now bring the Sharability into play, we notice that an optimization by MTU or path length leads to a deterioration of the Sharability value. However, this has no negative impact on the goodput achieved. Such a negative effect could especially then be observed,  if bottlenecks in the network can be avoided by choosing the most different paths. If all shared links have sufficient capacity, this doesn't matter. We can therefore assume, that there were no capacity bottlenecks in the used links at the time the measurement was conducted. 
 
-With regard to the Sharabilty values in Table \ref{tab:DiffFromOptimal}, two things are noteworthy:
+Concerning the Sharability values in Table \ref{tab:DiffFromOptimal}, two things are noteworthy:
 
-The values for the two path selection criteria MTU and Path length are almost identical. It is conceivable that the same selection resulted from both path selection procedures\footnote{Remember, the MTU is identical for all paths in the network.}. The path selection mechanism of Shila itself does not implement an explicit tiebreaker. However, it is possible that the paths received from the SCION infrastructure are already sorted by a criterion, in this case the length.
+The values for the two path selection criteria MTU and Path length are almost identical. It is conceivable that the same selection resulted from both path selection procedures\footnote{Remember, the MTU is identical for all paths in the network.}. The path selection mechanism of Shila itself does not implement an explicit tiebreaker. However, the paths received from the SCION infrastructure may be already sorted by a criterion, in this case the length.
 
-It is furthermore noticeable that the deterioration of Sharabilty is particularly marked when using just a few paths. This can be explained by the topology of the network. There are only a limited number of truly distinct paths between two endpoints available. As long as this number is not exhausted, the Sharability can be kept very small, but can also be as large if a different metric for selection is chosen, hence the potential for deviation is large. Once all distinct paths are use up, additional paths have to include already used path segments, the optimal value cannot be that small anymore, reducing the potential for deviation.
+It is furthermore noticeable that the deterioration of Sharability is particularly marked when using just a few paths. This can be explained by the topology of the network. There are only a limited number of truly distinct paths between two endpoints available. As long as this number is not exhausted, the Sharability can be kept very small, but can also be as large if a different metric for selection is chosen, hence the potential for deviation is large. Once all distinct paths are used up, additional paths have to include already used path segments, the optimal value cannot be that small anymore, reducing the potential for deviation.
 
 Using the Sharability as path selection criterion leads on average to an increase in path length between 15\% and 20\%. In the Shila Measurement, this increase has no negative influence on the performance achieved. 
 
 \subsection*{Comparison with QUIC}
 \label{subsec:ComparisonWithQUIC}
 
-Table \ref{tab:ComparisonWithQUIC} shows the values for goodput and throughput obtained from the Shila Measurement and from the Quic Measurement. 
+Table \ref{tab:ComparisonWithQUIC} shows the values for goodput and throughput obtained from the Shila Measurement and the Quic Measurement. 
 
 \subsubsection{Goodput}
 
-With respect to goodput, QUIC over SCION outperforms Shila clearly. Compared to MPTCP via SCION with a single path, QUIC achieves a goodput that is more than 3 times better. With the use of eight paths the performance is still more than 2.5 times better. The data exchange with MPTCP via SCION means a detour for the data in both endpoints. The individual segments travel via a virtual interface to the kernel, back to the userland application Shila and from there again into the kernel to be sent via SCION. Once at the destination, the same procedure is repeated in reverse order. These additional distances inevitably lead to an increase of the Round-Trip-Time which has a negative effect on the achieved goodput.
+Concerning goodput, QUIC over SCION outperforms Shila. Compared to MPTCP via SCION with a single path, QUIC achieves a goodput that is more than 3 times better. With the use of eight paths for MPTCP via SCION the performance is still more than 2.5 times better. The data exchange with MPTCP via SCION means a detour for the data in both endpoints. The individual segments travel via a virtual interface to the kernel, back to the userland application Shila and from there through SCION and its networking stack. Once at the destination, the same procedure is repeated in reverse order. These additional distances inevitably lead to an increase of the Round-Trip-Time which has a negative effect on the achieved goodput.
 
 \subsubsection{Throughput}
 
@@ -190,10 +191,10 @@ Based on the results obtained, we can answer the questions asked at the beginnin
 
 {\small \begin{enumerate}
 	\item How does the performance behave in relation to the number of paths used for a connection? \smallskip\\ \textbf{Increasing the number of paths leads to better performance. In the measurements conducted an increase in average goodput up to 20\% could be observed.}
-	\item How does the path selection algorithm influence the performance?
+	\item How does the path selection algorithm influence performance?
 	\smallskip\\ \textbf{Using different path selection algorithms does not influence performance. For the measurements carried out, none of the selection criteria was able to bypass a potential bottleneck in the network infrastructure and thus achieve better performance than the other criteria.}
-	\item How well does Shila compared to QUIC over SCION?
-	\smallskip\\ \textbf{QUIC over SCION clearly outperforms MPTCP over SCION concerning goodput and overhead.}
+	\item How well does Shila compare to QUIC over SCION?
+	\smallskip\\ \textbf{QUIC over SCION outperforms MPTCP over SCION concerning goodput and overhead.}
 \end{enumerate}}
 
-Although the questions can be answered well based on the measurements taken, a final answer to the performance of Shila should not be drawn from them. Rather, these initial results should be used as the basis for further questions and improvements to Shila. In Chapter \ref{chap:FutureWork} we discuss the questions that have emerged and possible improvements that can be addressed in future work.  
+Although the questions can be answered well based on the taken measurements, a final answer to the performance of Shila should not be drawn from them. Rather, these initial results should be used as the basis for further questions and improvements to Shila. In Chapter \ref{chap:FutureWork}, we discuss the questions that have emerged and possible improvements that can be addressed in future work.  
