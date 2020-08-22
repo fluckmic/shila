@@ -61,8 +61,48 @@ With the finally presented approaches to improve Shila this work lays the founda
 
 ### Shila
 
+In the following we describe how to setup the environment to be able to use Shila and how to use it once setup is done.
+
 ##### Setup
+
+###### Multipath TCP (MPTCP)
+
+Install MPTCP as described [here](http://multipath-tcp.org/pmwiki.php/Users/AptRepository).
+
+Install the MPTCP iproute-extension as described [here](http://multipath-tcp.org/pmwiki.php/Users/Tools) on the very top of the page.
+
+Enable and configure MPTCP as described [here](http://multipath-tcp.org/pmwiki.php/Users/Tools). A good starting point is to use the *fullmesh* path-manager and the *default* scheduler.
+
+###### Install SCION
+
+Install SCION as described [here](https://github.com/netsec-ethz/scion), this includes the installation of Go.
+
+After the installation of SCION you should have a folder *~/go/src/github.com/scionproto/scion/* containing the installation.
+
+###### Install Shila
+
+Get Shila and fetch the required packages.
+
+`cd ~/go/src/github.com`
+
+`git clone https://github.com/fluckmic/shila.git`
+
+`cd shila`
+
+`go get`
+
+###### Install iPerf3 
+
+`sudo apt install iperf3`
+
+This is just needed for the subsequent described example usage.
+
+##### Usage
+
+Good stating point is to use Shila with a local setup of SCION and through prepared scripts in *shila/testing/local*.
+
+
 
 ##### Configuration
 
-##### Usage
+There are many parameters which can be used to configure Shila. This parameters are described [here](https://github.com/fluckmic/shila/blob/hand-in/io/structure/config.go), whereas the default values are set [here](https://github.com/fluckmic/shila/blob/hand-in/config/config.go).
