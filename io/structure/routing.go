@@ -41,7 +41,7 @@ type NetworkPathEntryJSON struct {
 
 type NetworkAddressAndPathJSON struct {
 	Address string
-	Path    NetworkPathJSON
+	//Path    NetworkPathJSON
 }
 func (json NetworkAddressAndPathJSON) GetNetworkAddress() (shila.NetworkAddress, error) {
 
