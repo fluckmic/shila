@@ -15,7 +15,7 @@ type Mapping struct {
 	kernelSide  *kernelSide.Manager
 	networkSide *networkSide.Manager
 	routing     router.Router
-	connections map[shila.IPFlowKey] *Connection
+	connections map[shila.TCPFlowKey] *Connection
 	lock        sync.Mutex
 }
 
@@ -24,7 +24,7 @@ func NewMapping(kernelSide *kernelSide.Manager, networkSide *networkSide.Manager
 		kernelSide: 	kernelSide,
 		networkSide: 	networkSide,
 		routing: 		routing,
-		connections: 	make(map[shila.IPFlowKey] *Connection)}
+		connections: 	make(map[shila.TCPFlowKey] *Connection)}
 	go m.vacuum()
 	return m
 }
@@ -51,7 +51,7 @@ func (m *Mapping) vacuum() {
 func (m *Mapping) Retrieve(flow shila.Flow) *Connection {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	key := flow.IPFlow.Key()
+	key := flow.TCPFlow.Key()
 	if con, ok := m.connections[key]; ok {
 		return con
 	} else {
@@ -61,7 +61,7 @@ func (m *Mapping) Retrieve(flow shila.Flow) *Connection {
 	}
 }
 
-func (m *Mapping) Close(key shila.IPFlowKey, err error) {
+func (m *Mapping) Close(key shila.TCPFlowKey, err error) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if con, ok := m.connections[key]; ok {

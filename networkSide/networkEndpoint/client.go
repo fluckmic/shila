@@ -19,14 +19,14 @@ var _ shila.NetworkClientEndpoint = (*Client)(nil)
 
 type Client struct {
 	Base
-	key				shila.IPFlowKey
-	rConn			*snet.Conn
-	ipFlow 			shila.IPFlow
-	netFlow 		shila.NetFlow
+	key             shila.TCPFlowKey
+	rConn           *snet.Conn
+	tcpFlow         shila.TCPFlow
+	netFlow         shila.NetFlow
 	lAddrContactEnd shila.NetworkAddress 	// Just set for traffic client network endpoint
 }
 
-func NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow shila.IPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+func NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, tcpFlow shila.TCPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 	return &Client{
 		Base: 						Base{
 										Role:    shila.ContactNetworkEndpoint,
@@ -35,15 +35,15 @@ func NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow
 										State:   shila.NewEntityState(),
 										Issues:  issues,
 									},
-		ipFlow:						ipFlow,
-		netFlow: 					shila.NetFlow{Dst: rAddr, Path: path},
+		tcpFlow: tcpFlow,
+		netFlow: shila.NetFlow{Dst: rAddr, Path: path},
 	}
 }
 
-func NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow shila.IPFlow,
+func NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkAddress, path shila.NetworkPath, tcpFlow shila.TCPFlow,
 	issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
 
-	client := NewContactClient(rAddr, path, ipFlow, issues)
+	client := NewContactClient(rAddr, path, tcpFlow, issues)
 
 	client.(*Client).Base.Role 		 = shila.TrafficNetworkEndpoint
 	client.(*Client).lAddrContactEnd = lAddrContactEnd
@@ -121,7 +121,7 @@ func (client *Client) Says(str string) string {
 	return  fmt.Sprint(client.Identifier(), ": ", str)
 }
 
-func (client *Client) Key() shila.IPFlowKey {
+func (client *Client) Key() shila.TCPFlowKey {
 	return client.key
 }
 
@@ -141,7 +141,7 @@ func (client *Client) serveIngress() {
 			// From time to to we get a zero payload packet...?
 			//log.Error.Println(client.Says("Received zero payload packet."))
 		}
-		client.Ingress <-  shila.NewPacket(client, client.ipFlow, pyldMsg.Payload)
+		client.Ingress <-  shila.NewPacket(client, client.tcpFlow, pyldMsg.Payload)
 
 	}
 }
@@ -186,10 +186,10 @@ func (client *Client) sendControlMessage() error {
 	// Craft the control message, encode and send it.
 	var ctrlMsg controlMessage
 	if client.Role() == shila.ContactNetworkEndpoint {
-		ctrlMsg = controlMessage{IPFlow: client.ipFlow }
+		ctrlMsg = controlMessage{TcpFlow: client.tcpFlow}
 	}
 	if client.Role() == shila.TrafficNetworkEndpoint {
-		ctrlMsg = controlMessage{IPFlow: client.ipFlow, LAddrContactEnd: *client.lAddrContactEnd.(*net.UDPAddr)}
+		ctrlMsg = controlMessage{TcpFlow: client.tcpFlow, LAddrContactEnd: *client.lAddrContactEnd.(*net.UDPAddr)}
 	}
 
 	if err := gob.NewEncoder(io.Writer(client.rConn)).Encode(ctrlMsg); err != nil {

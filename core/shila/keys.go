@@ -13,9 +13,9 @@ const (
 )
 
 // Keys
-type IPAddressKey 			  	string		// (ipv4)
-type IPAddressPortKey		  	string		// (ipv4:port)
-type IPFlowKey 					string		// (ipv4-address:port<>ipv4-address:port)
+type IPAddressKey 			  	string 		// (ipv4)
+type IPAddressPortKey		  	string 		// (ipv4:port)
+type TCPFlowKey 				string    	// (ipv4-address:port<>ipv4-address:port)
 
 type NetworkAddressKey		  	string		// (network-address)
 type NetworkAddressAndPathKey 	string		// (network-address<>path)
@@ -44,16 +44,16 @@ func GetNetworkAddressKey(addr NetworkAddress) NetworkAddressKey {
 	return NetworkAddressKey(fmt.Sprint(KeyPrefix, addr.String(), KeySuffix))
 }
 
-func (ipf *IPFlow) Key() IPFlowKey {
+func (ipf *TCPFlow) Key() TCPFlowKey {
 	srcString := ipf.Src.String(); dstString := ipf.Dst.String()
 	if srcString < dstString {
-		return IPFlowKey(fmt.Sprint(KeyPrefix, srcString, KeyDelimiter, dstString, KeySuffix))
+		return TCPFlowKey(fmt.Sprint(KeyPrefix, srcString, KeyDelimiter, dstString, KeySuffix))
 	} else {
-		return IPFlowKey(fmt.Sprint(KeyPrefix, dstString, KeyDelimiter, srcString, KeySuffix))
+		return TCPFlowKey(fmt.Sprint(KeyPrefix, dstString, KeyDelimiter, srcString, KeySuffix))
 	}
 }
 
-func (ipf *IPFlow) String() string {
+func (ipf *TCPFlow) String() string {
 	srcString := ipf.Src.String(); dstString := ipf.Dst.String()
 	return fmt.Sprint(KeyPrefix, srcString, KeyDelimiter, dstString, KeySuffix)
 }
@@ -68,22 +68,22 @@ func (nf *NetFlow) Key() NetFlowKey {
 }
 
 func (fl *Flow) Key() FlowKey {
-	return FlowKey(fmt.Sprint(KeyPrefix, fl.IPFlow.Key(), KeyDelimiter, fl.NetFlow.Key(), KeySuffix))
+	return FlowKey(fmt.Sprint(KeyPrefix, fl.TCPFlow.Key(), KeyDelimiter, fl.NetFlow.Key(), KeySuffix))
 }
 
-func (ipf *IPFlow) SrcKey() IPAddressPortKey {
+func (ipf *TCPFlow) SrcKey() IPAddressPortKey {
 	return GetIPAddressPortKey(ipf.Src)
 }
 
-func (ipf *IPFlow) SrcIPKey() IPAddressKey {
+func (ipf *TCPFlow) SrcIPKey() IPAddressKey {
 	return GetIPAddressKey(ipf.Src.IP)
 }
 
-func (ipf *IPFlow) DstKey() IPAddressPortKey {
+func (ipf *TCPFlow) DstKey() IPAddressPortKey {
 	return GetIPAddressPortKey(ipf.Dst)
 }
 
-func (ipf *IPFlow) DstIPKey() IPAddressKey {
+func (ipf *TCPFlow) DstIPKey() IPAddressKey {
 	return GetIPAddressKey(ipf.Dst.IP)
 }
 

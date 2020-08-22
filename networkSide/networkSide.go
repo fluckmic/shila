@@ -89,7 +89,7 @@ func (manager *Manager) CleanUp() error {
 	return err
 }
 
-func (manager *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddress, flowKey shila.IPFlowKey) (channels shila.PacketChannels, error error) {
+func (manager *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.NetworkAddress, flowKey shila.TCPFlowKey) (channels shila.PacketChannels, error error) {
 
 	channels 			= shila.PacketChannels{}
 	error    			= nil
@@ -116,7 +116,7 @@ func (manager *Manager) EstablishNewTrafficServerEndpoint(lAddress shila.Network
 	}
 
 	// Add the endpointWrapper to the mapping
-	endpointWrapper = shila.NewNetworkServerEndpointIPFlowRegister(newEndpoint)
+	endpointWrapper = shila.NewNetworkServerEndpointTCPFlowRegister(newEndpoint)
 	manager.serverTrafficEndpoints[endpointKey] = endpointWrapper
 
 	// Register the new IP flow at the server endpointWrapper
@@ -144,17 +144,17 @@ func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (c
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	ipFlowKey := flow.IPFlow.Key()
-	if _, ok := manager.clientContactingEndpoints[ipFlowKey]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", ipFlowKey, " already exists.")); return
+	tcpFlowKey := flow.TCPFlow.Key()
+	if _, ok := manager.clientContactingEndpoints[tcpFlowKey]; ok {
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", tcpFlowKey, " already exists.")); return
 	}
 
 	// Establish a new contacting client endpoint
 	contactRemoteAddr := manager.specificManager.ContactRemoteAddr(flow.NetFlow.Dst)
-	ipFlow 			  := flow.IPFlow
+	tcpFlow := flow.TCPFlow
 	path 			  := flow.NetFlow.Path
 
-	contactingEndpoint 		 := manager.specificManager.NewContactClient(contactRemoteAddr, path, ipFlow, manager.endpointIssues.Egress)
+	contactingEndpoint 		 := manager.specificManager.NewContactClient(contactRemoteAddr, path, tcpFlow, manager.endpointIssues.Egress)
 	contactingNetFlow, error  = contactingEndpoint.SetupAndRun()						// Does now contain the src address as well.
 
 	if error != nil {
@@ -162,7 +162,7 @@ func (manager *Manager) EstablishNewContactingClientEndpoint(flow shila.Flow) (c
 	}
 
 	// Add it to the corresponding mapping
-	manager.clientContactingEndpoints[ipFlowKey] = contactingEndpoint
+	manager.clientContactingEndpoints[tcpFlowKey] = contactingEndpoint
 
 	// Announce the new traffic channels to the working side
 	channels = contactingEndpoint.TrafficChannels()
@@ -185,17 +185,17 @@ func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (traf
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	ipFlowKey := flow.IPFlow.Key()
-	if _, ok := manager.clientTrafficEndpoints[ipFlowKey]; ok {
-		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", ipFlowKey, " already exists.")); return
+	tcpFlowKey := flow.TCPFlow.Key()
+	if _, ok := manager.clientTrafficEndpoints[tcpFlowKey]; ok {
+		error = shila.CriticalError(fmt.Sprint("Endpoint w/ key ", tcpFlowKey, " already exists.")); return
 	}
 
 	lAddrContact := flow.NetFlow.Src
 	rAddr 		 := flow.NetFlow.Dst
 	path 		 := flow.NetFlow.Path
-	ipFlow 		 := flow.IPFlow
+	tcpFlow 	 := flow.TCPFlow
 
-	trafficEndpoint := manager.specificManager.NewTrafficClient(lAddrContact, rAddr, path, ipFlow, manager.endpointIssues.Egress)
+	trafficEndpoint := manager.specificManager.NewTrafficClient(lAddrContact, rAddr, path, tcpFlow, manager.endpointIssues.Egress)
 
 	trafficNetFlow, error = trafficEndpoint.SetupAndRun()
 	if error != nil {
@@ -203,7 +203,7 @@ func (manager *Manager) EstablishNewTrafficClientEndpoint(flow shila.Flow) (traf
 	}
 
 	// Add it to the corresponding mapping
-	manager.clientTrafficEndpoints[ipFlowKey] = trafficEndpoint
+	manager.clientTrafficEndpoints[tcpFlowKey] = trafficEndpoint
 
 	// Announce the new traffic channels to the working side
 	channels = trafficEndpoint.TrafficChannels()
@@ -229,7 +229,7 @@ func (manager *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 
 	key     := shila.GetNetworkAddressKey(flow.NetFlow.Src)
 	if ep, ok := manager.serverTrafficEndpoints[key]; ok {
-		ep.Unregister(flow.IPFlow.Key())
+		ep.Unregister(flow.TCPFlow.Key())
 		if ep.IsEmpty() {
 			err := ep.TearDown()
 			delete(manager.serverTrafficEndpoints, key)
@@ -240,7 +240,7 @@ func (manager *Manager) TeardownTrafficSeverEndpoint(flow shila.Flow) error {
 	return nil
 }
 
-func (manager *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) error {
+func (manager *Manager) TeardownContactingClientEndpoint(tcpFlow shila.TCPFlow) error {
 
 	if manager.state.Not(shila.Running) {
 		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
@@ -249,16 +249,16 @@ func (manager *Manager) TeardownContactingClientEndpoint(ipFlow shila.IPFlow) er
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	if ep, ok := manager.clientContactingEndpoints[ipFlow.Key()]; ok {
+	if ep, ok := manager.clientContactingEndpoints[tcpFlow.Key()]; ok {
 		err := ep.TearDown()
-		delete(manager.clientContactingEndpoints, ipFlow.Key())
+		delete(manager.clientContactingEndpoints, tcpFlow.Key())
 		return err
 	}
 
 	return nil
 }
 
-func (manager *Manager) TeardownTrafficClientEndpoint(ipFlow shila.IPFlow) error {
+func (manager *Manager) TeardownTrafficClientEndpoint(tcpFlow shila.TCPFlow) error {
 
 	if manager.state.Not(shila.Running) {
 		return  shila.CriticalError(fmt.Sprint("Entity in wrong state {", manager.state, "}."))
@@ -267,9 +267,9 @@ func (manager *Manager) TeardownTrafficClientEndpoint(ipFlow shila.IPFlow) error
 	manager.lock.Lock()
 	defer manager.lock.Unlock()
 
-	if ep, ok := manager.clientTrafficEndpoints[ipFlow.Key()]; ok {
+	if ep, ok := manager.clientTrafficEndpoints[tcpFlow.Key()]; ok {
 		err := ep.TearDown()
-		delete(manager.clientTrafficEndpoints, ipFlow.Key())
+		delete(manager.clientTrafficEndpoints, tcpFlow.Key())
 		return err
 	}
 	return nil

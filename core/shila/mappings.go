@@ -2,33 +2,33 @@
 package shila
 
 // Mappings
-type MappingNetworkServerEndpoint map[NetworkAddressKey] NetworkServerEndpointIPFlowRegister
-type MappingNetworkClientEndpoint map[IPFlowKey] NetworkClientEndpoint
+type MappingNetworkServerEndpoint map[NetworkAddressKey]NetworkServerEndpointTCPFlowRegister
+type MappingNetworkClientEndpoint map[TCPFlowKey] NetworkClientEndpoint
 
-// Register of IP flow keys
-type IPFlowRegister map[IPFlowKey]	bool
+// Register of TCP flow keys
+type TCPFlowRegister map[TCPFlowKey]	bool
 
-// Contains all registered IP flows for a given network server endpoint
-type NetworkServerEndpointIPFlowRegister struct {
+// Contains all registered tcp flows for a given network server endpoint
+type NetworkServerEndpointTCPFlowRegister struct {
 	NetworkServerEndpoint
-	IPFlowRegister
+	TCPFlowRegister
 }
 
-func NewNetworkServerEndpointIPFlowRegister(endpoint NetworkServerEndpoint) NetworkServerEndpointIPFlowRegister {
-	return NetworkServerEndpointIPFlowRegister{
+func NewNetworkServerEndpointTCPFlowRegister(endpoint NetworkServerEndpoint) NetworkServerEndpointTCPFlowRegister {
+	return NetworkServerEndpointTCPFlowRegister{
 		NetworkServerEndpoint: endpoint,
-		IPFlowRegister:		   make(IPFlowRegister),
+		TCPFlowRegister:       make(TCPFlowRegister),
 	}
 }
 
-func (r *NetworkServerEndpointIPFlowRegister) Register(key IPFlowKey) {
-	r.IPFlowRegister[key] = true
+func (r *NetworkServerEndpointTCPFlowRegister) Register(key TCPFlowKey) {
+	r.TCPFlowRegister[key] = true
 }
 
-func (r *NetworkServerEndpointIPFlowRegister) Unregister(key IPFlowKey) {
-	delete(r.IPFlowRegister, key)
+func (r *NetworkServerEndpointTCPFlowRegister) Unregister(key TCPFlowKey) {
+	delete(r.TCPFlowRegister, key)
 }
 
-func (r *NetworkServerEndpointIPFlowRegister) IsEmpty() bool {
-	return len(r.IPFlowRegister) == 0
+func (r *NetworkServerEndpointTCPFlowRegister) IsEmpty() bool {
+	return len(r.TCPFlowRegister) == 0
 }

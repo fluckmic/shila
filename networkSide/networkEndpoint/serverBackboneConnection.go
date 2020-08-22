@@ -93,14 +93,14 @@ type NetFlows struct {
 }
 
 type ServerBackboneConnection struct {
-	keys        	[] shila.NetworkAddressKey
-	netFlows    	NetFlows
-	server			*Server
-	ipFlow      	shila.IPFlow
-	inReader    	*io.PipeReader
-	inWriter    	*io.PipeWriter
-	connections 	*ServerBackboneConnections
-	lock        	sync.Mutex
+	keys        [] shila.NetworkAddressKey
+	netFlows    NetFlows
+	server      *Server
+	tcpFlow     shila.TCPFlow
+	inReader    *io.PipeReader
+	inWriter    *io.PipeWriter
+	connections *ServerBackboneConnections
+	lock        sync.Mutex
 }
 
 func newBackboneConnection(rAddress shila.NetworkAddress, conns *ServerBackboneConnections) *ServerBackboneConnection {
@@ -196,14 +196,14 @@ func (conn *ServerBackboneConnection) processControlMessage(ctrlMsg controlMessa
 	}()
 
 	// Set the ip flow
-	conn.ipFlow   = ctrlMsg.IPFlow.Swap()
+	conn.tcpFlow = ctrlMsg.TcpFlow.Swap()
 
 	// If the backbone connection is part of a contact server network endpoint, then the connection
 	// has to calculate the lAddress (w.r.t. the host) of the corresponding traffic endpoint.
 	// The representing flow is then updated accordingly such that the payload received through
 	// this connection is perceived as received through the traffic connection.
 	if conn.server.Role() == shila.ContactNetworkEndpoint {
-		conn.netFlows.represented.Src.(*snet.UDPAddr).Host.Port = conn.ipFlow.Src.Port
+		conn.netFlows.represented.Src.(*snet.UDPAddr).Host.Port = conn.tcpFlow.Src.Port
 	}
 
 	// If the backbone connect is part of a traffic server network endpoint, then the connection
@@ -233,7 +233,7 @@ func (conn *ServerBackboneConnection) processPayloadMessage() error {
 	}
 
 	conn.server.Ingress <- shila.NewPacketWithNetFlowAndKind(conn.server,
-													  		 conn.ipFlow.Swap(),
+													  		 conn.tcpFlow.Swap(),
 													  		 conn.netFlows.represented.Swap(),
 													  		 pyldMsg.Payload)
 

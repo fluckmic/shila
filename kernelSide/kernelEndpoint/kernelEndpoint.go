@@ -204,7 +204,7 @@ func (device *Device) serveEgress() {
 func (device *Device) packetize(ingressRaw chan byte) {
 	for {
 		if rawData, err := tcpip.PacketizeRawData(ingressRaw, config.Config.KernelEndpoint.SizeRawIngressStorage); rawData != nil {
-			if iPHeader, err := shila.GetIPFlow(rawData); err != nil {
+			if iPHeader, err := shila.GetTCPFlow(rawData); err != nil {
 				// We were not able to get the IP flow from the raw data, but there was no issue parsing
 				// the raw data. We therefore just drop the packet and hope that the next one is better..
 				log.Error.Print(device.Says(fmt.Sprint("Unable to get IP net flow in packetizer. ", err.Error())))

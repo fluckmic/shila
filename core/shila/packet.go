@@ -10,10 +10,10 @@ type Packet struct {
 	Payload    	[]byte
 }
 
-func NewPacket(ep Endpoint, ipf IPFlow, raw []byte) *Packet {
-	return &Packet{Entrypoint: ep, Flow: Flow{IPFlow: ipf}, TTL: InitialTTL, Payload: raw}
+func NewPacket(ep Endpoint, ipf TCPFlow, raw []byte) *Packet {
+	return &Packet{Entrypoint: ep, Flow: Flow{TCPFlow: ipf}, TTL: InitialTTL, Payload: raw}
 }
 
-func NewPacketWithNetFlowAndKind(ep Endpoint, ipf IPFlow, nf NetFlow, raw []byte) *Packet {
-	return &Packet{Entrypoint: ep, Flow: Flow{IPFlow: ipf, NetFlow: nf}, TTL: InitialTTL, Payload: raw}
+func NewPacketWithNetFlowAndKind(ep Endpoint, ipf TCPFlow, nf NetFlow, raw []byte) *Packet {
+	return &Packet{Entrypoint: ep, Flow: Flow{TCPFlow: ipf, NetFlow: nf}, TTL: InitialTTL, Payload: raw}
 }

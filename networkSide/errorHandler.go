@@ -16,8 +16,8 @@ func (manager *Manager) errorHandler() {
 			} else if server.Role() == shila.TrafficNetworkEndpoint {
 				if endpointWrapper, ok := manager.serverTrafficEndpoints[server.Key()]; ok {
 					// Publish an issue for every registered connection.
-					for ipFlow, _ := range endpointWrapper.IPFlowRegister {
-						manager.endpointIssues.Ingress <- shila.EndpointIssuePub{ Issuer: server, Key: ipFlow, Error: issue.Error}
+					for tcpFlow, _ := range endpointWrapper.TCPFlowRegister {
+						manager.endpointIssues.Ingress <- shila.EndpointIssuePub{ Issuer: server, Key: tcpFlow, Error: issue.Error}
 					}
 				} else {
 					shutdown.Fatal(shila.CriticalError("Unregistered server endpoint publishes issue. Should not happen."))

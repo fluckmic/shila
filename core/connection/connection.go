@@ -16,9 +16,9 @@ import (
 )
 
 type Connection struct {
-	key         shila.IPFlowKey
+	key         shila.TCPFlowKey
 	flow        shila.Flow
-	mainIpFlow  shila.IPFlow // Holds the main ip flow in the case of a sub flow connection
+	mainTcpFlow shila.TCPFlow // Holds the main tcp flow in the case of a sub flow connection
 	category    router.FlowCategory
 	rawMetrics  []int
 	state       state
@@ -40,7 +40,7 @@ type channels struct {
 
 func New(flow shila.Flow, kernelSide *kernelSide.Manager, networkSide *networkSide.Manager, router router.Router) *Connection {
 	return &Connection{
-		key:         flow.IPFlow.Key(),
+		key:         flow.TCPFlow.Key(),
 		flow:        flow,
 		state:       newState(),
 		lock:        sync.Mutex{},
@@ -62,9 +62,9 @@ func (conn *Connection) Close(err error) {
 	}
 
 	// Tear down all endpoints possibly associated with this connection
-	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+	_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.TCPFlow)
 	_ = conn.networkSide.TeardownTrafficSeverEndpoint(conn.flow)
-	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.flow.IPFlow)
+	_ = conn.networkSide.TeardownTrafficClientEndpoint(conn.flow.TCPFlow)
 
 	// Remove the entries from the router
 	conn.router.ClearEntry(conn.key)
@@ -172,7 +172,7 @@ func (conn *Connection) processPacketFromTrafficEndpoint(p *shila.Packet) error 
 							// of destination (from the connection point of view) which we need later to be able to get
 							// the network destination address for the subflow.
 							var err error
-							if err = conn.router.InsertEndpointTokenToIPFlow(p); err != nil {
+							if err = conn.router.InsertEndpointTokenToTCPFlow(p); err != nil {
 								return shila.TolerableError(fmt.Sprint("Unable to update router.", err.Error()))
 							}
 
@@ -210,12 +210,12 @@ func (conn *Connection) printEstablishmentStatement() {
 	log.Info.Println("")
 	log.Info.Println(conn.category, conn.createHumanReadableConnectionID(), "-",
 		conn.flowCount, "connection successful established!")
-	log.Info.Print("| IP Flow: \t ", conn.flow.IPFlow.Src.IP, ":", conn.flow.IPFlow.Src.Port, " <-> ",
-		conn.flow.IPFlow.Dst.IP, ":", conn.flow.IPFlow.Dst.Port)
-	log.Info.Print("| Net Flow: \t ", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst)
+	log.Info.Print("| TCP-Flow: \t ", conn.flow.TCPFlow.Src.IP, ":", conn.flow.TCPFlow.Src.Port, " <-> ",
+		conn.flow.TCPFlow.Dst.IP, ":", conn.flow.TCPFlow.Dst.Port)
+	log.Info.Print("| Net-Flow: \t ", conn.flow.NetFlow.Src, " <-> ", conn.flow.NetFlow.Dst)
 	log.Info.Print("| Metrics: \t ", conn.rawMetrics[0], " (mtu) ", conn.rawMetrics[1], " (length)")
 	log.Info.Print("| Sharability: \t ", conn.sharability)
-	log.Info.Print("| Main Flow: \t ", conn.mainIpFlow)
+	log.Info.Print("| Main-Flow: \t ", conn.mainTcpFlow)
 	// If the path is nil, the destination is within the local iA
 	if conn.flow.NetFlow.Path != nil {
 		log.Info.Printf("| %s\n", fmt.Sprintf("%s", conn.flow.NetFlow.Path.(snet.Path)))
@@ -270,7 +270,7 @@ func (conn *Connection) processPacketFromKerepStateRaw(p *shila.Packet) error {
 			conn.channels.NetworkEndpoint = channels
 			conn.setState(clientEstablished)
 			// The contacting client endpoint is no longer needed.
-			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.IPFlow)
+			_ = conn.networkSide.TeardownContactingClientEndpoint(conn.flow.TCPFlow)
 			conn.lock.Unlock()
 		}
 	}()
@@ -285,7 +285,7 @@ func (conn *Connection) processPacketFromContactingEndpointStateRaw(p *shila.Pac
 
 
 	// Get the kernel endpoint from the kernel side manager
-	packetDstKey := p.Flow.IPFlow.DstIPKey()
+	packetDstKey := p.Flow.TCPFlow.DstIPKey()
 	if channels, ok := conn.kernelSide.GetTrafficChannels(packetDstKey); ok {
 		conn.channels.KernelEndpoint = channels
 	} else {
@@ -333,7 +333,7 @@ func (conn *Connection) Says(str string) string {
 
 func (conn *Connection) processRoutingResponse(response router.Response) {
 
-	conn.mainIpFlow 	= response.MainIPFlow
+	conn.mainTcpFlow = response.MainTCPFlow
 	conn.flow.NetFlow 	= shila.NetFlow{Dst: response.Dst, Path: response.Path}
 	conn.category 		= response.FlowCategory
 	conn.rawMetrics 	= response.RawMetrics
@@ -343,7 +343,7 @@ func (conn *Connection) processRoutingResponse(response router.Response) {
 
 func (conn *Connection) createHumanReadableConnectionID() string {
 	// For the moment just a simple approach, but makes our life a lot easier.
-	return createLettersFromNumber(conn.mainIpFlow.Src.Port)
+	return createLettersFromNumber(conn.mainTcpFlow.Src.Port)
 }
 
 func createLettersFromNumber(index int) string {

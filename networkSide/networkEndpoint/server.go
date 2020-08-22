@@ -156,7 +156,7 @@ func (server *Server) resendFunctionality() {
 			} else {
 				// Server network endpoint is "not able" to send out the given packet.
 				err := ConnectionError("Unable to send packet.")
-				server.Issues <- shila.EndpointIssuePub { Issuer: server, Key: p.Flow.IPFlow.Key(), Error: err } // TODO!
+				server.Issues <- shila.EndpointIssuePub { Issuer: server, Key: p.Flow.TCPFlow.Key(), Error: err } // TODO!
 			}
 		}
 		server.holdingArea = server.holdingArea[:0]

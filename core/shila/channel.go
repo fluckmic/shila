@@ -23,7 +23,7 @@ type PacketChannelPubChannels struct {
 
 type EndpointIssuePub struct {
 	Issuer Endpoint
-	Key    IPFlowKey
+	Key    TCPFlowKey
 	Error  error
 }
 

@@ -9,7 +9,7 @@ import (
 
 type paths struct {
 	storage 	[]PathWrapper
-	mapping 	map[shila.IPFlowKey] int
+	mapping 	map[shila.TCPFlowKey] int
 	sharability int
 }
 
@@ -31,7 +31,7 @@ func newPaths(dstAddr shila.NetworkAddress) (paths, error) {
 		// Destination address is in the local IA
 		return paths{
 			storage: 		[]PathWrapper{{path: nil, rawMetrics: []int{0,0}}},
-			mapping: 		make(map[shila.IPFlowKey] int),
+			mapping: 		make(map[shila.TCPFlowKey] int),
 			sharability: 	0,
 		}, nil
 	}
@@ -53,12 +53,12 @@ func newPaths(dstAddr shila.NetworkAddress) (paths, error) {
 
 	return paths{
 		storage: 		scionPaths,
-		mapping: 		make(map[shila.IPFlowKey] int),
+		mapping: 		make(map[shila.TCPFlowKey] int),
 		sharability: 	sharabilityValue,
 	}, nil
 }
 
-func (p *paths) get(key shila.IPFlowKey) (*PathWrapper, int) {
+func (p *paths) get(key shila.TCPFlowKey) (*PathWrapper, int) {
 
 	if (p.storage == nil) || (len(p.storage) < 1) {
 		return nil, -1
@@ -78,7 +78,7 @@ func (p *paths) get(key shila.IPFlowKey) (*PathWrapper, int) {
 	return nil, -1
 }
 
-func (p *paths) free(key shila.IPFlowKey) {
+func (p *paths) free(key shila.TCPFlowKey) {
 	if index, ok := p.mapping[key]; ok {
 		p.storage[index].nUsed--
 		delete(p.mapping, key)

@@ -6,9 +6,9 @@ import (
 )
 
 type controlMessage struct {
-	IPFlow          shila.IPFlow
+	TcpFlow         shila.TCPFlow
 	LAddrContactEnd net.UDPAddr
-	Payload 		[]byte
+	Payload         []byte
 }
 
 type payloadMessage struct {

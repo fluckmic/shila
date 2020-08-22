@@ -7,18 +7,18 @@ import (
 )
 
 type Flow struct {
-	IPFlow  IPFlow
+	TCPFlow TCPFlow
 	NetFlow NetFlow
 }
 
 // Has to be parsed for every packet
-type IPFlow struct {
+type TCPFlow struct {
 	Src net.TCPAddr
 	Dst net.TCPAddr
 }
 
-func (ipf IPFlow) Swap() IPFlow {
-	return IPFlow{
+func (ipf TCPFlow) Swap() TCPFlow {
+	return TCPFlow{
 		Src: ipf.Dst,
 		Dst: ipf.Src,
 	}
@@ -38,11 +38,11 @@ func (nf NetFlow) Swap() NetFlow {
 	}
 }
 
-func GetIPFlow(raw []byte) (IPFlow, error) {
+func GetTCPFlow(raw []byte) (TCPFlow, error) {
 	if src, dst, err := tcpip.DecodeSrcAndDstTCPAddr(raw); err != nil {
-		return IPFlow{}, err
+		return TCPFlow{}, err
 	} else {
-		return IPFlow{Src: src, Dst: dst}, nil
+		return TCPFlow{Src: src, Dst: dst}, nil
 	}
 }
 

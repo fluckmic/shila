@@ -15,7 +15,7 @@ type Response struct {
 	Dst          shila.NetworkAddress
 	Path         shila.NetworkPath
 	FlowCategory FlowCategory
-	MainIPFlow   shila.IPFlow
+	MainTCPFlow  shila.TCPFlow
 	FlowCount    int
 	RawMetrics   []int
 	Sharability  int

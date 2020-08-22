@@ -16,13 +16,13 @@ func NewSpecificManager() SpecificManager {
 	return SpecificManager{	}
 }
 
-func (specMng SpecificManager) NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, ipFlow shila.IPFlow, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
-	return networkEndpoint.NewContactClient(rAddr, path, ipFlow, endpointIssues)
+func (specMng SpecificManager) NewContactClient(rAddr shila.NetworkAddress, path shila.NetworkPath, tcpFlow shila.TCPFlow, endpointIssues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+	return networkEndpoint.NewContactClient(rAddr, path, tcpFlow, endpointIssues)
 }
 
 func (specMng SpecificManager) NewTrafficClient(lAddrContactEnd shila.NetworkAddress, rAddr shila.NetworkAddress, path shila.NetworkPath,
-	ipFlow shila.IPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
-	return networkEndpoint.NewTrafficClient(lAddrContactEnd, rAddr, path, ipFlow, issues)
+	tcpFlow shila.TCPFlow, issues shila.EndpointIssuePubChannel) shila.NetworkClientEndpoint {
+	return networkEndpoint.NewTrafficClient(lAddrContactEnd, rAddr, path, tcpFlow, issues)
 }
 
 func (specMng SpecificManager) NewServer(lAddr shila.NetworkAddress, role shila.EndpointRole, issues shila.EndpointIssuePubChannel) shila.NetworkServerEndpoint {
