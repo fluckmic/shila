@@ -1,26 +1,18 @@
 [
   {
     "key"  : 	{ "ip" : "10.7.0.9", "port" : "60000" },
-    "flow" : 	{ "address"  : "17-ffaa:1:d87,127.0.0.1:60000",
-      "path" : { "elements" : [ { "element" : {} } ] }
-    }
+    "flow" : 	{ "address"  : "17-ffaa:1:d87,127.0.0.1:60000"}
   },
   {
     "key"  : 	{ "ip" : "10.7.0.9", "port" : "60001" },
-    "flow" : 	{ "address"  : "19-ffaa:1:d88,127.0.0.1:60001",
-      "path" : { "elements" : [ { "element" : {} } ] }
-    }
+    "flow" : 	{ "address"  : "19-ffaa:1:d88,127.0.0.1:60001"}
   },
   {
     "key"  : 	{ "ip" : "10.7.0.9", "port" : "60002" },
-    "flow" : 	{ "address"  : "20-ffaa:1:d89,127.0.0.1:60002",
-      "path" : { "elements" : [ { "element" : {} } ] }
-    }
+    "flow" : 	{ "address"  : "20-ffaa:1:d89,127.0.0.1:60002"}
   },
   {
     "key"  : 	{ "ip" : "10.7.0.9", "port" : "60003" },
-    "flow" : 	{ "address"  : "18-ffaa:1:d8a,127.0.0.1:60003",
-      "path" : { "elements" : [ { "element" : {} } ] }
-    }
+    "flow" : 	{ "address"  : "18-ffaa:1:d8a,127.0.0.1:60003"}
   }
 ]
