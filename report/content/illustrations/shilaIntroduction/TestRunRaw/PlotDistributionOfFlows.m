@@ -13,7 +13,7 @@ pathToCapture = "~/pCloudDrive/NonCrypto Folder/02-shila/Report/Illustrations/Sh
 data = readmatrix(fullfile(pathToCapture, filenameCapture),'NumHeaderLines',1);
 
 % Throw away the first n lines before the actual data transfer started
-data = data(11:end,:);
+data = data(5:end,:);
 
 time = 1:length(data(:,1));
 
