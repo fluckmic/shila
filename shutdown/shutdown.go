@@ -1,4 +1,8 @@
-// TODO: Borrowed from scion lib - add proper mentioning!
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// Remark: The code of this file, shutdown.go, was copied and adapted from the scion lib! 
+// (https://github.com/netsec-ethz/scion/blob/scionlab/go/lib/fatal/fatal.go)
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // Package shutdown provides a way to handle shutdown errors.
 // 1. It gives the main goroutine an opportunity to cleanly shut down in case of a shutdown error.
