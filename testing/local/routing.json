@@ -46,5 +46,12 @@
     "flow" : 	{ "address"  : "2-ff00:0:220,127.0.0.1:22224",
       "path" : { "elements" : [ { "element" : {} } ] }
     }
+  },
+  {
+    "key"  :    { "ip" : "10.7.0.9", "port" : "27041" },
+    "flow" :    { "address"  : "1-ff00:0:111,127.0.0.1:27041",
+      "path" : { "elements" : [ { "element" : {} } ] }
+    }
   }
+
 ]

@@ -8,10 +8,10 @@
     "WaitingTimeTrafficConnEstablishment": 1
   },
   "NetFlow": {
-    "Path" : "/home/scion/go/src/shila/testing/MultiInstanceLocal/routing.json"
+    "Path" : "/home/scion/go/src/shila/testing/local/routing.json"
   },
   "KernelSide": {
-    "NumberOfEgressInterfaces": 5,
+    "NumberOfEgressInterfaces": 3,
     "EgressNamespace": "shila-egress-0",
     "IngressNamespace": "shila-ingress-0",
     "IngressIP": "10.7.0.9"
