@@ -185,7 +185,7 @@ We start with a more detailed discussion of the Main-Flow establishment.
 
 \begin{description}
 	\item[M-1] On Host 2, the server instance of iPerf3 starts listening for incoming TCP connections. It, therefore, binds to the virtual interface in the Shila ingress namespace on the TCP address 10.7.0.9:27041. This step is not recognized by the Kernel-Endpoint hosting the corresponding virtual interface.
-	\item[M-2] On Host 1, the client instance of iPerf3 tries to connect to its server counterpart on TCP address 10.7.0.9:27041. For the connection establishment, an IP datagram, containing the TCP-SYN, is sent via one of the virtual interfaces in the egress namespace. Let's say it's identified by the IP address 10.0.0.1 and the socket bound to port 11111.
+	\item[M-2] On Host 1, the client instance of iPerf3 tries to connect to its server counterpart on TCP address 10.7.0.9:27041. For the connection establishment, an IP datagram, containing the TCP-SYN, is sent via one of the virtual interfaces in the egress namespace. Let's say It is identified by the IP address 10.0.0.1 and the socket bound to port 11111.
 	\item[M-3] The Kernel-Endpoint owning the corresponding virtual interface receives the IP datagram and puts it into a Shila-Packet. While payload, Shila-Endpoint and TCP-Flow$^{1}$ are determined, the Net-Flow for the created Shila-Packet is not yet known. The packet is now forwarded to the Working-Side.\medskip\\{\small[10.0.0.1:11111, 10.7.0.9:27041]$^{1}$}
 	\item[M-4] The Working-Side uses the TCP-Flow, extracted from the packet, as the key into the Shila-Connection-Mapping. Since there is no corresponding Shila-Connection, a new one is created and the Shila-Packet is forwarded on to it.  
 	\item[M-5] To be able to forward the received Shila-Packet, the newly created Shila-Connection has to first determine the destination SCION address and path. It does this by querying the Router, which determines the corresponding parts of the Net-Flow for the TCP-Flow of the packet.
@@ -235,7 +235,7 @@ The establishment of Sub-Flow works in the same way as that of a Main-Flow. Ther
 
 \begin{description}	
 \item[S-2] The initiation for the Sub-Flow is made by MPTCP itself. It binds to one of the yet unused virtual interfaces on Host 1. For our example we assume that port 22222 is chosen. 
-\item[S-5] The Router already has an entry, holding destination address and paths. For the establishment of the Sub-Flow, it's sufficient for the Shila-Connection to submit the Main-Flow-Identifier to get the required Net-Flow.
+\item[S-5] The Router already has an entry, holding destination address and paths. For the establishment of the Sub-Flow, It is sufficient for the Shila-Connection to submit the Main-Flow-Identifier to get the required Net-Flow.
 \end{description}
 
 \newpage

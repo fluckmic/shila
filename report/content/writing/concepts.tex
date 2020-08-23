@@ -1,7 +1,7 @@
 
 \chapter{Important Concepts}
 \label{chap:Concepts}
-In this chapter, we present the most important building blocks on which this work is based. It's meant to refresh the reader's understanding should allow to consume this thesis in a self-containing manner and to place the work in a larger context. The three building blocks are the Transmission Control Protocol (TCP), Multipath TCP (MPTCP) based on it and finally the new internet architecture SCION. These three concepts are summarized in the corresponding order in the following sections.
+In this chapter, we present the most important building blocks on which this work is based. It is meant to refresh the reader's understanding should allow to consume this thesis in a self-containing manner and to place the work in a larger context. The three building blocks are the Transmission Control Protocol (TCP), Multipath TCP (MPTCP) based on it and finally the new internet architecture SCION. These three concepts are summarized in the corresponding order in the following sections.
 
 \section{Transmission Control Protocol (TCP)}
 \label{sec:TCP}
@@ -10,7 +10,7 @@ This recap about the widely used transport protocol TCP is mainly inspired by th
 
 The Transmission Control Protocol (TCP) is one of the main protocols in today's Internet. Its two main developers, Vint Cerf and Bob Kahn, started working on the protocol in 1974. The original specification was written in 1981; defined in the RFC document number 793 \cite{rfc793}.
 
-TCP is a byte stream, connection-oriented and reliable transport protocol. In the OSI model, it is situated between the application layer above and the network layer below. TCP receives the data in a byte stream from the application. It's up to the protocol to partition this stream into so-called TCP segments in order to transmit the data in manageable pieces to the receiver. Before two endpoints can exchange data over TCP they must first agree upon the willingness to communicate; hence connection-oriented. Similar to a call with a telephone, first a connection has to be established before the two parties can exchange information. We describe the procedure of a TCP connection establishment and termination later in this section. To ensure reliable data transfer TCP uses different mechanisms. A per-segment checksum enables the receiver to detect crudities in the transferred data, furthermore is everything, that is received multiple times, discarded by the receiving side. It is also the receiver that ensures that the received data is transferred to the application in the correct order. TCP also has a retransmission functionality that ensures delivery of the data in the case of data corruption or loss. The successful reception of data is confirmed by the receiver with a positive acknowledgment. If the sender does not receive such positive acknowledgments for a certain period of time, it will resend the data. 
+TCP is a byte stream, connection-oriented and reliable transport protocol. In the OSI model, it is situated between the application layer above and the network layer below. TCP receives the data in a byte stream from the application. It is up to the protocol to partition this stream into so-called TCP segments in order to transmit the data in manageable pieces to the receiver. Before two endpoints can exchange data over TCP they must first agree upon the willingness to communicate; hence connection-oriented. Similar to a call with a telephone, first a connection has to be established before the two parties can exchange information. We describe the procedure of a TCP connection establishment and termination later in this section. To ensure reliable data transfer TCP uses different mechanisms. A per-segment checksum enables the receiver to detect crudities in the transferred data, furthermore is everything, that is received multiple times, discarded by the receiving side. It is also the receiver that ensures that the received data is transferred to the application in the correct order. TCP also has a retransmission functionality that ensures delivery of the data in the case of data corruption or loss. The successful reception of data is confirmed by the receiver with a positive acknowledgment. If the sender does not receive such positive acknowledgments for a certain period of time, it will resend the data. 
 
 \subsection*{TCP Segment}
 
@@ -32,7 +32,7 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 \textbf{ACK (Control Bit):} If set, then the acknowledgment number is valid. \smallskip\\
 \textbf{Window:} 16-bit number used by TCP for flow control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
 \textbf{SYN (Control Bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
-\textbf{FIN (Control Bit):} This bit is part of the connection termination. It's set by the sender if its byte stream has reached the end. \smallskip\\
+\textbf{FIN (Control Bit):} This bit is part of the connection termination. It is set by the sender if its byte stream has reached the end. \smallskip\\
 \textbf{Options:} Provides space for additional optional parameters that one may want to exchange between sender and receiver. 
 }
  
@@ -161,7 +161,7 @@ The benefits of MPTCP as an extension are promising, as already mentioned in Cha
 \section{SCION}
 \label{sec:SCION}
 
-In the upcoming summary, we introduce the reader to the fundamental concepts of SCION. It's based on the SCION book \cite{SCIONBook} and a selection of videos \cite{SCIONWebVideos}. More information and the latest news about the development of SCION can be found on the official web site \cite{SCIONWebMain}.
+In the upcoming summary, we introduce the reader to the fundamental concepts of SCION. It is based on the SCION book \cite{SCIONBook} and a selection of videos \cite{SCIONWebVideos}. More information and the latest news about the development of SCION can be found on the official web site \cite{SCIONWebMain}.
 
 \subsection{Shortcomings of today's Internet}
 
