@@ -14,35 +14,35 @@ TCP is a byte stream, connection-oriented and reliable transport protocol. In th
 
 \subsection*{TCP Segment}
 
-TCP partitions the byte stream into TCP Segments consisting of a header and a data part. Figure \ref{fig:TCPSegment} depicts a valid format of a TCP Segment with its different fields. In the following, the fields most important for the understanding of the TCP are described in more detail. 
+TCP partitions the byte stream into TCP segments consisting of a header and a data part. Figure \ref{fig:TCPSegment} depicts a valid format of a TCP segment with its different fields. In the following, the fields most important for the understanding of the TCP are described in more detail. 
 
 \begin{figure} [H]
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/importantConcepts/TCPSegment.pdf}  
-		\caption[Caption for the list of figures.]{Illustration of a TCP Segment.}
+		\caption[Caption for the list of figures.]{Illustration of a TCP segment.}
 		\label{fig:TCPSegment}
 	\end{center}
 \end{figure}
 
 {\small \textbf{Source Port:} 16-bit number tagging the application the segment originated from within a sending endpoint. \smallskip\\
 \textbf{Destination Port:} 16-bit number tagging the application the segment is destined for on a receiving endpoint. \smallskip\\
-\textbf{Sequence Number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
+\textbf{sequence number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
 \textbf{Acknowledgment Number:} 32-bit number telling the receiver which data byte the sender is expecting next. It is always one greater than the most recently received data byte and only valid if the ACK control bit is set. \smallskip\\
-\textbf{ACK (Control bit):} If set, then the Acknowledgment Number is valid. \smallskip\\
+\textbf{ACK (Control Bit):} If set, then the acknowledgment number is valid. \smallskip\\
 \textbf{Window:} 16-bit number used by TCP for Flow Control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
-\textbf{SYN (Control bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
-\textbf{FIN (Control bit):} This bit is part of the connection termination. It's set by the sender if its byte stream has reached the end. \smallskip\\
+\textbf{SYN (Control Bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
+\textbf{FIN (Control Bit):} This bit is part of the connection termination. It's set by the sender if its byte stream has reached the end. \smallskip\\
 \textbf{Options:} Provides space for additional optional parameters that one may want to exchange between sender and receiver. 
 }
  
 Note that a single TCP connection is globally uniquely identified by a complete pair of IP addresses (source and destination) together with a complete pair of TCP ports (source and destination).
 
-\subsection*{Connection establishment, data transfer and termination}
+\subsection*{Connection Establishment, Data Transfer and Termination}
 
 TCP is connection-oriented, meaning that there is a virtual connection between two endpoints exchanging data. Such a virtual connection runs through three stages: connection establishment, data transfer and connection termination.
 
-\paragraph{Connection establishment}
+\paragraph{Connection Establishment}
 
 Two hosts, A and B, willing to communicate establish a connection by exchanging a predefined set of messages known as the Three-Way Handshake. Figure \ref{fig:TCPConnectionEstablishmentAndTermination} on the left side illustrates this sequence. 
 
@@ -55,11 +55,11 @@ Two hosts, A and B, willing to communicate establish a connection by exchanging 
 	\end{center}
 \end{figure}
 
-Host A as an initiator of the connection sends a segment containing an initial Sequence Number x and the SYN control bit set to Host B. \smallskip\\Host B processes the received segment and answers with a segment of its own. It contains an initial Sequence Number y and has the SYN control bit set. Furthermore assigns Host B x+1 to the Acknowledgment Number and sets the ACK control bit. This indicates that the next byte expecting from Host B should contain data starting with Sequence Number x+1. \smallskip\\ Host A finishes the connection establishment phase upon reception of Host B's SYN+ACK. It sends a last acknowledgment to Host B, indicating that the next expected byte should start with Sequence Number y+1.
+Host A as an initiator of the connection sends a segment containing an initial sequence number x and the SYN control bit set to Host B. \smallskip\\Host B processes the received segment and answers with a segment of its own. It contains an initial sequence number y and has the SYN control bit set. Furthermore assigns Host B x+1 to the acknowledgment number and sets the ACK control bit. This indicates that the next byte expecting from Host B should contain data starting with sequence number x+1. \smallskip\\ Host A finishes the connection establishment phase upon reception of Host B's SYN+ACK. It sends a last acknowledgment to Host B, indicating that the next expected byte should start with sequence number y+1.
 
-\paragraph{Data transfer}
+\paragraph{Data Transfer}
 
-Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are Flow Control and Congestion Control. We discuss these concepts later, for now, we just focus on some key ideas. 
+Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are flow control and congestion control. We discuss these concepts later, for now, we just focus on some key ideas. 
 
 In a basic TCP implementation, segments are put into the network by the sender as long as there is data available and as long as the window announced by the receiver is not exceeded. The receiver consumes the segments and acknowledges them by sending back positive acknowledgments together with its current position in the byte stream. The announcement of the current window size is also included in these messages sent back. If data gets lost or duplicated, a hole may exist in the byte stream. The receiver continues to acknowledge the most current contiguous position in the byte stream accepted so far.
 
@@ -67,7 +67,7 @@ The sender must halt transmission in the case where data ready to be sent will e
 
 If there is no data to send, TCP waits patiently until either there is some again or the other end of the connection sends data to receive.  
 
-\paragraph{Connection termination}
+\paragraph{Connection Termination}
 
 A TCP connection is completely terminated by the exchange of four segments as depicted on the right side of Figure \ref{fig:TCPConnectionEstablishmentAndTermination}. Since the protocol is full-duplex, both ends must be torn down independently. To initiate this process the FIN control bits are used. 
 
@@ -75,19 +75,19 @@ As soon as the application running on Host A wants to close the connection, a FI
 
 \subsection*{Flow Control}
 
-Flow Control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to that of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the Window field to adjust the rate of flow between TCP endpoints. This concept is called Sliding Window. In every segment, the receiver specifies with the Window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
+Flow Control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to that of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the Window field to adjust the rate of flow between TCP endpoints. This concept is called sliding window. In every segment, the receiver specifies with the window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
 
 \subsection*{Congestion Control}
 
-Another major part of the data transfer in TCP is Congestion Control. However, this term is misleading, since it rather should be called congestion avoidance. TCP itself cannot control the congestion, it rather tries to avoid congestion using different mechanisms, which are briefly discussed in the following. 
+Another major part of the data transfer in TCP is congestion control. However, this term is misleading, since it rather should be called congestion avoidance. TCP itself cannot control the congestion, it rather tries to avoid congestion using different mechanisms, which are briefly discussed in the following. 
 
 \paragraph{Slow Start}
 
-Slow start is a mechanism used by the sender to control the sending rate. Hereby, the rate of acknowledgments returned by the receiver controls the rate at which the sender can transmit data. At the very beginning of a TCP connection, the Congestion Window is initialized to one. With every positive acknowledgment received, the Congestion Window is increased by one. The sender can send the minimum of this Congestion Window and the advertised window of the receiver, denoted as Transmission Window. Unlike the name suggests, Slow Start is by no means slow. In a congestion-free network with good response time, the Congestion Window doubles for every round-trip-time. The increase of the Congestion Window will continue until the maximum Transmission Window is reached or until congestion finally occurs.
+Slow start is a mechanism used by the sender to control the sending rate. Hereby, the rate of acknowledgments returned by the receiver controls the rate at which the sender can transmit data. At the very beginning of a TCP connection, the congestion window is initialized to one. With every positive acknowledgment received, the congestion window is increased by one. The sender can send the minimum of this congestion window and the advertised window of the receiver, denoted as transmission window. Unlike the name suggests, Slow Start is by no means slow. In a congestion-free network with good response time, the congestion window doubles for every round-trip-time. The increase of the congestion window will continue until the maximum transmission window is reached or until congestion finally occurs.
 
 \paragraph{Congestion Avoidance}
 
-The Congestion Avoidance algorithm has two mechanisms to detect network congestion. If the blockage is indicated through the reception of duplicate acknowledgments, the Transmission Window is halved and the Fast Retransmit and Fast Recovery mechanism take over. If the congestion was indicated through a timeout of the retransmission timer, then the sender is put back into Slow Start mode, i.e. the Transmission Window is set to one. After running into congestion, the Congestion Window is again increased using Slow Start. However, it is only used up to the halfway point where congestion originally occurred. After reaching this point, the Congestion Window is just increased by one for all segments in the Transmission Window that are acknowledged. The linear growth from this point onward makes sure that TCP increases its transmission rate more slowly towards the previous congestion point.  
+The congestion avoidance algorithm has two mechanisms to detect network congestion. If the blockage is indicated through the reception of duplicate acknowledgments, the transmission window is halved and the fast retransmit and fast recovery mechanism take over. If the congestion was indicated through a timeout of the retransmission timer, then the sender is put back into Slow Start mode, i.e. the transmission window is set to one. After running into congestion, the congestion window is again increased using Slow Start. However, it is only used up to the halfway point where congestion originally occurred. After reaching this point, the congestion window is just increased by one for all segments in the transmission window that are acknowledged. The linear growth from this point onward makes sure that TCP increases its transmission rate more slowly towards the previous congestion point.  
 
 \paragraph{Fast Retransmit}
 
@@ -95,7 +95,7 @@ If the sender receives an acknowledgment multiple times, it is not clear if it i
 
 \paragraph{Fast Recovery}
 
-Duplicate acknowledgments can only be generated when a segment is received at the receiver. That is, as long as the sender receives acknowledgments it knows that there is data flow through the network. The loss of a segment was probably just a rare event, instead of reducing the flow drastically by using Slow Start again the sender just enters Congestion Avoidance without decreasing the size of the Congestion Window too much. This behavior allows for higher throughput in cases of only moderate congestion.
+Duplicate acknowledgments can only be generated when a segment is received at the receiver. That is, as long as the sender receives acknowledgments it knows that there is data flow through the network. The loss of a segment was probably just a rare event, instead of reducing the flow drastically by using Slow Start again the sender just enters congestion avoidance without decreasing the size of the congestion window too much. This behavior allows for higher throughput in cases of only moderate congestion.
 
 \subsection*{Conclusion}
 
@@ -110,9 +110,9 @@ In this section, we introduce Multipath TCP. The presented summary is based on \
 
 In times where most hosts are equipped with multiple physical interfaces, a protocol that binds each connection to a single interface does not exhaust the potential of the infrastructure. TCP is not capable of using the multiple paths to the Internet available for an increase in connection redundancy and performance. Multipath TCP, as an evolution of TCP, is an attempt to utilize the multiple paths available to gain robustness and performance advantages.
 
-Multipath TCP allows an unmodified application to start what it believes a regular TCP connection using the well-known API for TCP. If both endpoints support the use of MPTCP, multiple flows are established under the hood. The data is shared among these flows, where most data is sent out on the least congested path. If the use of MPTCP is not supported a regular TCP connection is established instead. Multipath TCP works in all scenarios where TCP currently works. By using an appropriate Congestion Control MPTCP furthermore ensures that other, regular TCP connections present in the network are not disadvantaged. 
+Multipath TCP allows an unmodified application to start what it believes a regular TCP connection using the well-known API for TCP. If both endpoints support the use of MPTCP, multiple flows are established under the hood. The data is shared among these flows, where most data is sent out on the least congested path. If the use of MPTCP is not supported a regular TCP connection is established instead. Multipath TCP works in all scenarios where TCP currently works. By using an appropriate congestion control MPTCP furthermore ensures that other, regular TCP connections present in the network are not disadvantaged. 
 
-\subsection*{Connection setup}
+\subsection*{Connection Setup}
 
 MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. the main-flow. The sender includes the MP\_CAPABLE option in the SYN, which is also included in the returning SYN+ACK when the server is ready to use MPTCP. The sender concludes the Multipath TCP connection setup by including the MP\_CAPABLE option in the third packet of the handshake as well. The connecting entities fall back fo regular TCP if not all segments being exchanged as part of the Three-Way Handshake contain the respective option. The MP\_CAPABLE option itself contains a 64-bit key generated by the sender and the receiver, later used to verify the authenticity of additional flows. The sequence of segments exchanged for an MPTCP connection establishment between two Host A and B is illustrated in Figure \ref{fig:MTCPConnectionEstablishment}.
 
@@ -125,34 +125,34 @@ MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. th
 	\end{center}
 \end{figure}
 
-\subsection*{Addition of sub-flows}
+\subsection*{Addition of Sub-flows}
 
 Once a connection, i.e. the main-flow, has been established, further flows, so-called sub-flows, can be added. For this MPTCP again performs a regular TCP Three-Way Handshake using addresses or ports of additionally available interfaces. To add the sub-flow, the MP\_JOIN option has to be included in any segment part of the handshake. This option holds the message authentication code (MAC) of the keys exchanged in the previously described initial connection setup. This measure makes it difficult for malicious third parties to hijack an existing connection. Furthermore includes the option a connection identifier, derived as a hash from the receiver's key, used to match new sub-flows with an existing connections main-flow. 
 
-\subsection*{Data transfer}
+\subsection*{Data Transfer}
 
 Data exchanged between client and server can be sent over any flow part of a Multipath TCP connection. To remain a reliable protocol, MPTCP must retransmit data over a different flow if a certain flow fails. This is achieved by making use of two different principles discussed in the following and illustrated in Figure \ref{fig:MPTCPDataTransfer}.
 
 \paragraph{Flow and Data Sequence Number}
 
-In Multipath TCP every flow is equivalent to a regular TCP connection using its own 32-bit Sequence Number Space. With this Flow Sequence Number, the current position within the entire byte stream transferred over a certain flow is identified. Additionally, MPTCP maintains a 64-bit Data Sequence Numbering Space, which is used by the DSS\_MAP and the DSS\_ACK option. The DSS\_MAP contains a mapping between the Flow Sequence Number and the Data Sequence Number. It is used by the receiver for correctly ordering the byte stream, possibly received disordered over the different flows, for the application.
+In Multipath TCP every flow is equivalent to a regular TCP connection using its own 32-bit sequence number space. With this flow sequence number, the current position within the entire byte stream transferred over a certain flow is identified. Additionally, MPTCP maintains a 64-bit data sequence numbering space, which is used by the DSS\_MAP and the DSS\_ACK option. The DSS\_MAP contains a mapping between the flow sequence number and the data sequence number. It is used by the receiver for correctly ordering the byte stream, possibly received disordered over the different flows, for the application.
 
-\paragraph{Two different acknowledgment levels}
+\paragraph{Two different Acknowledgment Levels}
 
-The acknowledgment of received data happens on two different levels. The regular TCP Acknowledgment Number is used to confirm the reception of data on a flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same Flow Sequence Number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at a data sequence level are available. These allow MPTCP to detect the failure of a flow and to initiate the retransmission of lost data over a different flow.
+The acknowledgment of received data happens on two different levels. The regular TCP acknowledgment Number is used to confirm the reception of data on a flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same flow sequence number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at a data sequence level are available. These allow MPTCP to detect the failure of a flow and to initiate the retransmission of lost data over a different flow.
 
 \begin{figure}
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/importantConcepts/MPTCPDataTransfer.pdf}  
-		\caption[Caption for the list of figures.]{Illustration of data transfer in MPTCP with two flows. The regular TCP Sequence Numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on a flow connection level. With the additionally introduced DSS\_ACK's on a data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
+		\caption[Caption for the list of figures.]{Illustration of data transfer in MPTCP with two flows. The regular TCP sequence numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on a flow connection level. With the additionally introduced DSS\_ACK's on a data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
 		\label{fig:MPTCPDataTransfer}
 	\end{center}
 \end{figure}
 
 \subsection*{Congestion Control}
 
-One way to implement Congestion Control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its Congestion Window without affecting or being affected by other flows and their window. Possible Congestion Control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent Congestion Windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses instead a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
+One way to implement congestion control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its congestion window without affecting or being affected by other flows and their window. Possible congestion control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent congestion windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses instead a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
 
 \subsection*{Conclusion}
 

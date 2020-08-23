@@ -224,7 +224,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.5"
-     inkscape:cx="623.4533"
+     inkscape:cx="268.4533"
      inkscape:cy="-360.23694"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -2134,7 +2134,7 @@
            style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono Bold';stroke-width:0.26458332"
            y="693.59778"
            x="123.54379"
-           sodipodi:role="line">TCP connection establishment</tspan></text>
+           sodipodi:role="line">TCP Connection Establishment</tspan></text>
     </g>
     <g
        id="g4393-0"
@@ -2156,7 +2156,7 @@
            style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono Bold';stroke-width:0.26458332"
            y="688.30609"
            x="52.635468"
-           sodipodi:role="line">TCP connection termination</tspan></text>
+           sodipodi:role="line">TCP Connection Termination</tspan></text>
     </g>
   </g>
 </svg>
