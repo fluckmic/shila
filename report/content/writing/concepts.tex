@@ -30,7 +30,7 @@ TCP partitions the byte stream into TCP Segments consisting of a header and a da
 \textbf{Sequence Number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
 \textbf{Acknowledgment Number:} 32-bit number telling the receiver which data byte the sender is expecting next. It is always one greater than the most recently received data byte and only valid if the ACK control bit is set. \smallskip\\
 \textbf{ACK (Control bit):} If set, then the Acknowledgment Number is valid. \smallskip\\
-\textbf{Window:} 16-bit number used by TCP for flow control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
+\textbf{Window:} 16-bit number used by TCP for Flow Control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
 \textbf{SYN (Control bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
 \textbf{FIN (Control bit):} This bit is part of the connection termination. It's set by the sender if its byte stream has reached the end. \smallskip\\
 \textbf{Options:} Provides space for additional optional parameters that one may want to exchange between sender and receiver. 
@@ -59,7 +59,7 @@ Host A as an initiator of the connection sends a segment containing an initial S
 
 \paragraph{Data transfer}
 
-Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are flow control and congestion control. We discuss these concepts later, for now, we just focus on some key ideas. 
+Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are Flow Control and Congestion Control. We discuss these concepts later, for now, we just focus on some key ideas. 
 
 In a basic TCP implementation, segments are put into the network by the sender as long as there is data available and as long as the window announced by the receiver is not exceeded. The receiver consumes the segments and acknowledges them by sending back positive acknowledgments together with its current position in the byte stream. The announcement of the current window size is also included in these messages sent back. If data gets lost or duplicated, a hole may exist in the byte stream. The receiver continues to acknowledge the most current contiguous position in the byte stream accepted so far.
 
@@ -106,15 +106,15 @@ TCP is a rather complex protocol that handles an enormous amount of functionalit
 
 In this section, we introduce Multipath TCP. The presented summary is based on \cite{Barre2011, Raiciu2012, Wischik2011} and the RFC document number 6824 \cite{rfc6824}.
 
-\subsubsection{Basics}
+\subsection*{Basics}
 
 In times where most hosts are equipped with multiple physical interfaces, a protocol that binds each connection to a single interface does not exhaust the potential of the infrastructure. TCP is not capable of using the multiple paths to the Internet available for an increase in connection redundancy and performance. Multipath TCP, as an evolution of TCP, is an attempt to utilize the multiple paths available to gain robustness and performance advantages.
 
-Multipath TCP allows an unmodified application to start what it believes a regular TCP connection using the well-known API for TCP. If both endpoints support the use of MPTCP, additional sub-flows are established under the hood. The data is shared among these sub-flows, where most data is sent out on the least congested path. If the use of MPTCP is not supported a regular TCP connection is established instead. Multipath TCP works in all scenarios where TCP currently works. By using an appropriate congestion control MPTCP furthermore ensures that other, regular TCP connections present in the network are not disadvantaged. 
+Multipath TCP allows an unmodified application to start what it believes a regular TCP connection using the well-known API for TCP. If both endpoints support the use of MPTCP, multiple flows are established under the hood. The data is shared among these flows, where most data is sent out on the least congested path. If the use of MPTCP is not supported a regular TCP connection is established instead. Multipath TCP works in all scenarios where TCP currently works. By using an appropriate Congestion Control MPTCP furthermore ensures that other, regular TCP connections present in the network are not disadvantaged. 
 
-\subsubsection{Connection Setup}
+\subsection*{Connection setup}
 
-MPTCP uses the TCP Three-Way Handshake to set up the initial connection. The sender includes the MP\_CAPABLE option in the SYN, which is also included in the returning SYN+ACK when the server is ready to use MPTCP. The sender concludes the Multipath TCP connection setup by including the MP\_CAPABLE option in the third packet of the handshake as well. The connecting entities fall back fo regular TCP if not all segments being exchanged as part of the Three-Way Handshake contain the respective option. The MP\_CAPABLE option itself contains a 64-bit key generated by the sender and the receiver, later used to verify the authenticity of new sub-flows. The sequence of segments exchanged for an MPTCP connection establishment between two Host A and B is illustrated in Figure \ref{fig:MTCPConnectionEstablishment}.
+MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. the main-flow. The sender includes the MP\_CAPABLE option in the SYN, which is also included in the returning SYN+ACK when the server is ready to use MPTCP. The sender concludes the Multipath TCP connection setup by including the MP\_CAPABLE option in the third packet of the handshake as well. The connecting entities fall back fo regular TCP if not all segments being exchanged as part of the Three-Way Handshake contain the respective option. The MP\_CAPABLE option itself contains a 64-bit key generated by the sender and the receiver, later used to verify the authenticity of additional flows. The sequence of segments exchanged for an MPTCP connection establishment between two Host A and B is illustrated in Figure \ref{fig:MTCPConnectionEstablishment}.
 
 \begin{figure}[H]
 	\begin{center} 
@@ -125,36 +125,36 @@ MPTCP uses the TCP Three-Way Handshake to set up the initial connection. The sen
 	\end{center}
 \end{figure}
 
-\subsubsection{Addition of sub-flows}
+\subsection*{Addition of sub-flows}
 
-Once a connection has been established further sub-flows can be added. For this MPTCP again performs a regular TCP Three-Way Handshake using addresses or ports of additionally available interfaces. To add the sub-flow, the MP\_JOIN option has to be included in any segment part of the handshake. This option holds the message authentication code (MAC) of the keys exchanged in the previously described initial connection setup. This measure makes it difficult for malicious third parties to hijack an existing connection. Furthermore includes the option a connection identifier, derived as a hash from the receiver's key, used to match new sub-flows with an existing connection. 
+Once a connection, i.e. the main-flow, has been established, further flows, so-called sub-flows, can be added. For this MPTCP again performs a regular TCP Three-Way Handshake using addresses or ports of additionally available interfaces. To add the sub-flow, the MP\_JOIN option has to be included in any segment part of the handshake. This option holds the message authentication code (MAC) of the keys exchanged in the previously described initial connection setup. This measure makes it difficult for malicious third parties to hijack an existing connection. Furthermore includes the option a connection identifier, derived as a hash from the receiver's key, used to match new sub-flows with an existing connections main-flow. 
 
-\subsubsection{Data Transfer}
+\subsection*{Data transfer}
 
-Data exchanged between client and server can be sent over any sub-flow part of a Multipath TCP connection. To remain a reliable protocol, MPTCP must retransmit data over a different sub-flow if a certain sub-flow fails. This is achieved by making use of two different principles discussed in the following and illustrated in Figure \ref{fig:MPTCPDataTransfer}.
+Data exchanged between client and server can be sent over any flow part of a Multipath TCP connection. To remain a reliable protocol, MPTCP must retransmit data over a different flow if a certain flow fails. This is achieved by making use of two different principles discussed in the following and illustrated in Figure \ref{fig:MPTCPDataTransfer}.
 
-\paragraph{Sub-flow and Data Sequence Number}
+\paragraph{Flow and Data Sequence Number}
 
-In Multipath TCP every sub-flow is equivalent to a regular TCP connection using its own 32-bit sequence number space. With this sub-flow sequence number, the current position within the entire byte stream transferred over a certain sub-flow connection is identified. Additionally, MPTCP maintains a 64-bit data sequence numbering space, which is used by the DSS\_MAP and the DSS\_ACK option. The DSS\_MAP contains a mapping between the sub-flow sequence number and the data sequence number. It is used by the receiver for correctly ordering the byte stream, possibly received disordered over the different sub-flows, for the application.
+In Multipath TCP every flow is equivalent to a regular TCP connection using its own 32-bit Sequence Number Space. With this Flow Sequence Number, the current position within the entire byte stream transferred over a certain flow is identified. Additionally, MPTCP maintains a 64-bit Data Sequence Numbering Space, which is used by the DSS\_MAP and the DSS\_ACK option. The DSS\_MAP contains a mapping between the Flow Sequence Number and the Data Sequence Number. It is used by the receiver for correctly ordering the byte stream, possibly received disordered over the different flows, for the application.
 
-\paragraph{Two different Acknowledgment Levels}
+\paragraph{Two different acknowledgment levels}
 
-The acknowledgment of received data happens on two different levels. The regular TCP acknowledgment number is used to confirm the reception of data on a sub-flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same sub-flow sequence number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at the data sequence level are available. These allow MPTCP to detect the failure of a sub-flow and to initiate the retransmission of lost data over a different sub-flow.
+The acknowledgment of received data happens on two different levels. The regular TCP Acknowledgment Number is used to confirm the reception of data on a flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same Flow Sequence Number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at a data sequence level are available. These allow MPTCP to detect the failure of a flow and to initiate the retransmission of lost data over a different flow.
 
 \begin{figure}
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/importantConcepts/MPTCPDataTransfer.pdf}  
-		\caption[Caption for the list of figures.]{Illustration of data transfer in MPTCP with two flows. The regular TCP sequence numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on sub-flow connection level. With the additionally introduced DSS\_ACK's on the data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
+		\caption[Caption for the list of figures.]{Illustration of data transfer in MPTCP with two flows. The regular TCP Sequence Numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on a flow connection level. With the additionally introduced DSS\_ACK's on a data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
 		\label{fig:MPTCPDataTransfer}
 	\end{center}
 \end{figure}
 
-\subsubsection{Congestion Control}
+\subsection*{Congestion Control}
 
-One way to implement congestion control in MPTCP is to use conventional mechanisms on the sub-flow connection level. This means that each TCP sub-flow maintains its Congestion Window without affecting or being affected by other sub-flows and their window. Possible congestion control algorithms could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent Congestion Windows for each sub-flow, other users in the network are disadvantaged. Imagine that several sub-flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each sub-flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses instead a congestion algorithm which makes the windows of the individual sub-flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the  Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
+One way to implement Congestion Control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its Congestion Window without affecting or being affected by other flows and their window. Possible Congestion Control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent Congestion Windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses instead a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
 
-\subsubsection{Conclusion}
+\subsection*{Conclusion}
 
 The benefits of MPTCP as an extension are promising, as already mentioned in Chapter \ref{chap:RelatedWork}, especially in the area of smartphone usage.  With this summary, we have by no means covered all facets of Multipath TCP. But it does provide a basis for understanding this work and how we try to benefit from the protocol as well. An overview of the current development around MPTCP can be found here \cite{MPTCPWebMain}.
 
