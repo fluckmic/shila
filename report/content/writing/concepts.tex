@@ -163,7 +163,7 @@ The benefits of MPTCP as an extension are promising, as already mentioned in Cha
 
 In the upcoming summary, we introduce the reader to the fundamental concepts of SCION. It's based on the SCION book \cite{SCIONBook} and a selection of videos \cite{SCIONWebVideos}. More information and the latest news about the development of SCION can be found on the official web site \cite{SCIONWebMain}.
 
-\subsubsection{Shortcomings of today's Internet}
+\subsection{Shortcomings of today's Internet}
 
 We start by mentioning some of the Internet's shortcomings, more precisely the shortcomings of two important building blocks of it. Today's Internet is of great importance for the economy, politics and society worldwide. Despite this importance, the global infrastructure does not meet the requirements in terms of security and availability to any degree. The core of the Internet is based on a few protocols developed almost 30 years ago. The Internet Protocol (IP) and the Border Gateway Protocol (BGP) control most system-relevant functions, but have undergone only minimal development since their deployment and suffer from several shortcomings.
 
@@ -175,9 +175,9 @@ IP handles the transport of packets between end-users along a single path throug
 
 BGP is responsible for the exchange of routing information between independently operating autonomous systems, denoted as ASes, like Internet service providers (ISPs). These providers use BGP update messages to announce the IP prefixes which are reachable through their subnet. Each ISP can decide based on its criteria which announcements it wants to share further and which routes it wants to use. This traffic engineering is mainly driven by economically influenced policies. BGP also suffers from some shortcomings. It may take a considerable amount of time for the routing infrastructure to return to a stable state after new announcements have been made. Route changes directly affect forwarding and can lead to failures and interruptions of the data exchange. Furthermore, notifications affect all BGP entities that are present in the network. There is no hierarchy or isolation between individual areas. A single faulty BGP entity can severely disrupt the entire global routing infrastructure. Finally, BGP only allows one to select a single path for the routing between different autonomous systems. 
 
-\subsubsection{SCION - Scalability, Control and Isolation on Next-generation Networks}
+\subsection*{SCION - Scalability, Control and Isolation on Next-generation Networks}
 
-Intending to remedy the above-mentioned shortcomings and create a better, safer internet, the development of SCION started with the publication of the first paper \cite{SCIONPaper} in 2011. SCION, an acronym for scalability, control and isolation on next-generation networks, shall become a secure network architecture that provides high availability regardless of the presence of malicious actors and offers efficient point-to-point packet delivery. In the ensuing section, we then give an introduction to the correspondingly implemented SCION architecture. Its implementation and design are guided by the following objectives.
+Intending to remedy the above-mentioned shortcomings and create a better, safer internet, the development of SCION started with the publication of the first paper \cite{SCIONPaper} in 2011. SCION, an acronym for Scalability, Control and Isolation on Next-generation networks, shall become a secure network architecture that provides high availability regardless of the presence of malicious actors and offers efficient point-to-point packet delivery. In the ensuing section, we then give an introduction to the correspondingly implemented SCION architecture. Its implementation and design are guided by the following objectives.
 
 {\small \textbf{High availability:} The functionality of the network is guaranteed even in the presence of a malicious party as long as at least one benign path exists between communicating endpoints. \smallskip\\
 	\textbf{Path transparency:} Endpoints have control over and insight into the path their data takes through the network. \smallskip\\
@@ -186,7 +186,7 @@ Intending to remedy the above-mentioned shortcomings and create a better, safer 
 	\textbf{Router state avoidance:} Routing works without the routers having to store a state.
 }
 
-\subsubsection{The SCION Architecture}
+\subsection*{The SCION Architecture}
 
 The SCION architecture combines autonomous systems (ASes) into so-called isolation domains (ISD). Each ISD is managed by a subset of ASes, which form the ISD core and are denoted as core ASes. These core ASes agree on a policy, a trust root configuration (TRC), which applies inside their ISD and is used to validate bindings between names and public keys or addresses. Mapping to the real world, an isolation domain can for example represent a single state or the union of several states with the same legal understanding. Figure \ref{fig:SCIONArchitectureISDs} depicts a possible grouping of ASes into different ISDs connected by respective links.
 
@@ -230,6 +230,6 @@ After a host has received individual path segments in the course of the path loo
 
 Once a path is formed, it is included in the SCION packet header and used for forwarding. The recipient of a packet can send back data by simply inverting the path along which it got the packet or create a different one by performing a path lookup and combination on its own.
 
-\subsubsection{Conclusion}
+\subsection*{Conclusion}
 
 This summary only scratches the surface of the functionality that SCION provides. The new i´nternet architecture offers a variety of additional functions, security mechanisms and extensions which are not mentioned here. The goal of this section was to explain why the transformation to a new Internet architecture is so important and to introduce SCION as a promising candidate. Interested readers are again referred to the SCION book \cite{SCIONBook} or website \cite{SCIONWebMain}.
