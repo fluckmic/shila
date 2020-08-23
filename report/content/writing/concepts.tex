@@ -75,7 +75,7 @@ As soon as the application running on Host A wants to close the connection, a FI
 
 \subsection*{Flow Control}
 
-Flow Control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to that of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the Window field to adjust the rate of flow between TCP endpoints. This concept is called sliding window. In every segment, the receiver specifies with the window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
+Flow Control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to that of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the window field to adjust the rate of flow between TCP endpoints. This concept is called sliding window. In every segment, the receiver specifies with the window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
 
 \subsection*{Congestion Control}
 
