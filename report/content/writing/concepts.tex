@@ -1,16 +1,16 @@
 
 \chapter{Important Concepts}
 \label{chap:Concepts}
-In this chapter, we present the most important building blocks on which this work is based. It is meant to refresh the reader's understanding should allow to consume this thesis in a self-containing manner and to place the work in a larger context. The three building blocks are the Transmission Control Protocol (TCP), Multipath TCP (MPTCP) based on it and finally the new internet architecture SCION. These three concepts are summarized in the corresponding order in the following sections.
+In this chapter, we present the most important building blocks on which this work is based. The goal is to give the necessary insights to allow a self-containing consumption of this thesis and place the work in a larger context. The three building blocks are the Transmission Control Protocol (TCP), the Multipath TCP (MPTCP) based on it and the new internet architecture SCION. These three concepts are summarized in the corresponding order in the following sections.
 
 \section{Transmission Control Protocol (TCP)}
 \label{sec:TCP}
 
-This recap about the widely used transport protocol TCP is mainly inspired by the worth reading summary \cite{TCPSummary}.
+This recap about the widely used transport protocol TCP is mainly inspired by the summary \cite{TCPSummary}.
 
-The Transmission Control Protocol (TCP) is one of the main protocols in today's Internet. Its two main developers, Vint Cerf and Bob Kahn, started working on the protocol in 1974. The original specification was written in 1981; defined in the RFC document number 793 \cite{rfc793}.
+The Transmission Control Protocol (TCP) is one of the main protocols in today's Internet. Its two main developers Vint Cerf and Bob Kahn started working on the protocol in 1974. The original specification was written in 1981; defined in the RFC document number 793 \cite{rfc793}.
 
-TCP is a byte stream, connection-oriented and reliable transport protocol. In the OSI model, it is situated between the application layer above and the network layer below. TCP receives the data in a byte stream from the application. It is up to the protocol to partition this stream into so-called TCP segments in order to transmit the data in manageable pieces to the receiver. Before two endpoints can exchange data over TCP they must first agree upon the willingness to communicate; hence connection-oriented. Similar to a call with a telephone, first a connection has to be established before the two parties can exchange information. We describe the procedure of a TCP connection establishment and termination later in this section. To ensure reliable data transfer TCP uses different mechanisms. A per-segment checksum enables the receiver to detect crudities in the transferred data, furthermore is everything, that is received multiple times, discarded by the receiving side. It is also the receiver that ensures that the received data is transferred to the application in the correct order. TCP also has a retransmission functionality that ensures delivery of the data in the case of data corruption or loss. The successful reception of data is confirmed by the receiver with a positive acknowledgment. If the sender does not receive such positive acknowledgments for a certain period of time, it will resend the data. 
+TCP is a byte stream, connection-oriented and reliable transport protocol. In the OSI model, it is situated between the application layer above and the network layer below. TCP receives the data in a byte stream from the application. It is up to the protocol to partition this stream into so-called TCP segments in order to transmit the data in manageable pieces to the receiver. Before two endpoints can exchange data over TCP, they must first agree upon the willingness to communicate; hence connection-oriented. Similar to a call with a telephone, first a connection has to be established before the two parties can exchange information. We describe the procedure of a TCP connection establishment and termination later in this section. To ensure reliable data transfer TCP uses different mechanisms. A per-segment checksum enables the receiver to detect crudities in the transferred data. Everything that is received multiple times, is discarded by the receiving side. It is also the receiver that ensures that the received data is transferred to the application in the correct order. TCP also has a retransmission functionality that ensures delivery of the data in the case of data corruption or loss. The successful reception of data is confirmed by the receiver with a positive acknowledgment. If the sender does not receive such positive acknowledgments for a certain period of time, it will resend the data. 
 
 \subsection*{TCP Segment}
 
@@ -25,18 +25,18 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 	\end{center}
 \end{figure}
 
-{\small \textbf{Source Port:} 16-bit number tagging the application the segment originated from within a sending endpoint. \smallskip\\
-\textbf{Destination Port:} 16-bit number tagging the application the segment is destined for on a receiving endpoint. \smallskip\\
+{\small \textbf{Source Port:} 16-bit number tagging the application where the segment originated from within a sending endpoint. \smallskip\\
+\textbf{Destination Port:} 16-bit number tagging the application where the segment is destined for on a receiving endpoint. \smallskip\\
 \textbf{sequence number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
 \textbf{Acknowledgment Number:} 32-bit number telling the receiver which data byte the sender is expecting next. It is always one greater than the most recently received data byte and only valid if the ACK control bit is set. \smallskip\\
-\textbf{ACK (Control Bit):} If set, then the acknowledgment number is valid. \smallskip\\
+\textbf{ACK (Control Bit):} If set, the acknowledgment number is valid. \smallskip\\
 \textbf{Window:} 16-bit number used by TCP for flow control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
 \textbf{SYN (Control Bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
 \textbf{FIN (Control Bit):} This bit is part of the connection termination. It is set by the sender if its byte stream has reached the end. \smallskip\\
 \textbf{Options:} Provides space for additional optional parameters that one may want to exchange between sender and receiver. 
 }
  
-Note that a single TCP connection is globally uniquely identified by a complete pair of IP addresses (source and destination) together with a complete pair of TCP ports (source and destination).
+Note that a single TCP connection is uniquely identified by a complete pair of IP addresses (source and destination) together with a complete pair of TCP ports (source and destination).
 
 \subsection*{Connection Establishment, Data Transfer and Termination}
 
@@ -55,11 +55,11 @@ Two hosts, A and B, willing to communicate establish a connection by exchanging 
 	\end{center}
 \end{figure}
 
-Host A as an initiator of the connection sends a segment containing an initial sequence number x and the SYN control bit set to Host B. \smallskip\\Host B processes the received segment and answers with a segment of its own. It contains an initial sequence number y and has the SYN control bit set. Furthermore assigns Host B x+1 to the acknowledgment number and sets the ACK control bit. This indicates that the next byte expecting from Host B should contain data starting with sequence number x+1. \smallskip\\ Host A finishes the connection establishment phase upon reception of Host B's SYN+ACK. It sends a last acknowledgment to Host B, indicating that the next expected byte should start with sequence number y+1.
+Host A as an initiator of the connection sends a segment containing an initial sequence number x and the SYN control bit set to Host B. \smallskip\\Host B processes the received segment and answers with a segment of its own. It contains an initial sequence number y and has the SYN control bit set. Furthermore Host B assigns x+1 to the acknowledgment number and sets the ACK control bit. This indicates that the next byte expecting from Host B should contain data starting with sequence number x+1. \smallskip\\ Host A finishes the connection establishment phase upon reception of Host B's SYN+ACK. It sends a last acknowledgment to Host B, indicating that the next expected byte should start with sequence number y+1.
 
 \paragraph{Data Transfer}
 
-Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are flow control and congestion control. We discuss these concepts later, for now, we just focus on some key ideas. 
+Once the Three-Way Handshake is completed, the two hosts can exchange data with each other. Important functionalities of the data transfer are flow control and congestion control. These concepts are discussed later, first the focus lies on some key ideas.
 
 In a basic TCP implementation, segments are put into the network by the sender as long as there is data available and as long as the window announced by the receiver is not exceeded. The receiver consumes the segments and acknowledges them by sending back positive acknowledgments together with its current position in the byte stream. The announcement of the current window size is also included in these messages sent back. If data gets lost or duplicated, a hole may exist in the byte stream. The receiver continues to acknowledge the most current contiguous position in the byte stream accepted so far.
 
@@ -71,11 +71,11 @@ If there is no data to send, TCP waits patiently until either there is some agai
 
 A TCP connection is completely terminated by the exchange of four segments as depicted on the right side of Figure \ref{fig:TCPConnectionEstablishmentAndTermination}. Since the protocol is full-duplex, both ends must be torn down independently. To initiate this process the FIN control bits are used. 
 
-As soon as the application running on Host A wants to close the connection, a FIN segment is sent from Host A to Host B. Upon reception of this segment Host B acknowledges it and notifies its destination application about the termination request. As soon as this application shuts down the connection as well, Host B sends out a FIN segment which is finally acknowledged by Host A.
+As soon as the application running on Host A wants to close the connection, a FIN segment is sent from Host A to Host B. Upon reception of this segment, Host B acknowledges it and notifies its destination application about the termination request. As soon as this application shuts down the connection as well, Host B sends out a FIN segment which is finally acknowledged by Host A.
 
 \subsection*{Flow Control}
 
-Flow control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to that of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the window field to adjust the rate of flow between TCP endpoints. This concept is called sliding window. In every segment, the receiver specifies with the window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
+Flow control is an important part of the data transfer in TCP. Its purpose is to properly match the transmission rate of the sender to the one of the receiver and the network. For performance reasons, one is interested in a transmission rate that is high enough without overwhelming the receiver or the network. TCP uses the window field to adjust the rate of flow between TCP endpoints. This concept is called sliding window. In every segment, the receiver specifies with the window field how much data it is willing to buffer. The sender can only send up to that amount of data before it has to wait for further acknowledgments and window updates from the receiver. 
 
 \subsection*{Congestion Control}
 
@@ -87,19 +87,19 @@ Slow start is a mechanism used by the sender to control the sending rate. Hereby
 
 \paragraph{Congestion Avoidance}
 
-The congestion avoidance algorithm has two mechanisms to detect network congestion. If the blockage is indicated through the reception of duplicate acknowledgments, the transmission window is halved and the fast retransmit and fast recovery mechanism take over. If the congestion was indicated through a timeout of the retransmission timer, then the sender is put back into slow start mode, i.e. the transmission window is set to one. After running into congestion, the congestion window is again increased using slow start. However, it is only used up to the halfway point where congestion originally occurred. After reaching this point, the congestion window is just increased by one for all segments in the transmission window that are acknowledged. The linear growth from this point onward makes sure that TCP increases its transmission rate more slowly towards the previous congestion point.  
+The congestion avoidance algorithm has two mechanisms to detect network congestion. If the blockage is indicated through the reception of duplicate acknowledgments, the transmission window is halved and the fast retransmit and fast recovery mechanism take over. If the congestion was indicated through a timeout of the retransmission timer, the sender is put back into slow start mode, i.e. the transmission window is set to one. After running into congestion, the congestion window is again increased using slow start. However, it is only used up to the halfway point where congestion originally occurred. After reaching this point, the congestion window is just increased by one for all segments in the transmission window that are acknowledged. The linear growth from this point onward makes sure that TCP increases its transmission rate more slowly towards the previous congestion point.  
 
 \paragraph{Fast Retransmit}
 
-If the sender receives an acknowledgment multiple times, it is not clear if it is because a segment was lost or simply that a segment was delayed and received out of order at the receiver. If the latter is the case, it should not take too long until the latest expected acknowledgment arrives. Typically, for simple out of order condition, not more than one or two duplicated acknowledgments should be received. More duplicates are a strong indication that a segment was lost. Upon reception of three duplicated acknowledgments, the sender does not wait until the retransmission timer expires but resends the segment immediately and enters Fast Recovery.
+If the sender receives an acknowledgment multiple times, it is not clear if it is because a segment was lost or simply because a segment was delayed and received out of order at the receiver. If the latter is the case, it should not take too long until the latest expected acknowledgment arrives. Typically, for simple out of order condition, not more than one or two duplicated acknowledgments should be received. More duplicates are a strong indication that a segment was lost. Upon reception of three duplicated acknowledgments, the sender does not wait until the retransmission timer expires but resends the segment immediately and enters Fast Recovery.
 
 \paragraph{Fast Recovery}
 
-Duplicate acknowledgments can only be generated when a segment is received at the receiver. That is, as long as the sender receives acknowledgments it knows that there is data flow through the network. The loss of a segment was probably just a rare event, instead of reducing the flow drastically by using slow start again the sender just enters congestion avoidance without decreasing the size of the congestion window too much. This behavior allows for higher throughput in cases of only moderate congestion.
+Duplicate acknowledgments can only be generated when a segment is received at the receiver. Therefore, as long as the sender receives acknowledgments it knows that there is data flow through the network. The loss of a segment was probably just a rare event, instead of reducing the flow drastically by using slow start again the sender just enters congestion avoidance without decreasing the size of the congestion window too much. This behavior allows for higher throughput in cases of only moderate congestion.
 
 \subsection*{Conclusion}
 
-TCP is a rather complex protocol that handles an enormous amount of functionality in today's Internet. The presented discussion gives only a small insight into the scope of TCP. However, it should provide the reader with the necessary understanding so that the extension to TCP, namely Multipath TCP, discussed in the next section is more easily accessible.
+TCP is a rather complex protocol that handles an enormous amount of functionality in today's Internet. The presented discussion gives only a small insight into the scope of TCP. However, it provides the necessary insights to understand the extensions to TCP, namely Multipath TCP, discussed in the next section.
 
 \section{Multipath TCP (MPTCP)}
 \label{sec:MPTCP}
@@ -114,7 +114,7 @@ Multipath TCP allows an unmodified application to start what it believes a regul
 
 \subsection*{Connection Setup}
 
-MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. the main-flow. The sender includes the MP\_CAPABLE option in the SYN, which is also included in the returning SYN+ACK when the server is ready to use MPTCP. The sender concludes the Multipath TCP connection setup by including the MP\_CAPABLE option in the third packet of the handshake as well. The connecting entities fall back fo regular TCP if not all segments being exchanged as part of the Three-Way Handshake contain the respective option. The MP\_CAPABLE option itself contains a 64-bit key generated by the sender and the receiver, later used to verify the authenticity of additional flows. The sequence of segments exchanged for an MPTCP connection establishment between two Host A and B is illustrated in Figure \ref{fig:MTCPConnectionEstablishment}.
+MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. the main-flow. The sender includes the MP\_CAPABLE option in the SYN, which is also included in the returning SYN+ACK when the server is ready to use MPTCP. The sender concludes the Multipath TCP connection setup by including the MP\_CAPABLE option in the third packet of the handshake as well. The connecting entities fall back to regular TCP if not all segments being exchanged as part of the Three-Way Handshake contain the respective option. The MP\_CAPABLE option itself contains a 64-bit key generated by the sender and the receiver, later used to verify the authenticity of additional flows. The sequence of segments exchanged for an MPTCP connection establishment between two Host A and B is illustrated in Figure \ref{fig:MTCPConnectionEstablishment}.
 
 \begin{figure}[H]
 	\begin{center} 
@@ -127,7 +127,7 @@ MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. th
 
 \subsection*{Addition of Sub-flows}
 
-Once a connection, i.e. the main-flow, has been established, further flows, so-called sub-flows, can be added. For this MPTCP again performs a regular TCP Three-Way Handshake using addresses or ports of additionally available interfaces. To add the sub-flow, the MP\_JOIN option has to be included in any segment part of the handshake. This option holds the message authentication code (MAC) of the keys exchanged in the previously described initial connection setup. This measure makes it difficult for malicious third parties to hijack an existing connection. Furthermore includes the option a connection identifier, derived as a hash from the receiver's key, used to match new sub-flows with an existing connections main-flow. 
+Once a connection, i.e. the main-flow, has been established, further flows, so-called sub-flows, can be added. For this, MPTCP again performs a regular TCP Three-Way Handshake using addresses or ports of additionally available interfaces. To add the sub-flow, the MP\_JOIN option has to be included in any segment part of the handshake. This option holds the message authentication code (MAC) of the keys exchanged in the previously described initial connection setup. This measure makes it difficult for malicious third parties to hijack an existing connection. Furthermore, the option includes a connection identifier, derived as a hash from the receiver's key, used to match new sub-flows with an existing connections main-flow. 
 
 \subsection*{Data Transfer}
 
@@ -152,7 +152,7 @@ The acknowledgment of received data happens on two different levels. The regular
 
 \subsection*{Congestion Control}
 
-One way to implement congestion control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its congestion window without affecting or being affected by other flows and their window. Possible congestion control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent congestion windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses instead a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
+One way to implement congestion control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its congestion window without affecting or being affected by other flows and their window. Possible congestion control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent congestion windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
 
 \subsection*{Conclusion}
 
@@ -161,7 +161,7 @@ The benefits of MPTCP as an extension are promising, as already mentioned in Cha
 \section{SCION}
 \label{sec:SCION}
 
-In the upcoming summary, we introduce the reader to the fundamental concepts of SCION. It is based on the SCION book \cite{SCIONBook} and a selection of videos \cite{SCIONWebVideos}. More information and the latest news about the development of SCION can be found on the official web site \cite{SCIONWebMain}.
+In the upcoming summary, we introduce the fundamental concepts of SCION. It is based on the SCION book \cite{SCIONBook} and a selection of videos \cite{SCIONWebVideos}. More information and the latest news about the development of SCION can be found on the official web site \cite{SCIONWebMain}.
 
 \subsection*{Shortcomings of today's Internet}
 
@@ -173,7 +173,7 @@ IP handles the transport of packets between end-users along a single path throug
 
 \paragraph{Border Gateway Protocol (BGP) and its Shortcomings}
 
-BGP is responsible for the exchange of routing information between independently operating autonomous systems, denoted as ASes, like Internet service providers (ISPs). These providers use BGP update messages to announce the IP prefixes which are reachable through their subnet. Each ISP can decide based on its criteria which announcements it wants to share further and which routes it wants to use. This traffic engineering is mainly driven by economically influenced policies. BGP also suffers from some shortcomings. It may take a considerable amount of time for the routing infrastructure to return to a stable state after new announcements have been made. Route changes directly affect forwarding and can lead to failures and interruptions of the data exchange. Furthermore, notifications affect all BGP entities that are present in the network. There is no hierarchy or isolation between individual areas. A single faulty BGP entity can severely disrupt the entire global routing infrastructure. Finally, BGP only allows one to select a single path for the routing between different autonomous systems. 
+BGP is responsible for the exchange of routing information between independently operating autonomous systems, denoted as ASes, like Internet service providers (ISPs). These providers use BGP update messages to announce the IP prefixes which are reachable through their subnet. Each ISP can decide based on its criteria, which announcements it wants to share further and which routes it wants to use. This traffic engineering is mainly driven by economically influenced policies. BGP also suffers from some shortcomings. It may take a considerable amount of time for the routing infrastructure to return to a stable state after new announcements have been made. Route changes directly affect forwarding and can lead to failures and interruptions of the data exchange. Furthermore, notifications affect all BGP entities that are present in the network. There is no hierarchy or isolation between individual areas. A single faulty BGP entity can severely disrupt the entire global routing infrastructure. Finally, BGP only allows one to select a single path for the routing between different autonomous systems. 
 
 \subsection*{SCION - Scalability, Control and Isolation on Next-generation Networks}
 
@@ -199,7 +199,7 @@ The SCION architecture combines autonomous systems (ASes) into so-called isolati
 	\end{center}
 \end{figure}
 
-To enable an exchange between two endpoints, one or more paths through the network must be defined along which the data is sent. Every single step which is necessary to create such forwarding paths can be assigned to one of two planes. The control plane is responsible for discovering the paths and making them available to the end hosts, whereas the data plane is responsible for forwarding the data along the corresponding paths. This strict separation of routing (control plane) and forwarding (data plane) is one of the key features of SCION. The individual steps of creating a forwarding path are summarized below and illustrated in Figure \ref{fig:SCIONCreationForwardingPath}. The heading of the individual parts indicates their assignment to the corresponding plane.
+To enable an exchange between two endpoints, one or more paths through the network must be defined along where the data is sent. Every single step which is necessary to create such forwarding paths can be assigned to one of two planes. The control plane is responsible for discovering the paths and making them available to the end hosts, whereas the data plane is responsible for forwarding the data along the corresponding paths. This strict separation of routing (control plane) and forwarding (data plane) is one of the key features of SCION. The individual steps of creating a forwarding path are summarized below and illustrated in Figure \ref{fig:SCIONCreationForwardingPath}. The heading of the individual parts indicates their assignment to the corresponding plane.
 
 \paragraph{Path Exploration (Control Plane)}
 
@@ -215,7 +215,7 @@ If a source host wants to create a connection to a target host, it carries out a
 
 \paragraph{Path Combination (Data Plane)}
 
-After a host has received individual path segments in the course of the path lookup, it can now combine these into a path to the destination. Depending on where the destination is located, up to three path segments must be combined. If the destination AS is on the path from source AS to its core AS, then one segment is sufficient. If source and destination share only one core AS within the ISD, two segments are necessary, namely one from the source AS to the core AS and one from the core AS to the destination AS. Three path segments are necessary if source and destination are not located in the same ISD. In addition to the path segments connecting the ASes to their core, a segment between the two core ASes is also necessary.
+After a host has received individual path segments in the course of the path lookup, it can now combine these into a path to the destination. Depending on where the destination is located, up to three path segments must be combined. If the destination AS is on the path from source AS to its core AS, then one segment is sufficient. If source and destination share only one core AS within the ISD, two segments are necessary, namely one from the source AS to the core AS and one from the core AS to the destination AS. Three path segments are necessary if source and destination are not located in the same ISD. In addition to the path segments connecting the ASes to their core, a segment between the two core ASes is necessary.
 
 \begin{figure}
 	\begin{center}
@@ -228,8 +228,8 @@ After a host has received individual path segments in the course of the path loo
 
 \paragraph{Forwarding (Data Plane)}
 
-Once a path is formed, it is included in the SCION packet header and used for forwarding. The recipient of a packet can send back data by simply inverting the path along which it got the packet or create a different one by performing a path lookup and combination on its own.
+Once a path is formed, it is included in the SCION packet header and used for forwarding. The recipient of a packet can send back data by simply inverting the path along where it got the packet or create a different one by performing a path lookup and combination on its own.
 
 \subsection*{Conclusion}
 
-This summary only scratches the surface of the functionality that SCION provides. The new i´nternet architecture offers a variety of additional functions, security mechanisms and extensions which are not mentioned here. The goal of this section was to explain why the transformation to a new Internet architecture is so important and to introduce SCION as a promising candidate. Interested readers are again referred to the SCION book \cite{SCIONBook} or website \cite{SCIONWebMain}.
+This summary only scratches the surface of the functionality that SCION provides. The new internet architecture offers a variety of additional functions, security mechanisms and extensions which are not mentioned here. The goal of this section was to explain why the transformation to a new Internet architecture is so important and to introduce SCION as a promising candidate. Interested readers are again referred to the SCION book \cite{SCIONBook} or website \cite{SCIONWebMain}.

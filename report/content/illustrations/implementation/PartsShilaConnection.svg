@@ -1575,9 +1575,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.47326273"
-     inkscape:cx="1143.4948"
-     inkscape:cy="1035.755"
+     inkscape:zoom="0.33464729"
+     inkscape:cx="2686.7141"
+     inkscape:cy="985.66595"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -2805,17 +2805,17 @@
        id="rect819-3-2-0-1-7-56"
        width="79.7556"
        height="19.843723"
-       x="63.962345"
-       y="334.5415" />
+       x="65.119545"
+       y="360.20618" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
-       x="102.52601"
-       y="348.81653"
+       x="103.68322"
+       y="374.4812"
        id="text823-6-9-7-5-1-0-29"><tspan
          sodipodi:role="line"
-         x="102.52601"
-         y="348.81653"
+         x="103.68322"
+         y="374.4812"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
          id="tspan10795-6-2-9-1">TCP-Flow</tspan></text>
     <rect
@@ -2823,22 +2823,22 @@
        id="rect819-3-2-0-1-7-3-2"
        width="158.3696"
        height="19.843723"
-       x="191.07817"
-       y="334.5415" />
+       x="192.23534"
+       y="360.20618" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="271.27725"
-       y="348.81653"
+       x="272.43451"
+       y="374.4812"
        id="text823-6-9-7-5-1-0-6-7"><tspan
          sodipodi:role="line"
-         x="271.27725"
-         y="348.81653"
+         x="272.43451"
+         y="374.4812"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332"
          id="tspan10795-6-2-9-0-0">Shila-Routing-Entry</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker12304-3-9)"
-       d="m 143.71774,344.06651 h 19.8437 26.4584"
+       d="m 144.87496,369.73118 h 19.8437 26.4584"
        id="path850-47-6-9"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccc" />
@@ -2847,22 +2847,22 @@
        id="rect819-3-2-0-1-7-56-8"
        width="139.66701"
        height="19.84375"
-       x="63.581944"
-       y="360.99988" />
+       x="82.846634"
+       y="333.7478" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
-       x="132.30814"
-       y="375.2749"
+       x="151.57283"
+       y="348.02283"
        id="text823-6-9-7-5-1-0-29-5"><tspan
          sodipodi:role="line"
-         x="132.30814"
-         y="375.2749"
+         x="151.57283"
+         y="348.02283"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
          id="tspan10795-6-2-9-1-7">Main-Flow-Identifier</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker12304-3-1-3)"
-       d="m 203.24896,370.52484 5.44047,3e-5 h 26.4584"
+       d="m 222.51365,343.27277 5.44047,3e-5 h 26.4584"
        id="path850-47-6-9-5"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccc" />
@@ -3038,17 +3038,17 @@
        id="rect819-3-2-0-1-7-56-9"
        width="79.7556"
        height="19.843723"
-       x="236.58633"
-       y="360.99988" />
+       x="255.85103"
+       y="333.7478" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
-       x="275.14999"
-       y="375.2749"
+       x="294.41467"
+       y="348.02283"
        id="text823-6-9-7-5-1-0-29-4"><tspan
          sodipodi:role="line"
-         x="275.14999"
-         y="375.2749"
+         x="294.41467"
+         y="348.02283"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
          id="tspan10795-6-2-9-1-78">TCP-Flow</tspan></text>
     <rect
@@ -3086,7 +3086,7 @@
        style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.00000001, 1.00000001;stroke-dashoffset:0;stroke-opacity:1" />
     <path
        style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#DotM-6);marker-end:url(#DotM-6)"
-       d="m 336.18565,354.38531 13.22917,44.71459"
+       d="m 340.81537,380.04989 8.59945,19.05001"
        id="path10825"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
@@ -3201,7 +3201,7 @@
          x="257.50195"
          y="451.21017"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332"
-         id="tspan10795-6-2-9-0-0-8-1-8-2-8">Destination SCION address</tspan></text>
+         id="tspan10795-6-2-9-0-0-8-1-8-2-8">SCION address</tspan></text>
     <rect
        style="opacity:1;fill:#eaeaea;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4.4000001;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect819-3-2-0-1-7-3-2-4-8-3-8-0-7"
@@ -3800,7 +3800,7 @@
          id="tspan5235">connection establishment</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.00000006, 4.00000011;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#marker12268-0-3)"
-       d="M 154.28413,188.22698 134.44038,141.9249"
+       d="m 160.63413,190.07906 -38.1,-48.15416"
        id="path850-3-2-6-5"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
@@ -3832,7 +3832,7 @@
          id="tspan5235-9">connection establishment</tspan></text>
     <path
        style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.00000008, 4.00000015;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#marker12268-0-3-7)"
-       d="M 433.41954,188.22698 453.26329,141.9249"
+       d="m 446.6487,194.84156 6.61459,-52.91666"
        id="path850-3-2-6-5-6"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
