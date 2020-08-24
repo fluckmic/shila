@@ -44,7 +44,7 @@ For the exchange of data within Shila, so-called Shila-Packets are used. A packe
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ShilaPacket.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the Shila-Packet containing the payload, a handle to its creating Shila-Endpoint and the associated TCP-Flow and Net-Flow.}
+		\caption[]{Illustration of the Shila-Packet containing the payload, a handle to its creating Shila-Endpoint and the associated TCP-Flow and Net-Flow.}
 		\label{fig:IllustrationShilaPacket}
 	\end{center}
 \end{figure}
@@ -59,7 +59,7 @@ In the outermost level, the implementation of Shila can be divided into five dif
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ModulesOutermost.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the outermost division of the implementation into different parts. The Kernel-Side is responsible for the data exchange with the applications, whereas the Network-Side is responsible for the data exchange with other Shila instances. The Working-Side distributes each Shila-Packet to the correct Shila-Connection from where the packets are forwarded to their intended destination. The Router provides the necessary support to the Shila-Connection using itself the services provided by the SCION network.}
+		\caption[]{Illustration of the outermost division of the implementation into different parts. The Kernel-Side is responsible for the data exchange with the applications, whereas the Network-Side is responsible for the data exchange with other Shila instances. The Working-Side distributes each Shila-Packet to the correct Shila-Connection from where the packets are forwarded to their intended destination. The Router provides the necessary support to the Shila-Connection using itself the services provided by the SCION network.}
 		\label{fig:ImplementationModulesOutermost}
 	\end{center}
 \end{figure}
@@ -72,7 +72,7 @@ The Kernel-Side, shown in Figure \ref{fig:ImplementationModulesKernelSide}, is m
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ModulesKernelSide.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the Kernel-Side with its subparts. The manager allocates the namespaces and creates Kernel-Endpoints in them. It keeps a mapping from IP addresses to the created Kernel-Endpoints. Every Kernel-Endpoint contains a virtual interface with an IP address assigned to it and holds two traffic channels. One for sending incoming data to the Working-Side and one to receive outgoing data from the Shila-Connections. Entities can request handles to these traffic channels via the interface provided by the manager in the Kernel-Side.}
+		\caption[]{Illustration of the Kernel-Side with its subparts. The manager allocates the namespaces and creates Kernel-Endpoints in them. It keeps a mapping from IP addresses to the created Kernel-Endpoints. Every Kernel-Endpoint contains a virtual interface with an IP address assigned to it and holds two traffic channels. One for sending incoming data to the Working-Side and one to receive outgoing data from the Shila-Connections. Entities can request handles to these traffic channels via the interface provided by the manager in the Kernel-Side.}
 		\label{fig:ImplementationModulesKernelSide}
 	\end{center}
 \end{figure}
@@ -94,7 +94,7 @@ The Network-Side is also orchestrated by an appropriate manager. At startup, the
 
 \subsubsection{Server-Endpoint}
 
-The Server-Endpoint is one of two types of Shila-Endpoints found on the Network-Side. It can be further divided into Contact-Server-Endpoint and Traffic-Server-Endpoint. However, there is no difference in basic functionality between the two. We mention the differences in the discussion of setup and connection establishment, see Section \ref{sec:ImplementationSetup} and Section \ref{sec:ImplementationConnectionEstablishment}.
+The Server-Endpoint is one of two types of Shila-Endpoints found on the Network-Side. It can be further divided into Contact-Server-Endpoint and Traffic-Server-Endpoint. However, there is no difference in basic functionality between the two. We mention the differences in the discussion of setup and connection establishment, which can be found in Section \ref{sec:ImplementationSetup} and Section \ref{sec:ImplementationConnectionEstablishment}.
 
 A Server-Endpoint holds and handles a collection of Backbone-Connections, i.e. connections through the SCION network to Client-Endpoints running on other instances of Shila. Each such Backbone-Connection is associated with a Net-Flow. The Server-Endpoint-Mapping\footnote{In Figure \ref{fig:ImplementationModulesNetworkSide}, this mapping is shown as part of the Network-Endpoint-Mappings.} in the Network-Side uses the source address of this Net-Flow as a key. Inside the endpoint, the corresponding destination address is used as the key for the Backbone-Connection-Mapping. %Note that this mapping is used in the actual data exchange. 
 
@@ -102,26 +102,26 @@ A Backbone-Connection itself uses the appnet package \cite{Appnet} to establish 
 
 \subsubsection{Client-Endpoint}
 
-The Client-Endpoint is the other type of Shila-Endpoints within the Network-Side. It is the initiating party of a Backbone-Connection and is associated with just a single Net-Flow. As with the Server-Endpoint, a distinction is made between a Contact-Client-Endpoint and a Traffic-Client-Endpoint, again discussed later. The data exchange between the SCION network and the internal Shila units works via the appnet package and two traffic channels. Since only one Backbone-Connection is assigned to a single Client-Endpoint, no mapping is required inside.
+The Client-Endpoint is the other type of Shila-Endpoints within the Network-Side. It is the initiating party of a Backbone-Connection and is associated with just a single Net-Flow. As with the Server-Endpoint, a distinction is made between a Contact-Client-Endpoint and a Traffic-Client-Endpoint, which again is discussed later. The data exchange between the SCION network and the internal Shila units works via the appnet package and two traffic channels. Since only one Backbone-Connection is assigned to a single Client-Endpoint, no mapping is required inside.
 
-\begin{figure}
+\begin{figure} 
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ModulesNetworkSide.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the Network-Side with its subparts.}
+		\caption[]{Illustration of the Network-Side with its subparts. The manager is responsible for the creation of the Contact-Server-Endpoint during the setup of Shila. It furthermore provides an interface for the creation of new Network-Endpoints required for the establishment of new connections. The handles to the respective traffic channels are returned once the endpoints are ready. Every Backbone-Connection is initiated by a Client-Endpoint contacting a listening Server-Endpoint. To be able to send the outgoing traffic through the correct Backbone-Connection, every Server-Endpoint contains a Backbone-Connection-Mapping. This mapping is the only mapping on the Network-Side which is invoked for every packet sent out via the Network-Side. The Network-Endpoint-Mappings are just used by the manager for maintenance.}
 		\label{fig:ImplementationModulesNetworkSide}
 	\end{center}
 \end{figure}
 
 \subsection*{Working-Side}
 
-Upon the arrival of a Shila-Packet at the Working-Side it is processed by a dedicated worker. Its TCP-Flow is extracted and used as the key for the Shila-Connection-Mapping, the heart of the Working-Side. It contains the mapping from TCP-Flows to Shila-Connections. If there is no corresponding entry available then a new Shila-Connection is created and inserted into the mapping. Once obtained, the responsible worker processes the Shila-Packet through the associated Shila-Connection. The described process is illustrated in Figure \ref{fig:ImplementationProcessWorkingSide}.
+Upon the arrival of a Shila-Packet at the Working-Side it is processed by a dedicated worker. Its TCP-Flow is extracted and used as the key for the Shila-Connection-Mapping, the heart of the Working-Side. It contains the mapping from TCP-Flows to Shila-Connections. If there is no corresponding entry available then a new Shila-Connection is created and inserted into the mapping. Once obtained, the responsible worker processes the Shila-Packet through the associated Shila-Connection. The described process is illustrated in Figure \ref{fig:ImplementationProcessWorkingSide}. 
 
-\begin{figure}[H]
+\begin{figure}
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ProcessWorkingSide.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the Working-Side.}
+		\caption[]{Illustration of the Working-Side. Every Shila-Packet arriving at the Working-Side gets processed by a worker. This worker uses the TCP-Flow of the packet as the key into the Shila-Connection-Mapping, holding already established connections. If for a given Shila-Packet and its TCP-Flow no connection exists yet, a new one is created. The worker then processes the Shila-Packet through the Shila-Connection. Note that the establishment of the connection itself happens inside of the Shila-Connection.}
 		\label{fig:ImplementationProcessWorkingSide}
 	\end{center}
 \end{figure}
@@ -134,7 +134,7 @@ The Shila-Connection, depicted in Figure \ref{fig:ImplementationShilaConnection}
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/PartsShilaConnection.pdf}   
-		\caption[Caption for the list of figures.]{Illustration of the Shila-Connection together with the Router. The Shila-Connection receives the packets assigned to it through the Working-Side. If the connection is already established, the packet is forwarded directly to its destination via the egress traffic channel. During the connection setup, the Shila-Connection first uses the Router to determine the Net-Flow and then requests the egress traffic channels from the Kernel-Side and Network-Side.}
+		\caption[]{Illustration of the Shila-Connection together with the Router. The Shila-Connection receives the packets assigned to it through the Working-Side. If the connection is already established, the packet is forwarded directly to its destination via the egress traffic channel of the corresponding Shila-Endpoint. Coming from the Kernel-Side a packet leaves via the channel of a Network-Endpoint, coming from the Network-Side it leaves via the channel of a Kernel-Endpoint. During the connection setup, the Shila-Connection first uses the Router to determine the Net-Flow. It then requests the corresponding egress traffic channel from the Network-Side using this Net-Flow. This request involves the creation of the Backbone-Connection and the associated Network-Endpoints. By using the source IP address of the TCP-Flow the Shila-Connection gets the appropriate egress traffic channel from the Kernel-Side. The connection is established once both traffic channels are in place.}
 		\label{fig:ImplementationShilaConnection}
 	\end{center}
 \end{figure}
@@ -215,7 +215,7 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 			\begin{center}
 				\def\svgwidth{1\textwidth}
 				\includegraphics[scale=0.2]{../illustrations/implementation/ConnectionEstablishment.pdf}   
-				\caption[Caption for the list of figures.]{Illustration of the State of the Shila instances after the establishment of the Main-Flow and one Sub-Flow. Note that the Contact-Backbone-Connections are removed as soon as the establishment was successful. We show them just for demonstrative purpose.}
+				\caption[]{Illustration of the State of the Shila instances after the establishment of the Main-Flow and one Sub-Flow. Note that the Contact-Backbone-Connections are removed as soon as the establishment was successful. We show them just for demonstrative purpose.}
 				\label{fig:ConnectionEstablishment}
 			\end{center}
 		\end{figure}

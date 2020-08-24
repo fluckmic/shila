@@ -20,7 +20,7 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/importantConcepts/TCPSegment.pdf}  
-		\caption[Caption for the list of figures.]{Illustration of a TCP segment.}
+		\caption[]{Illustration of a TCP segment.}
 		\label{fig:TCPSegment}
 	\end{center}
 \end{figure}
@@ -50,7 +50,7 @@ Two hosts, A and B, willing to communicate establish a connection by exchanging 
 	\begin{center} 
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.24]{../illustrations/importantConcepts/TCPHandshake.pdf} 
-		\caption[Caption for the list of figures.]{Illustration of the TCP connection establishment (l.) and TCP connection termination (r.) messages exchange.}
+		\caption[]{Illustration of the TCP connection establishment (l.) and TCP connection termination (r.) messages exchange.}
 		\label{fig:TCPConnectionEstablishmentAndTermination}
 	\end{center}
 \end{figure}
@@ -120,7 +120,7 @@ MPTCP uses the TCP Three-Way Handshake to set up the initial connection, i.e. th
 	\begin{center} 
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.24]{../illustrations/importantConcepts/MPTCPHandshake.pdf} 
-		\caption[Caption for the list of figures.]{Illustration of the sequence of segments exchanged for the MPTCP connection setup. The MP\_CAPABLE option has to be included in all messages exchanged for the establishment to succeed.}
+		\caption[]{Illustration of the sequence of segments exchanged for the MPTCP connection setup. The MP\_CAPABLE option has to be included in all messages exchanged for the establishment to succeed.}
 		\label{fig:MTCPConnectionEstablishment}
 	\end{center}
 \end{figure}
@@ -145,7 +145,7 @@ The acknowledgment of received data happens on two different levels. The regular
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/importantConcepts/MPTCPDataTransfer.pdf}  
-		\caption[Caption for the list of figures.]{Illustration of data transfer in MPTCP with two flows. The regular TCP sequence numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on a flow connection level. With the additionally introduced DSS\_ACK's on a data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
+		\caption[]{Illustration of data transfer in MPTCP with two flows. The regular TCP sequence numbers are used to acknowledge data reception and trigger mechanisms for re-transmission on a flow connection level. With the additionally introduced DSS\_ACK's on a data sequence level, MPTCP is able to detect dying flows and can maintain the ordering of exchange data.}
 		\label{fig:MPTCPDataTransfer}
 	\end{center}
 \end{figure}
@@ -194,7 +194,7 @@ The SCION architecture combines autonomous systems (ASes) into so-called isolati
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.24]{../illustrations/importantConcepts/SCIONISDsAndASes.pdf} 
-		\caption[Caption for the list of figures.]{Illustration of multiple ISDs with their ASes connected through different types of links. Core ASes via core links and ASes not belonging to the core via customer-to-provider or peering links. This drawing is inspired by the one shown in the SCION book \cite{SCIONBook} on page 18.}
+		\caption[]{Illustration of multiple ISDs with their ASes connected through different types of links. Core ASes via core links and ASes not belonging to the core via customer-to-provider or peering links. This drawing is inspired by the one shown in the SCION book \cite{SCIONBook} on page 18.}
 		\label{fig:SCIONArchitectureISDs}
 	\end{center}
 \end{figure}
@@ -221,7 +221,7 @@ After a host has received individual path segments in the course of the path loo
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.24]{../illustrations/importantConcepts/SCIONPathCreation.pdf} 
-		\caption[Caption for the list of figures.]{Illustration of the different steps involved in the creation of a forwarding path: During path exploration, the AS E receives three PCB's describing different paths to reach the core. It decides to register two of these at the path server. If AS E wants to reach AS I it performs a lookup at the path server to get possible path segments. These individual path segments can then in the path combination be arbitrarily joined to form a forwarding path used for data exchange.}
+		\caption[]{Illustration of the different steps involved in the creation of a forwarding path: During path exploration, the AS E receives three PCB's describing different paths to reach the core. It decides to register two of these at the path server. If AS E wants to reach AS I it performs a lookup at the path server to get possible path segments. These individual path segments can then in the path combination be arbitrarily joined to form a forwarding path used for data exchange.}
 		\label{fig:SCIONCreationForwardingPath}
 	\end{center}
 \end{figure}
