@@ -2832,9 +2832,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.64"
-     inkscape:cx="2198.9554"
-     inkscape:cy="631.06375"
+     inkscape:zoom="0.32"
+     inkscape:cx="1506.6474"
+     inkscape:cy="1060.8796"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -2865,7 +2865,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -2970,7 +2970,7 @@
        y="-274.34088"
        transform="rotate(-90)" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.5,2.5;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0;stroke-opacity:1"
        d="m -234.65339,340.36239 h 859.8958 l 2e-5,251.35411 H 301.51695 v 0 l -536.17034,5e-5 z"
        id="path10906-9"
        inkscape:connector-curvature="0"
@@ -6085,7 +6085,7 @@
        y="-254.49713"
        transform="rotate(-90)" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.5,2.5;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0;stroke-opacity:1"
        d="m -214.80965,-69.741788 h 840.05208 l 4e-5,403.489558 h -316.2549 v 0 l -523.79722,8e-5 z"
        id="path10906-9-3"
        inkscape:connector-curvature="0"
@@ -10100,7 +10100,7 @@
          y="-256.70782"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.11111069px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332">Shila <tspan
    style="font-size:10.58333302px;stroke-width:0.26458332"
-   id="tspan17608"></tspan></tspan><tspan
+   id="tspan17608" /></tspan><tspan
          sodipodi:role="line"
          x="-422.59122"
          y="-242.19019"
@@ -10130,12 +10130,12 @@
            style="font-size:10.58333302px;stroke-width:0.26458332"
            id="tspan12350-9">@ 1-ff00:0:112,127.0.0.1</tspan></tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.50000007;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:2.50000007,2.50000007;stroke-dashoffset:0"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0"
        d="m -214.80963,95.622767 h -39.6875 V -69.74181 h 39.6875"
        id="path12422"
        inkscape:connector-curvature="0" />
     <path
-       style="fill:none;stroke:#000000;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.5000001, 2.5000001;stroke-dashoffset:0;stroke-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0;stroke-opacity:1"
        d="m -234.65338,505.72692 h -39.6875 V 340.36234 h 39.6875"
        id="path12422-7"
        inkscape:connector-curvature="0" />

@@ -111,7 +111,7 @@ The shim layer instantiates a single virtual network interface in the ingress na
 
 Figure \ref{fig:ShilaIllustrationStateAfterSetup} illustrates the state of Shila once the setup is completed. The implementation is now ready to establish connections and provide data exchange between the client and server instance of TCP applications running on, possibly different, SCION hosts. 
 
-\subsection{Connection Establishment}
+\subsection*{Connection Establishment}
 \label{subsec:ShilaConnectionEstablishment}
 
 This subsection presents the individual steps of a connection establishment between a client instance of an application and its server counterpart over MPTCP on top of SCION. The discussion is based on the example of Subsection \ref{subsec:ShilaUsage} and it assumes that a successfully initialized instance of Shila is running on Host 1 and Host 2. All the presented steps are illustrated in Figure \ref{fig:ShilaIllustrationConnectionEstablishment}. 
@@ -155,7 +155,7 @@ As soon as the Main-Flow of a connection is established, MPTCP starts to build S
 
 Once established, a flow is immediately used for the data exchange of the application. If at one point the connection is no longer needed, it is removed again, as mentioned in the following subsection.
 
-\subsection{Normal Operation and Clean-Up}
+\subsection*{Normal Operation and Clean-Up}
 \label{subsec:ShilaCleanUp}
 
 As soon as the Main-Flow or a Sub-Flow is established, its Contact-Backbone-Connection is no longer needed and is terminated. For data exchange between the TCP endpoints, data can be forwarded through all established flows. The decision along which flow the data is sent, is made by MPTCP and cannot be influenced by Shila. Data forwarded along a certain flow travels via the respective endpoints (Traffic-Client-Endpoint, Traffic-Server-Endpoint) along the Traffic-Backbone-Connection through the SCION network.  If a connection is no longer needed, i.e. no more data is flowing through, the respective Traffic-Backbone-Connections are removed together with its endpoints.
