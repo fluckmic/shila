@@ -263,17 +263,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994952"
-     inkscape:cx="842.20609"
-     inkscape:cy="644.86196"
+     inkscape:zoom="0.49497476"
+     inkscape:cx="1272.4297"
+     inkscape:cy="1142.8634"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
      units="px"
-     inkscape:window-width="1920"
-     inkscape:window-height="1016"
-     inkscape:window-x="2560"
-     inkscape:window-y="27"
+     inkscape:window-width="2508"
+     inkscape:window-height="1403"
+     inkscape:window-x="52"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
      fit-margin-top="10"
      fit-margin-left="10"
@@ -987,19 +987,25 @@
          sodipodi:role="line"
          id="tspan4167">Endpoint</tspan></text>
     <path
+       style="fill:#eaeaea;fill-opacity:1;stroke:#5d5d5d;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 610.32493,67.811936 c 5.57831,5.57832 16.73492,16.73493 16.73492,27.89155 11.15662,0 55.7831,33.469844 11.15662,78.096314 0,5.57832 0,33.46986 -16.73492,39.04816 11.15662,55.7831 -55.78309,61.3614 -44.62648,-11.15661 -11.83355,-12.41046 -22.31323,-39.04816 -11.15661,-55.78309 -16.73493,-22.31323 -12.10085,-62.723134 8.76591,-76.183754 -9.88158,-48.29222 48.61098,-44.14833 35.86056,-1.91257 z"
+       id="path2238"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccc" />
+    <path
        style="fill:none;stroke:#000000;stroke-width:1.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#SemiCircleIn-9)"
-       d="m 501.38276,102.3181 h 39.6875"
+       d="m 501.38276,102.3181 72.76043,-3e-5"
        id="path850-4-6-7-6"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
-       x="562.50726"
+       x="594.25739"
        y="105.20795"
        id="text823-6-9-7-5-1-0-62"><tspan
          sodipodi:role="line"
-         x="562.50726"
+         x="594.25739"
          y="105.20795"
          style="font-style:oblique;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono Oblique';text-align:center;text-anchor:middle;stroke-width:1.5;stroke-miterlimit:4.4000001;stroke-dasharray:none"
          id="tspan10795-6-2-9-9">:7654</tspan></text>
@@ -1185,22 +1191,16 @@
            y="110.13506"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332">Virtual interface</tspan></text>
     </g>
-    <path
-       style="fill:#eaeaea;fill-opacity:1;stroke:#5d5d5d;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 603.71034,186.87446 c 5.57831,5.57832 16.73492,16.73493 16.73492,27.89155 11.15662,0 55.7831,33.46985 11.15662,78.09632 0,5.57832 0,33.46986 -16.73492,39.04816 11.15662,55.7831 -55.78309,61.3614 -44.62648,-11.15661 -11.83355,-12.41046 -22.31323,-39.04816 -11.15661,-55.78309 -16.73493,-22.31323 -12.10085,-62.72314 8.76591,-76.18376 -9.88158,-48.29222 48.61098,-44.14833 35.86056,-1.91257 z"
-       id="path2238"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccccccc" />
     <text
        xml:space="preserve"
        style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="598.05493"
-       y="265.41479"
+       x="607.43579"
+       y="151.5757"
        id="text823-6-9-1-1-4"><tspan
          sodipodi:role="line"
          id="tspan821-7-1-8-2-7"
-         x="598.05493"
-         y="265.41479"
+         x="607.43579"
+         y="151.5757"
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.11111069px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;fill:#5d5d5d;fill-opacity:1;stroke-width:0.26458332">SCION</tspan></text>
     <g
        transform="translate(-2.0365647e-5,251.35419)"
