@@ -402,17 +402,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.98994952"
-     inkscape:cx="1676.2498"
-     inkscape:cy="574.09448"
+     inkscape:zoom="0.24748738"
+     inkscape:cx="827.87353"
+     inkscape:cy="-68.189723"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
      units="px"
-     inkscape:window-width="2508"
-     inkscape:window-height="1403"
-     inkscape:window-x="52"
-     inkscape:window-y="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1016"
+     inkscape:window-x="2560"
+     inkscape:window-y="27"
      inkscape:window-maximized="1"
      fit-margin-top="10"
      fit-margin-left="10"
@@ -434,7 +434,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -526,17 +526,6 @@
        id="path850-47"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccc" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
-       x="527.44574"
-       y="397.77963"
-       id="text823-6-9-7-5"><tspan
-         sodipodi:role="line"
-         x="527.44574"
-         y="397.77963"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.58333302px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332"
-         id="tspan10795-6">Working-Side</tspan></text>
     <rect
        style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4.4000001;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect819-3-2-0-1-7"
@@ -1332,7 +1321,7 @@
            height="75"
            x="110.45119"
            y="-360.48322" /></flowRegion><flowPara
-         id="flowPara3661"></flowPara></flowRoot>    <flowRoot
+         id="flowPara3661" /></flowRoot>    <flowRoot
        xml:space="preserve"
        id="flowRoot3682"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:53.33333206px;line-height:1.25;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-feature-settings:normal;text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:tb-rl;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
@@ -1343,5 +1332,5 @@
            height="1500"
            x="-39.548798"
            y="-110.48322" /></flowRegion><flowPara
-         id="flowPara3688"></flowPara></flowRoot>  </g>
+         id="flowPara3688" /></flowRoot>  </g>
 </svg>
