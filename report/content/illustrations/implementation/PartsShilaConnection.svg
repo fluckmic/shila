@@ -1575,9 +1575,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.33464729"
-     inkscape:cx="2686.7141"
-     inkscape:cy="985.66595"
+     inkscape:zoom="0.94652547"
+     inkscape:cx="1168.2942"
+     inkscape:cy="1140.5683"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -2767,7 +2767,7 @@
        inkscape:connector-curvature="0"
        id="path14720"
        d="M 82.846669,46.674886 H 486.33626 l 1e-5,100.541674 h 85.98956 V 271.57072 H 23.31544 16.700853 V 147.21656 h 66.145832 z"
-       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2, 2;stroke-dashoffset:0;stroke-opacity:1" />
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2,2;stroke-dashoffset:0;stroke-opacity:1" />
     <rect
        style="opacity:0;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:4.4000001;stroke-dasharray:none;stroke-opacity:1"
        id="rect852"
@@ -2882,7 +2882,7 @@
          id="tspan821-7-1-8"
          x="413.5939"
          y="64.775856"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:14.11111069px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332">Shila-Connection</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.11111069px;font-family:'DejaVu Sans Mono';-inkscape-font-specification:'DejaVu Sans Mono';text-align:center;text-anchor:middle;stroke-width:0.26458332">Shila-Connection</tspan></text>
     <rect
        style="opacity:1;fill:#eaeaea;fill-opacity:1;stroke:none;stroke-width:1.18848753;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.18848757, 4.75395024;stroke-dashoffset:0;stroke-opacity:1"
        id="rect13868-36"
