@@ -155,7 +155,7 @@ In this section, we describe the crucial steps executed during the setup of Shil
 
 \paragraph{Loading of the Routing-Information}
 
-To perform its function of providing translations between a TCP-Flow and a Net-Flow, the Router loads the Routing-Information from disk. Saved as a JSON file it contains the translation from a TCP to a SCION address. Currently, there is no other way to provide the Router with this necessary information. However, alternatives are certainly conceivable and are mentioned in Chapter \ref{chap:FutureWork}. To be able to do path selection the router furthermore connects to the SCION daemon.
+To perform its function of providing translations between a TCP-Flow and a Net-Flow, the Router loads the Routing-Information from disk. Saved as a JSON file it contains the translation from a TCP to a SCION address. Currently, there is no other way to provide the Router with this necessary information. However, alternatives are certainly conceivable and are mentioned in Chapter \ref{chap:FutureWork}. To be able to do path selection the Router furthermore connects to the SCION daemon.
 
 \paragraph{Setup of Namespaces}
 
@@ -215,7 +215,7 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 			\begin{center}
 				\def\svgwidth{1\textwidth}
 				\includegraphics[scale=0.2]{../illustrations/implementation/ConnectionEstablishment.pdf}   
-				\caption[]{Illustration of the state of the Shila instances after the establishment of the Main-Flow and one Sub-Flow. Note that the Contact-Backbone-Connections are removed as soon as the establishment was successful. We show them just for demonstrative purpose.}
+				\caption[]{Illustration of the state of the Shila instances after the establishment of the Main-Flow and one Sub-Flow. Note that the Contact-Backbone-Connections are removed as soon as the establishment was successful. We show them here just for demonstrative purpose.}
 				\label{fig:ConnectionEstablishment}
 			\end{center}
 		\end{figure}
@@ -223,7 +223,7 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 \begin{description}		
 	\item[M-15] The IP datagram containing the answer from the iPerf3 server instance, a SYN+ACK, arrives at the Kernel-Endpoint at Host 2. From there the answer travels in a Shila-Packet, using its TCP-Flow$^{5}$, through the Working-Side to the corresponding Shila-Connection.
 	\item[M-16] The Shila-Connection assigns its Net-Flow to the Shila-Packet and forwards it via traffic channel to the corresponding Traffic-Server-Endpoint. From there the SYN+ACK finds its way through the Traffic-Backbone-Connection to the corresponding client part. The right connection is found by using the destination address of the packets Net-Flow as key into the Backbone-Connection-Mapping.
-	\item[M-17] The reception of the first data from the Traffic-Client-Endpoint on Host 1 concludes the connection establishment. The first response from the iPerf3 server instance reaches the Shila-Connection, where the Main-Flow-Identifier is extracted. This identifier is used to update the Router accordingly such that Sub-Flows created later can be assigned to their Main-Flow. The response, holding the SYN+ACK, is then sent along the traffic channel toward the client instance of iPerf3.
+	\item[M-17] The reception of the first data from the Traffic-Client-Endpoint on Host 1 concludes the connection establishment. The response from the iPerf3 server instance reaches the Shila-Connection, where the Main-Flow-Identifier is extracted. This identifier is used to update the Router accordingly such that Sub-Flows created later can be assigned to their Main-Flow. The response, holding the SYN+ACK, is then sent along the traffic channel toward the client instance of iPerf3.
 	\item[M-18] The Contact-Backbone-Connection is no longer needed and can therefore be removed, together with its corresponding Network-Endpoints.
 \end{description}
 
@@ -231,10 +231,10 @@ As soon as the Main-Flow is established, MPTCP starts to initiate further flows,
 
 \subsection*{Sub-Flow Establishment}
 
-The establishment of Sub-Flow works in the same way as the one of the Main-Flow. Therefore, in the following, only the deviating points are mentioned. Of course, the individual entities bind to other ports. This is not explicitly mentioned and should be clear from Figure \ref{fig:ConnectionEstablishment}.
+The establishment of a Sub-Flow works in the same way as the one of the Main-Flow. Therefore, in the following, only the deviating points are mentioned. Of course, the individual entities bind to other ports. This is not explicitly mentioned and should be clear from Figure \ref{fig:ConnectionEstablishment}.
 
 \begin{description}	
-\item[S-2] The initiation for the Sub-Flow is made by MPTCP itself. It binds to one of the yet unused virtual interfaces on Host 1. For our example we assume that port {\footnotesize 22222} is chosen. 
+\item[S-2] The initiation for the Sub-Flow is made by MPTCP itself. It binds to one of the yet unused virtual interfaces on Host 1. For our example we assume that virtual interface {\footnotesize 20.0.0.2} and port {\footnotesize 22222} is chosen. 
 \item[S-5] The Router already has an entry, holding destination address and paths. For the establishment of the Sub-Flow, it is sufficient for the Shila-Connection to submit the Main-Flow-Identifier to get the required Net-Flow.
 \end{description}
 
@@ -250,22 +250,20 @@ During the connection establishment, the Router gets a request from the involved
 
 The Shila-Connection is requesting the Net-Flow for a given TCP-Flow. That is, the Router has to determine and handle the three different entries.
 
-\begin{description}
-	\item[Source SCION address] This is the address of the host running the current Shila instance and can be requested from the SCION daemon.
-	\item[Destination SCION address] The Router first extracts the destination TCP address from the TCP-Flow. Then a request, using the extracted address as key, is placed into the Routing-Information to fetch the corresponding destination SCION address.
-	\item[SCION path] By querying the SCION daemon the Router receives a set of possible paths leading to the previously fetched destination address. From this collection, the Router selects the best possible subset and stores it together with the destination address in a Shila-Routing-Entry. The Routing-Mapping is accordingly updated with the TCP-Flow and the Main-Flow-Identifier such that the entry is later found when needed in the routing for a Sub-Flow establishment. Finally, the best path from the extracted subset is selected for the Net-Flow.
-\end{description}
+\textbf{Source SCION Address:} This is the address of the host running the current Shila instance and can be requested from the SCION daemon. \smallskip\\
+	\textbf{Destination SCION Address:} The Router first extracts the destination TCP address from the TCP-Flow. Then a request, using the extracted address as key, is placed into the Routing-Information to fetch the corresponding destination SCION address. \smallskip\\
+	\textbf{SCION Path:} By querying the SCION daemon the Router receives a set of possible paths leading to the previously fetched destination address. From this collection, the Router selects the best possible subset and stores it together with the destination address in a Shila-Routing-Entry. The Routing-Mapping is accordingly updated with the TCP-Flow and the Main-Flow-Identifier such that the entry is later found when needed in the routing for a Sub-Flow establishment. Finally, the best path from the extracted subset is selected for the Net-Flow.
 
-It remains to be clarified by which criteria the Router determines the best subset of paths. Its cardinality corresponds to the number of virtual egress interfaces. For a single connection, each interface corresponds to a possible flow for which a path is required. As quality criteria, three different metrics are available: Maximum Transmission Unit (MTU), path length and Sharability \cite{Sharability}. Sharability counts how many times each path segment occurs in a set of paths. It is a measure of the path distinctness. Which metric to use, is decided by the user when starting up Shila. The first two metrics, MTU and path length, are provided directly by the SCION daemon, the Router just has to sort the selection of paths accordingly and select the topmost ones. For MTU, the sorting is done in descending order, whereas for the path length in ascending order. For Sharability, the Router has to determine the minimizing subset which is computationally expensive. We, therefore, approximate the solution with a greedy approach.
+It remains to be clarified by which criteria the Router determines the best subset of paths. Its cardinality corresponds to the number of virtual interfaces in the egress namespace. For a single connection, each interface corresponds to a possible flow for which a path is required. As quality criteria, three different metrics are available: Maximum Transmission Unit (MTU), path length and Sharability \cite{Sharability}. Sharability counts how many times each path segment occurs in a set of paths. Each individual count is decremented by one and summed up to form the final metric, a measure of path distinctness. Which metric to use, is decided by the user when starting up Shila. The first two metrics, MTU and path length, are provided directly by the SCION daemon, the Router just has to sort the selection of paths accordingly and select the topmost ones. For MTU, the sorting is done in descending order, whereas for the path length in ascending order. For Sharability, the Router has to determine the minimizing subset which is computationally expensive. We, therefore, approximate the solution with a greedy approach.
 
 \subsection*{Path Selection in the Sub-Flow Establishment}
 
-The Router gets a Main-Flow-Identifier in the case where the Shila-Connection is about to establish a Sub-Flow. In this case, a Main-Flow has already been created and a corresponding entry exists in the Routing-Mapping. The Router receives the corresponding TCP-Flow through the Main-Flow-Identifier and thus also the Shila-Routing-Entry. The Net-Flow is compiled with ease, as all required entries are either easily determined (source address) or are already stored in the entry (destination address, path). For the path, the next best-unused one is taken from the subset of flows stored in the fetched routing entry.
+The Router gets a Main-Flow-Identifier in the case where the Shila-Connection is about to establish a Sub-Flow. In this case, a Main-Flow has already been created and a corresponding entry exists in the Routing-Mapping. The Router gets the corresponding TCP-Flow through the Main-Flow-Identifier and thus also the Shila-Routing-Entry. The Net-Flow is compiled with ease, as all required entries are either easily determined (source address) or are already stored in the entry (destination address, path). For the path, the next best-unused one is taken from the subset of paths stored in the fetched routing entry.
 
 \section{Normal Operation and Clean-up}
 \label{sec:ImplementationNormalOperationAndCleanUp}
 
-Once a connection has been established, all the data exchanged between two TCP endpoints flows through the Shila-Connections and Backbone-Traffic-Connections of the involved flows. For each IP datagram traveling with MPTCP over SCION, there are either two or three lookups within the participating Shila instances required. The lookup in the Shila-Connection-Mapping is inevitable on both endpoints. If the datagram travels from server to client an additional one in the Backbone-Connection-Mapping is necessary. Also always necessary is the parsing of the IP datagram after its retrieval from the virtual interface, required for the determination of the TCP-Flow. Other than that, the processed Shila-Packet can pass the Shila instances without much interaction. Every Shila-Connection is able to relay the packets directly between the Shila-Endpoints using the handles of the respective traffic channels.
+Once a connection has been established, all the data exchanged between two TCP endpoints flows through the Shila-Connections and Backbone-Traffic-Connections of the involved flows. For each IP datagram traveling with MPTCP over SCION, there are either two or three lookups within the participating Shila instances required. The lookup in the Shila-Connection-Mapping is inevitable on both endpoints. If the datagram travels from server to client an additional one in the Backbone-Connection-Mapping is necessary. Also always necessary is the parsing of the IP datagram after its retrieval from the virtual interface, required for the determination of the TCP-Flow. Other than that, the processed Shila-Packet can pass the Shila instances without much interaction. Every Shila-Connection is able to relay its packets directly between the Shila-Endpoints using the handles of the respective traffic channels.
 
 As mentioned in the introductory section, Shila has no influence on which flow of the connection the data uses. This is determined by MPTCP and depends among others on the choice of the congestion algorithm or the scheduler. It is generally not possible for Shila to interact with an established connection, it mainly acts as a relay station.
 
@@ -273,4 +271,4 @@ Shila maintains an established connection as long as there is data flowing. If t
 
 \section{Remark}
 
-In addition to a structure that is as modular as possible and a clear separation of the individual functionalities, the completion of a functional version of Shila had high priority within this work. Based on the first working version, measurements could be carried out to evaluate the performance of Shila for the first time. We discuss these performance measurements in the following Chapter \ref{chap:PerformanceEvaluation}. It should be considered, that a first implementation has prototype character in some sense, and that the quality and performance can be further improved in revision cycles. Hence, possible extensions and inputs for future work is discussed in Chapter \ref{chap:FutureWork}.
+In addition to a structure that is as modular as possible and a clear separation of the individual functionalities, the completion of a functional version of Shila had high priority within this work. Based on the first working version, measurements could be carried out to evaluate the performance of Shila for the first time. We discuss these performance measurements in the following Chapter \ref{chap:PerformanceEvaluation}. It should be considered, that a first implementation has prototype character in some sense, and that the quality and performance can be further improved in revision cycles. Hence, possible extensions and inputs for future work are discussed in Chapter \ref{chap:FutureWork}.

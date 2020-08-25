@@ -25,7 +25,7 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 	\end{center}
 \end{figure}
 
-{\small \textbf{Source Port:} 16-bit number tagging the application where the segment originated from within a sending endpoint. \smallskip\\
+\textbf{Source Port:} 16-bit number tagging the application where the segment originated from within a sending endpoint. \smallskip\\
 \textbf{Destination Port:} 16-bit number tagging the application where the segment is destined for on a receiving endpoint. \smallskip\\
 \textbf{Sequence number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
 \textbf{Acknowledgment Number:} 32-bit number telling the receiver which data byte the sender is expecting next. It is always one greater than the most recently received data byte and only valid if the ACK control bit is set. \smallskip\\
@@ -34,9 +34,8 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 \textbf{SYN (Control Bit):} Sender and receiver use this bit during the connection establishment to synchronize their sequence numbers.  \smallskip\\
 \textbf{FIN (Control Bit):} This bit is part of the connection termination. It is set by the sender if its byte stream has reached the end. \smallskip\\
 \textbf{Options:} Provides space for additional optional parameters that one may want to exchange between sender and receiver. 
-}
  
-Note that a single TCP connection is uniquely identified by a complete pair of IP addresses (source and destination) together with a complete pair of TCP ports (source and destination).
+%Note that a single TCP connection is uniquely identified by a complete pair of IP addresses (source and destination) together with a complete pair of TCP ports (source and destination).%
 
 \subsection*{Connection Establishment, Data Transfer and Termination}
 
@@ -179,12 +178,11 @@ BGP is responsible for the exchange of routing information between independently
 
 Intending to remedy the above-mentioned shortcomings and create a better, safer internet, the development of SCION started with the publication of the first paper \cite{SCIONPaper} in 2011. SCION, an acronym for Scalability, Control and Isolation on Next-generation networks, shall become a secure network architecture that provides high availability regardless of the presence of malicious actors and offers efficient point-to-point packet delivery. In the ensuing section, we give an introduction to the correspondingly implemented SCION architecture. Its implementation and design are guided by the following objectives.
 
-{\small \textbf{High Availability:} The functionality of the network is guaranteed even in the presence of a malicious party as long as at least one benign path exists between communicating endpoints. \smallskip\\
+\textbf{High Availability:} The functionality of the network is guaranteed even in the presence of a malicious party as long as at least one benign path exists between communicating endpoints. \smallskip\\
 	\textbf{Path Transparency:} Endpoints have control over and insight into the path their data takes through the network. \smallskip\\
 	\textbf{Plane Separation:} There is a strict separation of control plane and data plane which ensures that their functionality is not influenced by each other. \smallskip\\
 	\textbf{Multipath Support:} The architecture allows an endpoint to send data to its destination along multiple paths. \smallskip\\
 	\textbf{Router State Avoidance:} Routing works without the routers having to store a state.
-}
 
 \subsection*{The SCION Architecture}
 
@@ -221,14 +219,14 @@ After a host has received individual path segments in the course of the path loo
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.24]{../illustrations/importantConcepts/SCIONPathCreation.pdf} 
-		\caption[]{Illustration of the different steps involved in the creation of a forwarding path: During path exploration, the AS E receives three PCB's describing different paths to reach the core. It decides to register two of these at the path server. If AS E wants to reach AS I it performs a lookup at the path server to get possible path segments. These individual path segments can then in the path combination be arbitrarily joined to form a forwarding path used for data exchange.}
+		\caption[]{Illustration of the different steps involved in the creation of a forwarding path: During path exploration, the AS E receives three PCB's describing different paths to reach the core. It decides to register two of these at the path server. If AS E wants to reach AS I it performs a lookup at the path server to get possible path segments. These individual path segments can then be joined to form a forwarding path.}
 		\label{fig:SCIONCreationForwardingPath}
 	\end{center}
 \end{figure}
 
 \paragraph{Forwarding (Data Plane)}
 
-Once a path is formed, it is included in the SCION packet header and used for forwarding. The recipient of a packet can send back data by simply inverting the path along where it got the packet or create a different one by performing a path lookup and combination on its own.
+Once a path is formed, it is included in the SCION packet header and used for forwarding. The recipient can send back data by simply inverting the path along where it got the packet or create a different one by performing a path lookup and combination on its own.
 
 \subsection*{Conclusion}
 
