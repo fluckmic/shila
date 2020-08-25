@@ -23,7 +23,7 @@ TCP stands for Transmission Control Protocol, a reliable, connection-oriented tr
 
 \section{Multipath TCP (MPTCP)}
 
-MPTCP stands for Multipath TCP and is an extension to TCP. It works exactly like TCP, with the only difference that all available network interfaces of a computer are used for the connection. This means that when the user visits his favorite website, MPTCP creates not just one connection, but one sub-connection, a so-called flow, for each interface available. Nowadays devices often have multiple attachment points to the Internet. So MPTCP creates, as illustrated in Figure \ref{fig:IntroMPTCP}, one flow via WLAN, one via cable and maybe even one via an analog dial-up modem. Thanks to these multiple flows, the protocol can improve reliability and performance. However, also with MPTCP, endpoints cannot influence what paths are taken by the individual flows. 
+MPTCP stands for Multipath TCP and is an extension to TCP. It works exactly like TCP, with the only difference that all available network interfaces of a computer are used for the connection. This means, that when the user visits his favorite website, MPTCP creates not just one connection, but one sub-connection, a so-called flow, for each interface available. Nowadays devices often have multiple attachment points to the Internet. MPTCP creates, as illustrated in Figure \ref{fig:IntroMPTCP}, one flow via WLAN, one via cable and maybe even one via an analog dial-up modem. Thanks to these multiple flows, the protocol can improve reliability and performance. However, also with MPTCP, endpoints cannot influence what paths are taken by the individual flows. 
 
 \begin{figure}[H]
 	\begin{center}
@@ -51,7 +51,7 @@ Scalability, Control and Isolation on next-generation Networks or SCION for shor
 
 \subsection*{Functionality}
 
-Shila is the abbreviation for Shim Layer and is the main contribution of this work. It acts as a mediating layer and enables the use of MPTCP in the SCION internet architecture; illustrated in Figure \ref{fig:IntroRoleOfShila}. 
+Shila is the abbreviation for shim layer and its implementation and evaluation is the main contribution of this work. It acts as a mediating layer and enables the use of MPTCP in the SCION internet architecture; illustrated in Figure \ref{fig:IntroRoleOfShila}. 
 
 \begin{figure}[H]
 	\begin{center}
@@ -62,7 +62,7 @@ Shila is the abbreviation for Shim Layer and is the main contribution of this wo
 	\end{center}
 \end{figure}
 
-Upon startup, Shila creates and monitors a user-selectable number of virtual network interfaces. A virtual interface is a fake connection to a network, which is perceived by the computer as a real one. If now someone visits his favorite homepage, Multipath TCP tries to connect to the server via these virtual interfaces. Shila detects this connection establishment and redirects the data flow.  For every flow created by MPTCP, the Shila instance creates a connection over SCION to the Shila instance running on the server and forwards the respective data traffic. The shim layer on the server side receives the data and distributes it through the MPTCP functionality to the server application.
+Upon startup, Shila creates and monitors a user-selectable number of virtual network interfaces. A virtual interface is a fake connection to a network, which is perceived by the computer as a real one. If now someone visits his favorite homepage, Multipath TCP tries to connect to the server via these virtual interfaces. Shila detects this connection establishment and redirects the data.  For every flow created by MPTCP, the Shila instance creates a connection over SCION to the Shila instance running on the server and forwards the respective data traffic. The shim layer on the server side receives the data and distributes it through the MPTCP functionality to the server application.
 
 \subsection*{Benefit}
 

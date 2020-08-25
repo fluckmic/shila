@@ -14,7 +14,7 @@ TCP is a byte stream, connection-oriented and reliable transport protocol. In th
 
 \subsection*{TCP Segment}
 
-TCP partitions the byte stream into TCP segments consisting of a header and a data part. Figure \ref{fig:TCPSegment} depicts a valid format of a TCP segment with its different fields. In the following, the fields most important for the understanding of the TCP are described in more detail. 
+TCP partitions the byte stream into TCP segments consisting of a header and a data part. Figure \ref{fig:TCPSegment} depicts a valid format of a TCP segment with its different fields. In the following, the fields most important for the understanding of TCP are described in more detail. 
 
 \begin{figure} [H]
 	\begin{center}
@@ -27,7 +27,7 @@ TCP partitions the byte stream into TCP segments consisting of a header and a da
 
 {\small \textbf{Source Port:} 16-bit number tagging the application where the segment originated from within a sending endpoint. \smallskip\\
 \textbf{Destination Port:} 16-bit number tagging the application where the segment is destined for on a receiving endpoint. \smallskip\\
-\textbf{sequence number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
+\textbf{Sequence number:} 32-bit number identifying the current position of the first data byte in the segment within the entire byte stream for the TCP connection. \smallskip\\
 \textbf{Acknowledgment Number:} 32-bit number telling the receiver which data byte the sender is expecting next. It is always one greater than the most recently received data byte and only valid if the ACK control bit is set. \smallskip\\
 \textbf{ACK (Control Bit):} If set, the acknowledgment number is valid. \smallskip\\
 \textbf{Window:} 16-bit number used by TCP for flow control. It specifies the number of bytes the sender of this segment is currently willing to receive. \smallskip\\
@@ -91,7 +91,7 @@ The congestion avoidance algorithm has two mechanisms to detect network congesti
 
 \paragraph{Fast Retransmit}
 
-If the sender receives an acknowledgment multiple times, it is not clear if it is because a segment was lost or simply because a segment was delayed and received out of order at the receiver. If the latter is the case, it should not take too long until the latest expected acknowledgment arrives. Typically, for simple out of order condition, not more than one or two duplicated acknowledgments should be received. More duplicates are a strong indication that a segment was lost. Upon reception of three duplicated acknowledgments, the sender does not wait until the retransmission timer expires but resends the segment immediately and enters Fast Recovery.
+If the sender receives an acknowledgment multiple times, it is not clear if it is because a segment was lost or simply because a segment was delayed and received out of order at the receiver. If the latter is the case, it should not take too long until the latest expected acknowledgment arrives. Typically, for simple out of order condition, not more than one or two duplicated acknowledgments should be received. More duplicates are a strong indication that a segment was lost. Upon reception of three duplicated acknowledgments, the sender does not wait until the retransmission timer expires but resends the segment immediately and enters fast recovery.
 
 \paragraph{Fast Recovery}
 
@@ -139,7 +139,7 @@ In Multipath TCP every flow is equivalent to a regular TCP connection using its 
 
 \paragraph{Two different Acknowledgment Levels}
 
-The acknowledgment of received data happens on two different levels. The regular TCP acknowledgment Number is used to confirm the reception of data on a flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same flow sequence number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at a data sequence level are available. These allow MPTCP to detect the failure of a flow and to initiate the retransmission of lost data over a different flow.
+The acknowledgment of received data happens on two different levels. The regular TCP acknowledgment number is used to confirm the reception of data on a flow connection level. Standard retransmission mechanisms, as discussed earlier, are used to recover from a segment loss indicated through the reception of multiple acknowledgments confirming the same flow sequence number. With the additional DSS\_ACK returned by the receiver as part of the ACK's, cumulative acknowledgments at a data sequence level are available. These allow MPTCP to detect the failure of a flow and to initiate the retransmission of lost data over a different flow.
 
 \begin{figure}
 	\begin{center}
@@ -152,7 +152,7 @@ The acknowledgment of received data happens on two different levels. The regular
 
 \subsection*{Congestion Control}
 
-One way to implement congestion control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its congestion window without affecting or being affected by other flows and their window. Possible congestion control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent congestion windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
+One way to implement congestion control in MPTCP is to use conventional mechanisms on a flow connection level. This means that each TCP flow maintains its congestion window without affecting or being affected by other flows and their window. Possible congestion control could be any suitable for TCP, like the default AIMD approach \cite{rfc5681} mentioned in the previous section or derivatives like CUBIC \cite{rfc8312}. But with independent congestion windows for each flow, other users in the network are disadvantaged. Imagine that several flows of an MPTCP connection and a single external TCP connection share the same link. In this case, the MPTCP connection may use more bandwidth than it is entitled to.  This is possible because each flow is treated as a single, independent TCP connection. To eliminate this injustice MPTCP uses a congestion algorithm which makes the windows of the individual flows dependent on each other. One possible implementation hereby is the Linked Increase Algorithm (lia) \cite{rfc6356}, initially proposed by the community.  In the meantime, further developments, for example the Opportunistic Linked Increase Algorithm (olia) \cite{khalili-mptcp-congestion-control-05}  or the Balanced Linked Adaptation Congestion Control Algorithm (balia) \cite{walid-mptcp-congestion-control-04} are available.
 
 \subsection*{Conclusion}
 
@@ -177,13 +177,13 @@ BGP is responsible for the exchange of routing information between independently
 
 \subsection*{SCION - Scalability, Control and Isolation on Next-generation Networks}
 
-Intending to remedy the above-mentioned shortcomings and create a better, safer internet, the development of SCION started with the publication of the first paper \cite{SCIONPaper} in 2011. SCION, an acronym for Scalability, Control and Isolation on Next-generation networks, shall become a secure network architecture that provides high availability regardless of the presence of malicious actors and offers efficient point-to-point packet delivery. In the ensuing section, we then give an introduction to the correspondingly implemented SCION architecture. Its implementation and design are guided by the following objectives.
+Intending to remedy the above-mentioned shortcomings and create a better, safer internet, the development of SCION started with the publication of the first paper \cite{SCIONPaper} in 2011. SCION, an acronym for Scalability, Control and Isolation on Next-generation networks, shall become a secure network architecture that provides high availability regardless of the presence of malicious actors and offers efficient point-to-point packet delivery. In the ensuing section, we give an introduction to the correspondingly implemented SCION architecture. Its implementation and design are guided by the following objectives.
 
-{\small \textbf{High availability:} The functionality of the network is guaranteed even in the presence of a malicious party as long as at least one benign path exists between communicating endpoints. \smallskip\\
-	\textbf{Path transparency:} Endpoints have control over and insight into the path their data takes through the network. \smallskip\\
-	\textbf{Plane separation:} There is a strict separation of control plane and data plane which ensures that their functionality is not influenced by each other. \smallskip\\
-	\textbf{Multipath support:} The architecture allows an endpoint to send data to its destination along multiple paths. \smallskip\\
-	\textbf{Router state avoidance:} Routing works without the routers having to store a state.
+{\small \textbf{High Availability:} The functionality of the network is guaranteed even in the presence of a malicious party as long as at least one benign path exists between communicating endpoints. \smallskip\\
+	\textbf{Path Transparency:} Endpoints have control over and insight into the path their data takes through the network. \smallskip\\
+	\textbf{Plane Separation:} There is a strict separation of control plane and data plane which ensures that their functionality is not influenced by each other. \smallskip\\
+	\textbf{Multipath Support:} The architecture allows an endpoint to send data to its destination along multiple paths. \smallskip\\
+	\textbf{Router State Avoidance:} Routing works without the routers having to store a state.
 }
 
 \subsection*{The SCION Architecture}
@@ -215,7 +215,7 @@ If a source host wants to create a connection to a target host, it carries out a
 
 \paragraph{Path Combination (Data Plane)}
 
-After a host has received individual path segments in the course of the path lookup, it can now combine these into a path to the destination. Depending on where the destination is located, up to three path segments must be combined. If the destination AS is on the path from source AS to its core AS, then one segment is sufficient. If source and destination share only one core AS within the ISD, two segments are necessary, namely one from the source AS to the core AS and one from the core AS to the destination AS. Three path segments are necessary if source and destination are not located in the same ISD. In addition to the path segments connecting the ASes to their core, a segment between the two core ASes is necessary.
+After a host has received individual path segments in the course of the path lookup, it can now combine these into a path to the destination. Depending on where the destination is located, up to three path segments must be combined. If the destination AS is on the path from source AS to its core AS, then one segment is sufficient. If path segments have an AS in common, two segments are necessary, namely one from the source AS to the shared AS and one from there to the destination AS. Three path segments are necessary if the path segments from source AS and destination AS to their respective core AS do not intersect. In addition to the path segments connecting the ASes to their core, a segment between the two core ASes is necessary.
 
 \begin{figure}
 	\begin{center}
@@ -232,4 +232,4 @@ Once a path is formed, it is included in the SCION packet header and used for fo
 
 \subsection*{Conclusion}
 
-This summary only scratches the surface of the functionality that SCION provides. The new internet architecture offers a variety of additional functions, security mechanisms and extensions which are not mentioned here. The goal of this section was to explain why the transformation to a new Internet architecture is so important and to introduce SCION as a promising candidate. Interested readers are again referred to the SCION book \cite{SCIONBook} or website \cite{SCIONWebMain}.
+This summary only scratches the surface of the functionality that SCION provides. The new internet architecture offers a variety of additional functions, security mechanisms and extensions which are not mentioned here. The goal of this section was to explain why the transformation to a new internet architecture is so important and to introduce SCION as a promising candidate. Interested readers are again referred to the SCION book \cite{SCIONBook} or website \cite{SCIONWebMain}.
