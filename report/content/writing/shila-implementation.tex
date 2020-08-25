@@ -5,7 +5,7 @@ In this chapter, we present a more detailed treatise of the implementation of Sh
 
 \section{Core Concepts and Terms}
 
-In the subsections below the concepts and terms important to understand the content of this part are explained. Figure \ref{fig:IllustrationShilaPacket} summarizes them in an illustration.
+In the subsections below the concepts and terms important to understand the content of this chapter are explained. Figure \ref{fig:IllustrationShilaPacket} summarizes them in an illustration.
 
 \subsection*{Flows}
 \label{subsec:ShilaImplementationImportantConceptsFlows}
@@ -84,13 +84,13 @@ The Kernel-Endpoint creates and holds the virtual network interface over which t
 
 \subsubsection{Virtual Interface}
 
-Shila uses the Universal TUN/TAP device driver \cite{TUNTAPDriver} to set up virtual network devices on the host. Such a virtual network device is perceived by the kernel as a real Ethernet device. The difference is that traffic from the kernel is not sent through a physical medium but can be read by an application, in our case Shila. Furthermore receives the virtual device the data not over the cable but from an application, again Shila.
+Shila uses the universal TUN/TAP device driver \cite{TUNTAPDriver} to set up virtual network devices on the host. Such a virtual network device is perceived by the kernel as a real Ethernet device. The difference is that traffic from the kernel is not sent through a physical medium but can be read by an application, in our case Shila. Furthermore receives the virtual device the data not over the cable but from an application, again Shila.
 
 Each virtual network interface has an IP address assigned to it. When a TCP endpoint sends data over a virtual device, Shila receives the corresponding IP datagrams. Each of these contains a TCP-Flow. The source TCP address consists of the IP address of the virtual device and an arbitrary port. The destination address is the TCP address the application wants to send data to. Conversely; when Shila writes payload (i.e. an IP datagram) to a virtual device, then the kernel forwards it to the application identified by the destination TCP address.  
 
 \subsection*{Network-Side}
 
-The Network-Side is also orchestrated by an appropriate manager. At startup, the manager takes care of establishing the Contact-Server-Endpoint. It furthermore provides the interface to Shila-Connections for the creation of new Contact-Client-Endpoints, Traffic-Client-Endpoints and Traffic-Server-Endpoints. The Network-Side holds three different mappings. Two to get the corresponding Client-Endpoint for a given TCP-Flow, and one to get the Server-Endpoint associated with the SCION source address. These mappings are only used by the manager to interact with the endpoints, e.g. for the deallocation in case of a disconnection. They are not needed for the data exchange itself. After establishing the connection, the corresponding Shila-Connections directly hold a handle of the traffic channels from the respective endpoints. Figure \ref{fig:ImplementationModulesNetworkSide} illustrates these Network-Endpoint-Mappings as part of the whole Kernel-Side and its subparts.  
+The Network-Side is also orchestrated by an appropriate manager. At startup, the manager takes care of establishing the Contact-Server-Endpoint. It furthermore provides the interface to Shila-Connections for the creation of new Contact-Client-Endpoints, Traffic-Client-Endpoints and Traffic-Server-Endpoints. The Network-Side holds three different mappings. Two to get the corresponding Client-Endpoint for a given TCP-Flow, and one to get the Server-Endpoint associated with the source SCION address. These mappings are only used by the manager to interact with the endpoints, e.g. for the deallocation in case of a disconnection. They are not needed for the data exchange itself. After establishing the connection, the corresponding Shila-Connections directly hold a handle of the traffic channels from the respective endpoints. Figure \ref{fig:ImplementationModulesNetworkSide} illustrates these Network-Endpoint-Mappings as part of the whole Kernel-Side and its subparts.  
 
 \subsubsection{Server-Endpoint}
 
@@ -98,7 +98,7 @@ The Server-Endpoint is one of two types of Shila-Endpoints found on the Network-
 
 A Server-Endpoint holds and handles a collection of Backbone-Connections, i.e. connections through the SCION network to Client-Endpoints running on other instances of Shila. Each such Backbone-Connection is associated with a Net-Flow. The Server-Endpoint-Mapping\footnote{In Figure \ref{fig:ImplementationModulesNetworkSide}, this mapping is shown as part of the Network-Endpoint-Mappings.} in the Network-Side uses the source address of this Net-Flow as a key. Inside the endpoint, the corresponding destination address is used as the key for the Backbone-Connection-Mapping. %Note that this mapping is used in the actual data exchange. 
 
-A Backbone-Connection itself uses the appnet package \cite{Appnet} to establish the connection in SCION. Data received from the SCION network is packed into a Shila packet by the responsible Backbone-Connection and sent via the ingress traffic channel of the server to the Working-Side. Packets received from Shila-Connections are allocated to their Backbone-Connection using their Net-Flow and the Backbone-Connection-Mapping. From there, the payload is put into a Shila-Message and sent via appnet package through the SCION network.
+A Backbone-Connection itself uses the appnet package \cite{Appnet} to establish the connection in SCION. Data received from the SCION network is packed into a Shila-Packet by the responsible Backbone-Connection and sent via the ingress traffic channel of the server to the Working-Side. Packets received from Shila-Connections are allocated to their Backbone-Connection using their Net-Flow and the Backbone-Connection-Mapping. From there, the payload is put into a Shila-Message and sent via appnet package through the SCION network.
 
 \subsubsection{Client-Endpoint}
 
@@ -121,14 +121,14 @@ Upon the arrival of a Shila-Packet at the Working-Side it is processed by a dedi
 	\begin{center}
 		\def\svgwidth{1\textwidth}
 		\includegraphics[scale=0.2]{../illustrations/implementation/ProcessWorkingSide.pdf}   
-		\caption[]{Illustration of the Working-Side. Every Shila-Packet arriving at the Working-Side gets processed by a worker. This worker uses the TCP-Flow of the packet as key into the Shila-Connection-Mapping, holding already established connections. If for a given Shila-Packet and its TCP-Flow no connection exists yet, a new one is created. The worker then processes the Shila-Packet through the Shila-Connection. Note that the establishment of the connection itself happens inside of the Shila-Connection.}
+		\caption[]{Illustration of the Working-Side. Every Shila-Packet arriving at the Working-Side gets processed by a worker. This worker uses the TCP-Flow of the packet as key into the Shila-Connection-Mapping. If for a given Shila-Packet and its TCP-Flow no connection exists yet, a new one is created. The worker then processes the Shila-Packet through the Shila-Connection. Note that the establishment of the connection itself happens inside of the Shila-Connection.}
 		\label{fig:ImplementationProcessWorkingSide}
 	\end{center}
 \end{figure}
 
 \subsection*{Shila-Connection}
 
-The Shila-Connection, depicted in Figure \ref{fig:ImplementationShilaConnection}, is the main part of Shila, with its logic responsible for establishing and maintaining connections. The centerpiece is the state machine and the close coupling to the Router, which provides SCION destination and path information. During connection establishment, the Shila-Connection uses the interfaces of Kernel-Side and Network-Side as well as the functionalities provided by the Router to put its traffic channels into place. Once established, the packages flow smoothly through the Shila-Connection to their respective destination endpoints without much interaction. Every Shila-Connection is identified by its TCP-Flow and holds, once the connection is established, the corresponding Net-Flow.
+The Shila-Connection, depicted in Figure \ref{fig:ImplementationShilaConnection}, is the main part of Shila, with its logic responsible for establishing and maintaining connections. The centerpiece is the state machine and the close coupling to the Router, which provides SCION destination and path information. During connection establishment, the Shila-Connection uses the interfaces of Kernel-Side and Network-Side as well as the functionalities provided by the Router to put its traffic channels into place. Once established, the packets flow smoothly through the Shila-Connection to their respective destination endpoints without much interaction. Every Shila-Connection is identified by its TCP-Flow and holds, once the connection is established, the corresponding Net-Flow.
 
 \begin{figure}
 	\begin{center}
@@ -146,7 +146,7 @@ The Router supplies the Shila-Connection with the Net-Flow as part of the connec
 
 \subsubsection{Shila-Routing-Entry}
 
-A Shila-Routing-Entry stores a SCION address and several paths leading through the SCION network to this destination. The number of stored paths depends on the setting of Shila, namely on the number of virtual interfaces created in the egress namespace. Also stored for each of the paths is its quality, given in different metrics. These metrics are used as a decision criterion in the process of path selection which is itself part of the creation of routing entries. The whole process of the routing, i.e. the creation of these entries as well as the procedure of path selection is described in its own Section \ref{sec:ImplementationPathSelection}.
+A Shila-Routing-Entry stores a SCION address and several paths leading through the SCION network to this destination. The number of stored paths depends on the setting of Shila, namely on the number of virtual interfaces created in the egress namespace. Also stored for each of the paths is its quality, given in different metrics. These metrics are used as a decision criterion in the process of path selection. This is itself part of the creation of routing entries and is described in its own Section \ref{sec:ImplementationPathSelection}.
 
 \section{Setup}
 \label{sec:ImplementationSetup}
@@ -155,7 +155,7 @@ In this section, we describe the crucial steps executed during the setup of Shil
 
 \paragraph{Loading of the Routing-Information}
 
-To perform its function of providing translations between a TCP-Flow and a Net-Flow, the Router establishes a connection to the SCION daemon and loads the Routing-Information from disk. Saved as a JSON file it contains the translation from a TCP to a SCION address. Currently, there is no other way to provide the Router with this necessary information. However, alternatives are certainly conceivable and are mentioned in Chapter \ref{chap:FutureWork}.
+To perform its function of providing translations between a TCP-Flow and a Net-Flow, the Router loads the Routing-Information from disk. Saved as a JSON file it contains the translation from a TCP to a SCION address. Currently, there is no other way to provide the Router with this necessary information. However, alternatives are certainly conceivable and are mentioned in Chapter \ref{chap:FutureWork}. To be able to do path selection the router furthermore connects to the SCION daemon.
 
 \paragraph{Setup of Namespaces}
 
@@ -169,7 +169,7 @@ Each Kernel-Endpoint contains a virtual interface to which an IP address is assi
 
 \paragraph{Contact-Server-Endpoint}
 
-During the setup, the manager in the Network-Site creates just one Network-Endpoint; the Contact-Server-Endpoint. This endpoint starts listening for incoming Backbone-Connections on the default SCION port {\footnotesize 7654} using the appnet package. In contrast to all other Shila-Endpoints, it only needs the ingress traffic channel, namely for incoming messages that initiate the establishment of a new connection. This channel is registered with the Working-Side.
+During the setup, the manager in the Network-Side creates just one Network-Endpoint; the Contact-Server-Endpoint. This endpoint starts listening for incoming Backbone-Connections on the default SCION port {\footnotesize 7654} using the appnet package. In contrast to all other Shila-Endpoints, it only needs the ingress traffic channel, namely for incoming messages that initiate the establishment of a new connection. This channel is registered with the Working-Side.
 
 After the successful setup, applications can be started in the respective namespaces and the data exchange is initiated with the connection establishment.
 
@@ -202,13 +202,13 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 %\begin{description}
 	\item[M-8] With the successful setup of the Contact-Client-Endpoint, the Shila-Connection receives the handle to its egress traffic channel. Using this channel, the Shila-Packet, and hence the initial IP datagram containing the SYN is now transferred to the Contact-Server-Endpoint running on the Shila instance on Host 2. %The Shila-Connection sets its Net-Flow$^{3}$ to be the one of the Contact-Backbone-Connection.%
 	\item[M-9] The IP datagram is received at the Contact-Server-Endpoint on Host 2. There, it is put into a Shila-Packet and forwarded via the ingress traffic channel to the Working-Side. The Net-Flow$^{4}$ (namely that of the backbone connection between Contact-Client-Endpoint and Contact-Server-Endpoint) can already be assigned to the newly created Shila-Packet. The TCP-Flow$^{5}$ is also known since it was transmitted with the establishment of the Contact-Backbone-Connection.\medskip\\{\footnotesize [2-ff00:0:220,127.0.0.1:7654, 1-ff00:0:112,127.0.0.1:12121]$^{4}$}\\{\footnotesize [10.7.0.9:27041, 10.0.0.1:11111]$^{5}$} 
-	\item[M-10] The Working-Site on Host 2 cannot find a Shila-Connection for the TCP-Flow$^{5}$ in the Shila-Packet. Accordingly, a new one is created and the packet is passed to it.
+	\item[M-10] The Working-Side on Host 2 cannot find a Shila-Connection for the TCP-Flow$^{5}$ in the Shila-Packet. Accordingly, a new one is created and the packet is passed to it.
 	\item[M-11] Inside the Shila-Connection, three tasks are performed. First, the Net-Flow$^{4}$ of the Shila-Packet is extracted and assigned to the Shila-Connection.  %Note, until now it was the Net-Flow of the associated Contact-Backbone-Connection. %
 	Second, the Shila-Packet is forwarded. The source IP address of its TCP-Flow$^{5}$ is used to retrieve the egress traffic channel from the Kernel-Endpoint residing in the ingress namespace. This is done by the Shila-Connection by querying the Kernel-Endpoint-Mapping inside the Kernel-Side. For our example, the IP address used as the key is {\footnotesize 10.7.0.9}. The Shila-Packet is forwarded through the respective channel, once it is obtained. Third, the Shila-Connection causes the creation of a Traffic-Server-Endpoint which is ready for new Backbone-Connections at SCION port {\footnotesize 27041}. The ingress traffic channel is registered with the Working-Side and the Shila-Connection receives a handle to the respective egress traffic channel.
 	\item[M-12] The Kernel-Endpoint receives the Shila-Packet, extracts its payload and sends the IP datagram containing the SYN through the virtual interface towards the listening iPerf3 server instance.
 	\item[M-13] In the meantime, the Shila-Connection of Host 1 has initiated the creation of a Traffic-Client-Endpoint. This now establishes a Backbone-Connection to its opposite, called a Traffic-Backbone-Connection. This time, in comparison to step M-7, using the complete Net-Flow. Let us assume that the Traffic-Client-Endpoint bound locally to SCION port {\footnotesize 34343}, completing the Net-Flow$^{6}$ of the Traffic-Backbone-Connection. This Net-Flow is assigned to Shila-Connection on Host 1.
 	\medskip\\{\footnotesize [1-ff00:0:112,127.0.0.1:34343, 2-ff00:0:220,127.0.0.1:27041]$^{6}$}
-	\item[M-14] With the successful establishment of the Traffic-Backbone-Connection, the involved Server-Endpoint on Host 2 receives the TCP-Flow$^{5}$ as well as two Net-Flows. The Net-Flow$^{4}$ of Contact-Backbone-Connection and the Net-Flow$^{7}$ of the Traffic-Backbone-Connection. Both of its destination addresses are used as key to store the Traffic-Backbone-Connection in the Backbone-Connection-Mapping. This is required since the Shila-Connection sends all data back, including the data received via the Contact-Server-Endpoint, via the Traffic-Server-Endpoint. Until now, the Shila-Connection on Host 2 holds the Net-Flow of the Contact-Backbone-Connection. It can now can be updated to the one of the Traffic-Backbone-Connection.\medskip\\{\footnotesize [2-ff00:0:220,127.0.0.1:27041, 1-ff00:0:112,127.0.0.1:34343]$^{7}$}
+	\item[M-14] With the successful establishment of the Traffic-Backbone-Connection, the involved Server-Endpoint on Host 2 receives the TCP-Flow$^{5}$ as well as two Net-Flows. The Net-Flow$^{4}$ of Contact-Backbone-Connection and the Net-Flow$^{7}$ of the Traffic-Backbone-Connection. Both of its destination addresses are used as key to store the Traffic-Backbone-Connection in the Backbone-Connection-Mapping. This is required since the Shila-Connection sends all data back, including the data received via the Contact-Server-Endpoint, via the Traffic-Server-Endpoint. Until now, the Shila-Connection on Host 2 held the Net-Flow of the Contact-Backbone-Connection. It can now can be updated to the one of the Traffic-Backbone-Connection.\medskip\\{\footnotesize [2-ff00:0:220,127.0.0.1:27041, 1-ff00:0:112,127.0.0.1:34343]$^{7}$}
 \end{description}	
 	\begin{landscape}
 		\begin{figure}
@@ -221,7 +221,7 @@ The entire process of determining the Net-Flow, i.e. address translation and the
 		\end{figure}
 	\end{landscape}
 \begin{description}		
-	\item[M-15] The IP datagram containing the answer from the iPerf3 server instance, a SYN+ACK, arrives at the Kernel-Endpoint at Host 2. From there the answer travels in a Shila-Packet, using its TCP-Flow$^{5}$, through the Working-Site to the corresponding Shila-Connection.
+	\item[M-15] The IP datagram containing the answer from the iPerf3 server instance, a SYN+ACK, arrives at the Kernel-Endpoint at Host 2. From there the answer travels in a Shila-Packet, using its TCP-Flow$^{5}$, through the Working-Side to the corresponding Shila-Connection.
 	\item[M-16] The Shila-Connection assigns its Net-Flow to the Shila-Packet and forwards it via traffic channel to the corresponding Traffic-Server-Endpoint. From there the SYN+ACK finds its way through the Traffic-Backbone-Connection to the corresponding client part. The right connection is found by using the destination address of the packets Net-Flow as key into the Backbone-Connection-Mapping.
 	\item[M-17] The reception of the first data from the Traffic-Client-Endpoint on Host 1 concludes the connection establishment. The first response from the iPerf3 server instance reaches the Shila-Connection, where the Main-Flow-Identifier is extracted. This identifier is used to update the Router accordingly such that Sub-Flows created later can be assigned to their Main-Flow. The response, holding the SYN+ACK, is then sent along the traffic channel toward the client instance of iPerf3.
 	\item[M-18] The Contact-Backbone-Connection is no longer needed and can therefore be removed, together with its corresponding Network-Endpoints.

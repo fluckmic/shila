@@ -7,23 +7,23 @@ This chapter introduces the central point of the thesis and the author's main co
 \section{Introduction}
 \label{sec:ShilaIntroduction}
 
-Shila could very well be the name of the female lead role in a thrilling crime novel. However, in the context of this work Shila is the abbreviation of Shim Layer. It appropriately names the implementation which, by mediating between the two technologies, enables the use of MPTCP via SCION.
+Shila could very well be the name of the female lead role in a thrilling crime novel. However, in the context of this work Shila is the abbreviation of shim layer. It appropriately names the implementation which, by mediating between the two technologies, enables the use of MPTCP over SCION.
 
 \subsection*{Initial Situation}
 \label{subsec:ShilaInitialSituation}
 
-To simplify the following descriptions, the starting point for the use of Shila is defined. To use Shila, one needs at least two computers with MPTCP installed. In addition, the devices must be connected through the SCION network.\footnote{The usage of multiple instances of Shila on a single device is also possible. For illustrative purposes, however, this scenario is not discussed here.} Guidance to install MPTCP can be found here \cite{MPTCPWebMain}, the setup of SCION is described in detail on the official SCION webpage \cite{SCIONWebMain}.
+To simplify the following descriptions, the starting point for the use of Shila is defined. To use Shila, one needs at least two devices\footnote{The usage of multiple instances of Shila on a single device is also possible. For illustrative purposes, however, this scenario is not discussed here.} with MPTCP installed. In addition, the devices must be connected through the SCION network. Guidance to install MPTCP can be found here \cite{MPTCPWebMain}, the setup of SCION is described in detail on the official SCION webpage \cite{SCIONWebMain}.
 
-Each computer is identified by a SCION address, not surprisingly referred to as the SCON address of a host. TCP applications, or TCP endpoints, which are executed on a host are bound to a network interface. They are uniquely addressable through a IP address paired with a TCP port number, denoted as TCP address of an application. The individual parts of this tuple are called the IP address or the TCP port of an application. Furthermore, TCP applications can also be linked with addresses of the SCION namespace. The same principle applies here. Thus, an application may also be identified either by a full SCION address or just individual parts of it, e.g. just the SCION port.
+Each device is identified by a SCION address, not surprisingly referred to as the SCON address of a host. TCP applications, or TCP endpoints, which are executed on a host are bound to a network interface. They are uniquely addressable through an IP address paired with a TCP port number, denoted as TCP address of an application. The individual parts of this tuple are called the IP address or the TCP port of an application. Furthermore, TCP applications can also be linked with addresses of the SCION namespace. The same principle applies here. Thus, an application may also be identified either by a full SCION address or just individual parts of it, e.g. just the SCION port.
 
 \subsection*{Usage}
 \label{subsec:ShilaUsage}
 
-In the following, a simple example case describes how a user can utilize Shila. An description on how to use Shila is also part of the Shila code repository \cite{ShilaGithub}.
+In the following, a simple example case describes how a user can utilize Shila. A description on how to use Shila is also part of the Shila code repository \cite{ShilaGithub}.
 
 As an example, a setup with two endpoints is considered. Host 1 with SCION address {\footnotesize 1-ff00:0:112,127.0.0.1} and Host 2 with address {\footnotesize 2-ff00:0:220,127.0.0.1}, both are part of the SCION network. The goal is to establish a connection between the client instance of an TCP application running on Host 1 and the respective server instance with TCP address {\footnotesize 10.7.0.9:27041} running on Host 2. As an example TCP application, we consider iPerf3, the well-known measurement tool.
 
-First, the so-called Routing-Information for the Shila instance running on Host 1 has to be prepared. It describes the mapping between TCP address of an application running on a certain host and the same host's SCION address. The routing information stored in a file is named \textit{routing.json} and is located in the Shila root directory. For the given example it contains only one entry:
+First, the so-called Routing-Information for the Shila instance running on Host 1 has to be prepared. It describes the mapping between TCP address of an application running on a certain host and the same host's SCION address. The routing information stored in a file named \textit{routing.json} and is located in the Shila root directory. For the given example it contains only one entry:
 
 \begin{minted}
 {json}
@@ -51,7 +51,7 @@ sudo ip netns exec shila-egress iperf3 -c 10.7.0.9 -p 27041
 \end{minted}
 
 \newpage
-Following, the output of certain involved entities are shown. Figure \ref{fig:IntroductionOutputShilaOnHost1} displays the output generated by the Shila instance running on Host 1. The shim layer creates a default number of three paths through the SCION network used for the data exchange between the two iPerf3 instances. Figure \ref{fig:IntroductionOutputIperfOnHost1} shows the output generated by iPerf3 running on Host 1. Figure \ref{fig:IntroductionDataDistributionAmongPaths} visualizes the distribution of the data exchange among the three different flows.
+Following, the output of certain involved entities is shown. Figure \ref{fig:IntroductionOutputShilaOnHost1} displays the output generated by the Shila instance running on Host 1. The shim layer creates a default number of three paths through the SCION network used for the data exchange between the two iPerf3 instances. Figure \ref{fig:IntroductionOutputIperfOnHost1} shows the output generated by iPerf3 running on Host 1. Figure \ref{fig:IntroductionDataDistributionAmongPaths} visualizes the distribution of the data exchange among the three different flows.
 
 \begin{figure}
 	\begin{center}
@@ -84,7 +84,7 @@ Following, the output of certain involved entities are shown. Figure \ref{fig:In
 
 The functionality of Shila can be divided into three parts. The first part considers the setup of Shila in general, i.e. everything necessary to get a running instance of Shila. The latter two parts specifically consider the data exchange between two TCP endpoints. In detail, the second part discusses what is necessary to establish such a connection and the third part covers the operating state and also the cleaning up once a connection is no longer needed. 
 
-In the following subsections the three parts are outlined, so the reader gets a basic understanding of the mechanics of Shila. In chapter \ref{chap:ShilaImplementation} everything mentioned is explained again in more detail.
+In the following subsections the three parts are outlined, so the reader gets a basic understanding of the mechanics of Shila. In Chapter \ref{chap:ShilaImplementation} everything mentioned is explained again in more detail.
 
 \subsection*{Setup}
 
@@ -92,11 +92,11 @@ Launching and setting up Shila includes the following steps.
 
 \paragraph{Loading of the Routing-Information} Shila reads the Routing-Information presented in the respective file. It contains the mapping from TCP addresses of applications to SCION addresses of hosts running these apps. 
 
-\paragraph{Setup of Namespaces} Shila sets up two different network namespaces. The ingress namespace holds the network interface used to accept incoming connections. The egress namespace accommodates the network interfaces which are used for connections initiated by the respective host.
+\paragraph{Setup of Namespaces} Shila sets up two different network namespaces. The ingress namespace (\textit{shila-ingress}) holds the network interface used to accept incoming connections. The egress namespace (\textit{shila-egress}) accommodates the network interfaces which are used for connections initiated by the respective host.
 
 \paragraph{Creation of virtual Interfaces} A virtual network interface is a network device that is supported entirely in software, i.e. there is no real hardware network adapter. It allows applications to take over the role of the wire. For a real network interface, the IP datagrams of connected applications are sent directly to the cable. Virtual interfaces make these data available to applications in userspace.
 
-The shim layer instantiates a single virtual network interface in the ingress namespace. This interface is per default bound to the IP address {\footnotesize 10.7.0.9} and is used by all listening TCP applications to bind their sockets. In the egress namespace one to eight\footnote{The current implementation of MPTCP uses a maximum of eight different interfaces for a single MPTCP connection.} virtual interfaces can be instantiated. Each is assigned a random IP address. All of the virtual network interfaces later corresponds to a single flow of an MPTCP connection.
+The shim layer instantiates a single virtual network interface in the ingress namespace. This interface is per default bound to the IP address {\footnotesize 10.7.0.9} and is used by all listening TCP applications to bind their sockets. In the egress namespace one to eight\footnote{The current implementation of MPTCP uses a maximum of eight different interfaces for a single MPTCP connection.} virtual interfaces can be instantiated. Each is assigned a random IP address. Each of these virtual network interfaces later corresponds to a single flow of an MPTCP connection.
 
 \paragraph{Running the Contact-Server-Endpoint} To be receptive to incoming connections, Shila starts a so-called Contact-Server-Endpoint. It binds per default to the SCION port {\footnotesize 7654} and serves as an initial point of contact. Shila instances running on different hosts initiate possible data exchange through this contact point.
 
@@ -142,7 +142,7 @@ The creation of a connection itself can be divided into two parts. The establish
 	\item[M-10] The reception of the first data received from the Traffic-Client-Endpoint on Host 1 concludes the establishment of the Main-Flow. Shila extracts its identifier, denoted as Main-Flow-Identifier, and links it to the corresponding routing information. This mapping is important for the following creation of Sub-Flows. The IP datagram, holding the SYN+ACK, is finally handed to the virtual interface from where the initial SYN came from. From there it finds its way to the client instance of iPerf3.
 \end{description}
 
-As soon as the Main-Flow of a connection is established, MPTCP starts to build Sub-Flow. The procedure differs only in some points from the procedure for establishing a Main-Flow. These points are mentioned below. For illustration purposes, an established Sub-Flow is indicated in Figure \ref{fig:ShilaIllustrationConnectionEstablishment}.
+As soon as the Main-Flow of a connection is established, MPTCP starts to initiate Sub-Flows. The procedure differs only in some points from the procedure for establishing a Main-Flow. These points are mentioned below. For illustration purposes, an established Sub-Flow is indicated in Figure \ref{fig:ShilaIllustrationConnectionEstablishment}.
 
 \textbf{Sub-Flow Establishment}
 
@@ -155,7 +155,7 @@ As soon as the Main-Flow of a connection is established, MPTCP starts to build S
 
 Once established, a flow is immediately used for the data exchange of the application. If at one point the connection is no longer needed, it is removed again, as mentioned in the following subsection.
 
-\subsection*{Normal Operation and Clean-Up}
+\subsection*{Normal Operation and Clean-up}
 \label{subsec:ShilaCleanUp}
 
-As soon as the Main-Flow or a Sub-Flow is established, its Contact-Backbone-Connection is no longer needed and is terminated. For data exchange between the TCP endpoints, data can be forwarded through all established flows. The decision along which flow the data is sent, is made by MPTCP and cannot be influenced by Shila. Data forwarded along a certain flow travels via the respective endpoints (Traffic-Client-Endpoint, Traffic-Server-Endpoint) along the Traffic-Backbone-Connection through the SCION network.  If a connection is no longer needed, i.e. no more data is flowing through, the respective Traffic-Backbone-Connections are removed together with its endpoints.
+As soon as the Main-Flow or a Sub-Flow is established, its Contact-Backbone-Connection is no longer needed and is terminated. For data exchange between the TCP endpoints, data can be forwarded through all established flows. The decision along which flow the data is sent, is made by MPTCP and cannot be influenced by Shila\footnote{But of course, could Shila decided to send a flow through the Backbone-Connection of a different flow.}. Data forwarded along a certain flow travels via the respective endpoints along the Traffic-Backbone-Connection through the SCION network.  If a connection is no longer needed, i.e. no more data is flowing through, the respective Traffic-Backbone-Connections are removed together with its endpoints.
