@@ -2004,9 +2004,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.24748738"
-     inkscape:cx="4288.7438"
-     inkscape:cy="667.37298"
+     inkscape:zoom="0.12374369"
+     inkscape:cx="6556.5604"
+     inkscape:cy="-888.52423"
      inkscape:document-units="mm"
      inkscape:current-layer="layer5"
      showgrid="true"
@@ -2084,7 +2084,7 @@
          inkscape:groupmode="layer"
          id="layer6"
          inkscape:label="Shila"
-         style="display:inline">
+         style="display:none">
         <g
            transform="translate(-9.7499999e-5,-3.907072e-5)"
            id="g10075"
@@ -2493,7 +2493,7 @@
          inkscape:groupmode="layer"
          id="layer5"
          inkscape:label="Shila"
-         style="display:inline">
+         style="display:none">
         <g
            transform="translate(37.544289,66.192319)"
            id="g10068"
@@ -4010,7 +4010,7 @@
      inkscape:groupmode="layer"
      id="layer7"
      inkscape:label="Main-Flow-Established"
-     style="display:inline">
+     style="display:none">
     <path
        style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.99526062"
        d="m 102.36458,75.906248 h 59.53125"
@@ -4231,7 +4231,7 @@
      inkscape:groupmode="layer"
      id="layer8"
      inkscape:label="Sub-Flow-Established"
-     style="display:inline">
+     style="display:none">
     <path
        style="fill:none;stroke:#434343;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 128.82291,168.51041 v 26.45833 h 33.07292"
