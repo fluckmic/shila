@@ -16,7 +16,7 @@
    id="svg8"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="Complete.svg"
-   inkscape:export-filename="/home/fluckmic/go/src/shila/presentation/content/illustrations/functionality/exported/mf-established.png"
+   inkscape:export-filename="/home/fluckmic/go/src/shila/presentation/content/illustrations/functionality/exported/sf-es.png"
    inkscape:export-xdpi="300"
    inkscape:export-ydpi="300">
   <defs
@@ -2004,9 +2004,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.12374369"
-     inkscape:cx="6556.5604"
-     inkscape:cy="-888.52423"
+     inkscape:zoom="0.175"
+     inkscape:cx="5180.5375"
+     inkscape:cy="-0.2605022"
      inkscape:document-units="mm"
      inkscape:current-layer="layer5"
      showgrid="true"
@@ -2052,7 +2052,8 @@
        id="g27490"
        inkscape:label="Host-2"
        style="display:inline"
-       inkscape:groupmode="layer">
+       inkscape:groupmode="layer"
+       sodipodi:insensitive="true">
       <g
          id="g6258"
          inkscape:label="Host">
@@ -2084,7 +2085,7 @@
          inkscape:groupmode="layer"
          id="layer6"
          inkscape:label="Shila"
-         style="display:none">
+         style="display:inline">
         <g
            transform="translate(-9.7499999e-5,-3.907072e-5)"
            id="g10075"
@@ -2425,8 +2426,7 @@
          transform="translate(1051.7188,-13.42424)"
          id="g27568-8"
          inkscape:label="MPTCP"
-         style="display:inline"
-         sodipodi:insensitive="true">
+         style="display:inline">
         <rect
            style="opacity:1;fill:#eaeaea;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.00000002, 1.00000002;stroke-dashoffset:0;stroke-opacity:1"
            id="rect13868-36-7-9-9-4-6-8"
@@ -2459,7 +2459,8 @@
        id="layer4"
        inkscape:label="Host-1"
        transform="translate(-37.544294,-66.192319)"
-       style="display:inline">
+       style="display:inline"
+       sodipodi:insensitive="true">
       <g
          id="g27496"
          inkscape:label="Host"
@@ -2493,7 +2494,7 @@
          inkscape:groupmode="layer"
          id="layer5"
          inkscape:label="Shila"
-         style="display:none">
+         style="display:inline">
         <g
            transform="translate(37.544289,66.192319)"
            id="g10068"
@@ -4010,7 +4011,7 @@
      inkscape:groupmode="layer"
      id="layer7"
      inkscape:label="Main-Flow-Established"
-     style="display:none">
+     style="display:inline">
     <path
        style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.99526062"
        d="m 102.36458,75.906248 h 59.53125"
@@ -4231,7 +4232,7 @@
      inkscape:groupmode="layer"
      id="layer8"
      inkscape:label="Sub-Flow-Established"
-     style="display:none">
+     style="display:inline">
     <path
        style="fill:none;stroke:#434343;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 128.82291,168.51041 v 26.45833 h 33.07292"
